@@ -1,4 +1,4 @@
-
+import numpy as np
 #Suqin
 class Controller(object):
     def __init__(self, spec, model):
@@ -11,10 +11,12 @@ class Controller(object):
         return self.merge(traj_c, safe_c)
     
     def traj_control(self, dt, x, goal_x):
-        return 1
+        u = np.ones(self.model.u_shape)
+        return u
     
     def safe_control(self, dt, x, goal_x):
-        return 1
+        u = np.ones(self.model.u_shape)
+        return u
 
     def merge(self, traj_c, safe_c):
-        return 2
+        return traj_c + safe_c

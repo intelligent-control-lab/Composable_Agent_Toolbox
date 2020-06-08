@@ -16,6 +16,7 @@ if __name__ == "__main__":
     agent_env_spec = [{'init_x':np.vstack([0,0,0,0]), 'init_p':np.vstack([0,0])}, 
                       {'init_x':np.vstack([0,0,0,0]), 'init_p':np.vstack([0,0])}]
     env_spec = {
+        "dt": 0.1,
         "friction": 0,
         "agent_env_spec": agent_env_spec
     }
