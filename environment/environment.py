@@ -1,5 +1,6 @@
 import numpy as np
 import world
+import matplotlib.pyplot as plt
 class Environment(object):
     def __init__(self, env_spec, agents):
         '''
@@ -11,14 +12,23 @@ class Environment(object):
         self.world = world.World(env_spec)
         for i in range(len(agents)):
             self.world.add_agent(agents[i], env_spec['agent_env_spec'][i])
-            for j in range(len(agents[i].sensors)):
-                self.world.add_sensor(agents[i].sensors[j].spec)
 
     def reset(self):
         env_info, sensor_data = self.world.reset()
-        return env_info, sensor_data
+        return self.dt, env_info, sensor_data
     def step(self, controls):
         env_info, sensor_data = self.world.simulate(controls, self.dt)
-        return env_info, sensor_data
-    def render(self):
-        pass
+        self.render(env_info)
+        return self.dt, env_info, sensor_data
+
+    def render(self, env_info):
+        plt.cla()
+        plt.axis([0, 100, 0, 100])
+        x = []
+        y = []
+        for i in range(len(env_info)):
+            x.append(env_info[i][0])
+            y.append(env_info[i][1])
+        plt.scatter(x,y,s=100)
+        plt.pause(0.1)
+        plt.draw()

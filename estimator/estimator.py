@@ -12,7 +12,6 @@ class Estimator(object):
 
     def estimate(self, sensor_data):
         fus_sensor_data = self.fusion(sensor_data)
-        dT = sensor_data[0]
         est_param = 1
         self.model.param = est_param
         est_state = fus_sensor_data
