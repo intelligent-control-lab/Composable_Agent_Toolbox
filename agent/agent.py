@@ -3,6 +3,8 @@ import numpy as np
 class Agent(object):
     def __init__(self, module_spec):
        self.instantiate_by_spec(module_spec)
+       self.replanning_cycle = 10
+       self.replanning_timer = self.replanning_cycle
     
     def instantiate_by_spec(self, module_spec):
         self.task = module_spec['task']
@@ -20,8 +22,13 @@ class Agent(object):
     def action(self, dt, sensors_data):
         est_state, est_parameter = self.estimator.estimate(sensors_data[0])
         goal = self.get_goal((est_state, est_state))
-        agent_goal_state = self.planner.planning(dt, goal, est_state)
-        print(est_state)
+
+        if self.replanning_timer == self.replanning_cycle:
+            self.planned_traj = self.planner.planning(dt, goal, est_state)
+            self.replanning_timer = 0
+        agent_goal_state = self.planned_traj[self.replanning_timer]
+        self.replanning_timer += 1
+
         control = self.controller.control(dt, est_state, agent_goal_state, est_parameter)
 
         return control
