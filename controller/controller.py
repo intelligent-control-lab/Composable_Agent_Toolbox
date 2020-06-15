@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 class Controller_Base(object):
     '''
     This is the basic controller class template.
-    One should complete the __init__(), get_control() and reset() function to instantiate a controller.
+    One should complete the __init__(), control() and reset() function to instantiate a controller.
     '''
     __metaclass__ = ABCMeta
 
@@ -24,7 +24,7 @@ class Controller_Base(object):
         pass
 
     @abstractmethod
-    def get_control(self):
+    def control(self):
         '''
         This function calculate the controller output at each time step
         '''
@@ -43,15 +43,17 @@ class Zero_Controller(Controller_Base):
     This is a blank controller class.
     The Zero_Controller always returns 0 as controller output.
     '''
-    def __init__(self):
+    def __init__(self, spec, model):
         self.name = 'Zero'
         self.type = 'None'
+        self.spec = spec
+        self.model = model
 
     def reset(self):
         return True
 
-    def get_control(self, dt, x, goal_x, model):
-        return 0
+    def control(self, dt, x, goal_x, est_params):
+        return np.zeros(self.model.u_shape)
 
 
 # Controller Class
@@ -63,28 +65,31 @@ class Controller(Controller_Base):
     The controller key can be ignored if it's not used, it will be filled with an zero controller automatically.
 
     E.g. a PID controller specs:
-    {"feedback": "PID", "params": {"kp": 0, "ki": 0, "kd": 0}}
-    '''
+    {"feedback": "PID", "params": {"kp": [1, 1], "ki": [0, 0], "kd": [0, 0]}}
+    '''    
     def __init__(self, spec, model):
-        if 'coordination' in spec:
-            self.coordination = globals()[spec['coordination']](spec['params'])
+        self.spec = spec
+        self.model = model
+
+        if 'coordination' in self.spec:
+            self.coordination = globals()[self.spec['coordination']](self.spec['params'], self.model)
         else:
-            self.coordination = Zero_Controller()
+            self.coordination = Zero_Controller(self.spec, self.model)
         
-        if 'feedforward' in spec:
-            self.feedforward = globals()[spec['feedforward']](spec['params'])
+        if 'feedforward' in self.spec:
+            self.feedforward = globals()[self.spec['feedforward']](self.spec['params'], self.model)
         else:
-            self.feedforward = Zero_Controller()
+            self.feedforward = Zero_Controller(self.spec, self.model)
 
-        if 'feedback' in spec:
-            self.feedback = globals()[spec['feedback']](spec['params'])
+        if 'feedback' in self.spec:
+            self.feedback = globals()[self.spec['feedback']](self.spec['params'], self.model)
         else:
-            self.feedback = Zero_Controller()
+            self.feedback = Zero_Controller(self.spec, self.model)
 
-        if 'Safety' in spec:
-            self.safety = globals()[spec['safety']](spec['params'])
+        if 'Safety' in self.spec:
+            self.safety = globals()[self.spec['safety']](self.spec['params'], self.model)
         else:
-            self.safety = Zero_Controller()
+            self.safety = Zero_Controller(self.spec, self.model)
     
     def reset(self, item):
         '''
@@ -104,54 +109,77 @@ class Controller(Controller_Base):
         return (stat1 and stat2 and stat3 and stat4)
 
     def remove(self, item):
-        setattr(self, item, Zero_Controller())
+        setattr(self, item, Zero_Controller(self.spec, self.model))
         return True
 
     def remove_all(self):
-        self.coordination = Zero_Controller()
-        self.feedforward = Zero_Controller()
-        self.feedback = Zero_Controller()
-        self.safety = Zero_Controller()
+        self.coordination = Zero_Controller(self.spec, self.model)
+        self.feedforward = Zero_Controller(self.spec, self.model)
+        self.feedback = Zero_Controller(self.spec, self.model)
+        self.safety = Zero_Controller(self.spec, self.model)
         return True
 
-    def get_control(self, dt, x, goal_x, model):
-        coordination_output = self.coordination.get_control(dt, x, goal_x, model)
-        feedforward_output  = self.feedforward.get_control(dt, x, goal_x, model)
-        feedback_output     = self.feedback.get_control(dt, x, goal_x, model)
-        safety_output       = self.safety.get_control(dt, x, goal_x, model)
+    def control(self, dt, x, goal_x, est_params):
+        coordination_output = self.coordination.control(dt, x, goal_x, est_params)
+        feedforward_output  = self.feedforward.control(dt, x, goal_x, est_params)
+        feedback_output     = self.feedback.control(dt, x, goal_x, est_params)
+        safety_output       = self.safety.control(dt, x, goal_x, est_params)
         return coordination_output + feedforward_output + feedback_output + safety_output
 
 
 # A PID Controller Class Example
 class PID(Controller_Base):
     '''
-    An one-channel PID controller.
+    A multi-channel PID controller.
     '''
-    kp, ki, kd = 0.0, 0.0, 0.0
-    e, e_last, sum_e = 0.0, 0.0, 0.0
-
-    def __init__(self, spec):
+    def __init__(self, params, model):
         self.name = 'PID'
-        self.kp = spec['kp']
-        self.ki = spec['ki']
-        self.kd = spec['kd']
-        self.e_last, self.sum_e = 0.0, 0.0
+        self.params = params
+        self.model = model
+        self.kp = self.params['kp']
+        self.ki = self.params['ki']
+        self.kd = self.params['kd']
+        self.e      = np.zeros(self.model.u_shape)
+        self.e_last = np.zeros(self.model.u_shape)
+        self.sum_e  = np.zeros(self.model.u_shape)
 
     def reset(self):
-        self.e, self.e_last, self.sum_e = 0.0, 0.0, 0.0
+        self.e      = np.zeros(self.model.u_shape)
+        self.e_last = np.zeros(self.model.u_shape)
+        self.sum_e  = np.zeros(self.model.u_shape)
         return True
 
-    def param_tuning(self, param):
-        self.kp = param.kp
-        self.ki = param.ki
-        self.kd = param.kd
+    def param_tuning(self, params):
+        self.kp = params['kp']
+        self.ki = params['ki']
+        self.kd = params['kd']
         return True
 
-    def get_control(self, dt, x, goal_x, model):
-        self.e = goal_x - x
+    def control(self, dt, x, goal_x, est_params):
+        self.e = np.array(goal_x).reshape(len(goal_x), 1) - np.array(x).reshape(len(x), 1)
         self.sum_e += self.e * dt
-        output = self.kp * self.e + self.ki * self.sum_e + self.kd * (self.e - self.e_last) / dt
+        output = np.diag(self.kp) * self.e + np.diag(self.ki) * self.sum_e + np.diag(self.kd) * (self.e - self.e_last) / dt
         return output
 
     def get_error(self, x, goal_x):
-        return goal_x - x
+        return np.array(goal_x).reshape(len(goal_x), 1) - np.array(x).reshape(len(x), 1)
+
+
+# Velocity Feedforward Controller Class
+class Vel_FF(Controller_Base):
+    '''
+    A multi-channel velocity feedforward controller.
+    '''
+    def __init__(self, params, model):
+        self.name = 'PID'
+        self.params = params
+        self.model = model
+        self.kv = self.params['kv']
+        self.goal_x_last = 0
+
+    def reset(self):
+        return True
+
+    def control(self, dt, x, goal_x, est_params):
+        output = np.diag(self.kv) * (goal_x - self.goal_x_last) / dt
+        return output
