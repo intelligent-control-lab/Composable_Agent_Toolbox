@@ -8,7 +8,7 @@ if __name__ == "__main__":
         "model": "Model",
         "estimator": "Estimator",
         "planner": "Planner",
-        "controller": "Controller",
+        "controller": {"feedback": "PID", "kp": 0, "ki": 0, "kd": 0},
         "sensors": ["PVSensor", "PVSensor"], #an agent can have multiple sensors
     }
     agent_specs = [module_spec, module_spec]

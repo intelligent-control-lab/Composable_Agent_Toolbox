@@ -21,6 +21,6 @@ class Agent(object):
         est_state, est_parameter = self.estimator.estimate(sensors_data[0])
         goal = self.get_goal((est_state, est_state))
         agent_goal_state = self.planner.planning(dt, goal, est_state)
-        control = self.controller.control(dt, est_state, agent_goal_state)
+        control = self.controller.get_control(dt, est_state, agent_goal_state, self.model)
 
         return control
