@@ -145,7 +145,7 @@ class model(object):
             for i in self.params:
                 evaled = evaled.subs(i, params_sub[counter])
                 counter += 1                
-            return evaled
+            return [evaled, np.array(evaled).astype(np.float64)]
         else: 
             # Evaluate the expression using a continuous time flag
             evaled = self.cont_model.subs(self.x, x_sub)
