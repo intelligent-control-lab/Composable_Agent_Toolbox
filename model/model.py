@@ -3,6 +3,7 @@
 import numpy as np
 import sympy as sp
 import math as m
+import time
 
 class Model(object):
     def __init__(self, use_library, model_name, nonlinear_flag, time_sample, disc_flag):
@@ -40,6 +41,10 @@ class Model(object):
             self.params = params_dec[0]
             self.shape_params = params_dec[1]
 
+            # Generate a list of all in use symbols
+            self.all_syms = [[self.x, self.u, self.params]]
+            # self.shape_all_syms = self.all_syms.shape
+
             # Determine if this a nonlinear system or a linear system
             if self.nonlinear_flag:
                 # Declare f(x, params)
@@ -49,6 +54,8 @@ class Model(object):
                 self.measure_func = self._declare_func_measure()
                 if self.disc_flag: 
                     self.disc_model = self._discretize_dyn()
+                    self.disc_model_lam = self._convert_funcs2lam(self.disc_model)
+                    self.measure_func_lam = self._convert_funcs2lam(self.measure_func)
                 else: 
                     # Evaluate the system in a continuous form:
                     pass
@@ -134,6 +141,14 @@ class Model(object):
         dis_model = self.x + self.time_sample*self.cont_model
         return dis_model
 
+    def _convert_funcs2lam(self, func):
+        '''
+        this method converts the functions to python lambda functions for use in numerical evaluation note that the reason why we are passing the argument func here is that we can specify whichever function we like
+        '''
+        lam_func = sp.lambdify(self.all_syms,func)
+        return lam_func
+
+
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
         evaluate the dynamics with a specific values substituted for the state and the parameters
@@ -194,9 +209,24 @@ if __name__ == '__main__':
     print(pen_model.cont_model)
     print(pen_model.disc_model)
     print(pen_model.measure_func)
+    start1 = time.process_time()
     evaled = pen_model.evaluate_dynamics([m.pi, 1], [0.01], [2, 9.81, 9.81])
+    end1 = (time.process_time()-start1)
+    print(' ')
+    print('Number of Seconds for Subs Method')
+    print(end1)    
     print('Value of the state when placed in the dynamics')
     print(evaled)
     print('Value of the expected measurement equation')
     evaled_measure = pen_model.evaluate_measurement([m.pi, 1])
     print(evaled_measure)
+    print(pen_model.disc_model_lam)
+    start2 = time.process_time()
+    evaled2 = pen_model.disc_model_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]]) 
+    end2 = time.process_time() - start2
+    print(evaled2)
+    print('Number of Seconds for lambda function method')
+    print(end2)
+    print('Lambda Function')
+    print(pen_model.measure_func_lam)
+    print(pen_model.measure_func_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]]))    
