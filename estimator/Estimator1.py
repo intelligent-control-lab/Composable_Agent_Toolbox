@@ -95,17 +95,17 @@ class Extended_Kalman_Filter(Estimator_Base):
 	def estimate(self,posterior_pos,posterior_state_cov,z_meas):
 		# check Chase's code, see which method gives next state
 		priori_pos               = self.forward_propagate_dynamics(posterior_pos)      							; # need to call dynamics of the paritcular robot model
-		A                        = self.linearization_forward_dynamics(posterior_pos)  							; # need to call dynamics of the paritcular robot model
-		priori_cov               = np.matmul(np.matmul(A,posterior_state_cov),np.transpose(A)) + self._Rww      ;   
-		n                        = len(posterior_pos)                                           				;
-		I                        = np.identity(n)                                               				;
-		H                        = self.linearization_measurement_function(priori_pos)   						; # need to call dynamics of the paritcular robot model
-		innovation               = z_meas - self.measurement_function(priori_pos)        						; # need to call dynamics of the paritcular robot model
-		S                        = np.matmul(np.matmul(H,priori_cov),np.transpose(H)) + self._Rvv  				;
-		Sinv                     = np.linalg.inv(S)																;
-		K                        = np.matmul(np.matmul(priori_cov,np.transpose(H)),Sinv)                  		;
-		next_posterior_state     = priori_pos + np.matmul(K,innovation)                         				;
-		next_posterior_state_cov = np.matmul(I-(np.matmul(K,H)),priori_cov)                     				;
+		A                        = self.linearization_forward_dynamics(posterior_pos)  							; # need to call linearization of dynamics of the paritcular robot model
+		priori_cov               = np.matmul(np.matmul(A,posterior_state_cov),np.transpose(A)) + self._Rww      ; # P- = APA' + Q 
+		n                        = len(posterior_pos)                                           				; # get size of EKF state
+		I                        = np.identity(n)                                               				; # initialize identity
+		H                        = self.linearization_measurement_function(priori_pos)   						; # linearization of robot's measurement function
+		innovation               = z_meas - self.measurement_function(priori_pos)        						; # calculate innovation, needs measurement function
+		S                        = np.matmul(np.matmul(H,priori_cov),np.transpose(H)) + self._Rvv  				; # S = HP-H' + R
+		Sinv                     = np.linalg.inv(S)																; # Calculate Sinverse
+		K                        = np.matmul(np.matmul(priori_cov,np.transpose(H)),Sinv)                  		; # Calculate Kalman Gain
+		next_posterior_state     = priori_pos + np.matmul(K,innovation)                         				; # Get next pos estimate
+		next_posterior_state_cov = np.matmul(I-(np.matmul(K,H)),priori_cov)                     				; # Get next pos covaraince, this is posteriori covariance
 
 		return next_posterior_state,next_posterior_state_cov
 
