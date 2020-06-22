@@ -23,8 +23,9 @@ class Model(object):
         self.nonlinear_flag   = nonlinear_flag
         self.time_sample = time_sample
         self.disc_flag = disc_flag
+        self.symbol_dict = {} # Define an empty dictionary for holding the variables
 
-        # Declare the 
+
         if self.use_library:
             # Perform a look-up in the dynamics library 
             pass
@@ -33,16 +34,19 @@ class Model(object):
             state_dec = self._declare_state() # Function initializes state variables
             self.x = state_dec[0] # This defines the state vector and gives it to the model object
             self.shape_x = state_dec[1] # This is the shape of the state vector
+            self.symbol_dict.update(state_dec[2]) # This updates the symbol dictionary to include the state symbol to mapping information
 
             # Initialize Controls
             cntl_dec = self._declare_cntl()
             self.u = cntl_dec[0] # This defines the control vector
             self.shape_u = cntl_dec[1] # This is the shape of the control vector
+            self.symbol_dict.update(cntl_dec[2]) # This updates the symbol dictionary to include the control symbol to name mapping information
 
             # Initialize Parameters
             params_dec = self._declare_params()
             self.params = params_dec[0] # This defines the parameter vector
             self.shape_params = params_dec[1] # This is the shape of the parameter vector
+            self.symbol_dict.update(params_dec[2]) # This updates the symbol dictionary to include the parameter symbol to name mapping information
 
             # Generate a list of all in use symbols
             self.all_syms = [[self.x, self.u, self.params]] # "Vertically stack" the states, parameter, control (really a three element list)
@@ -78,8 +82,11 @@ class Model(object):
         x = sp.Matrix([x1, x2])
         shape_x = x.shape # Get the shape of x and return it
 
+        # Declare your states with given names
+        state_dict = {x1:'angle', x2:'angular velocity'}
+
         # return the states in aggregation and the shape of the state vector:
-        return [x, shape_x]
+        return [x, shape_x, state_dict]
 
     def _declare_cntl(self):
         '''
@@ -87,14 +94,18 @@ class Model(object):
         '''
 
         # Example placeholder is for a system with one control variable
-        u1 = sp.symbols(['u1'])
+        u1 = sp.symbols('u1')
 
         # Declare the controls in aggregated vector form:
         u = sp.Matrix([u1])
         shape_u = u.shape # Get the shape of x and return it
 
+        # Declare your controls with given names
+        # cntl_dict = {u1:'torque', 'dumb_key':'torque2'}
+        cntl_dict = {u1:'torque'}
+
         # return the controls in aggregation and the shape of the control vector:
-        return [u, shape_u]
+        return [u, shape_u, cntl_dict]
 
     def _declare_params(self):
         '''
@@ -108,8 +119,11 @@ class Model(object):
         params = sp.Matrix([m, l, g])
         shape_params = params.shape # Get the parameter vector dimension
 
+        # Declare your parameters with given names:
+        param_dict = {m:'mass', l: 'string length', g: 'acceleration due to gravity'}
+
         # return the parameters in aggregation and the shape.
-        return [params, shape_params]
+        return [params, shape_params, param_dict]
 
 
     def _declare_func_f(self):
@@ -245,3 +259,5 @@ if __name__ == '__main__':
     print('Lambda Function')
     print(pen_model.measure_func_lam)
     print(pen_model.measure_func_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]])) # Example of the evaluation of the lambdify-generated measurement equations
+    print('List of Symbols')
+    print(pen_model.symbol_dict)
