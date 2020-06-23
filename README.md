@@ -11,6 +11,15 @@ We specified the dependencies in `environment.yml`. You can reproduce the conda 
 conda env create -f environment.yml
 ```
 
+## Usage
+
+Change the specs and run `python benchmark.py`.
+
+The specs strutue is shown below. 
+
+![](img/specs.svg)
+
+
 ## Developer Guide
 
 > The point of having style guidelines is to have a common vocabulary of coding so people can concentrate on what you’re saying rather than on how you’re saying it. If code you add to a file looks drastically different from the existing code, it throws readers out of their rhythm when they go to read it. Avoid this.
