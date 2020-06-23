@@ -17,7 +17,7 @@ Change the specs and run `python benchmark.py`.
 
 The specs strutue is shown below. 
 
-![](img/specs.svg =100x)
+<img src="./img/specs.svg" width="100">
 
 
 ## Developer Guide
