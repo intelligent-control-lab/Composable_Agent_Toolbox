@@ -1,8 +1,29 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
-class BB8(object):
-    def __init__(self, init_x):
+class Agent(ABC):
+ 
+    def __init__(self, name, init_x):
+        self.name = name
         self._x = init_x
+
+    @abstractmethod
+    def forward(self):
+        pass
+    
+    @property
+    def state(self):
+        return self._x
+    
+    @abstractmethod
+    def pos(self):
+        pass
+
+    @abstractmethod
+    def vel(self):
+        pass
+
+class BB8Agent(Agent):
     
     def _f(self, x):
         return np.vstack([x[2], x[3], 0, 0])
@@ -27,3 +48,5 @@ class BB8(object):
     @property
     def vel(self):
         return self._x[[2,3]]
+
+    
