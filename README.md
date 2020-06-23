@@ -17,7 +17,7 @@ Change the specs and run `python benchmark.py`.
 
 The specs strutue is shown below. 
 
-<img src="./img/specs.svg" width="700">
+<img src="./img/specs.svg" width="600">
 
 
 ## Developer Guide
