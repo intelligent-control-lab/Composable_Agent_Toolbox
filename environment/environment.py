@@ -11,7 +11,7 @@ class Environment(object):
         self.dt = env_spec['dt']
         self.world = world.World(env_spec)
         for i in range(len(agents)):
-            self.world.add_agent(agents[i], env_spec['agent_env_spec'][i])
+            self.world.add_agent(agents[i], env_spec['agent_env_spec'][agents[i].name])
 
     def reset(self):
         env_info, sensor_data = self.world.reset()
