@@ -27,6 +27,18 @@ class PVSensor(Sensor):
         }
         return ret
 
+class StateSensor(Sensor):
+    def __init__(self, agent, all_agents, spec):
+        super().__init__(agent, all_agents, spec)
+        self.noise_var = spec['noise_var']
+
+    def measure(self):
+        ret = {
+            "state": self._gaussian_noise(self.agent.state, self.noise_var),
+        }
+        return ret
+
+
 class RadarSensor(Sensor):
     def __init__(self, agent, all_agents, spec):
         super().__init__(agent, all_agents, spec)
