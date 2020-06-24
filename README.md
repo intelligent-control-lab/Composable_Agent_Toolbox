@@ -24,7 +24,13 @@ The python version is 3.8. But the code should be compatible with all 3.x versio
 We specified the dependencies in `environment.yml`. You can reproduce the conda environment by
 
 ```bash
-conda env create -f environment.yml
+conda env create --name $your_env_name -f environment.yml
+```
+
+If you already have an environment and just want to make sure existing packages align with the specification. Run
+
+```bash
+conda env update --name $your_env_name -f environment.yml
 ```
 
 ## Usage
