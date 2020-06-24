@@ -34,8 +34,8 @@ class Agent(object):
         if self.replanning_timer == self.planner.replanning_cycle:
             self.planned_traj = self.planner.planning(dt, goal, est_data)
             self.replanning_timer = 0
-        agent_cartesian_goal = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
+        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
         self.replanning_timer += 1
-        control = self.controller.control(dt, est_data, agent_cartesian_goal, est_param)
+        control = self.controller.control(dt, est_data, next_traj_point, est_param)
         
         return control

@@ -59,7 +59,7 @@ class GoalAgent(BB8Agent):
     This agent only flash to a new place when the real agent reaches it.
     The reason we inheritate it from BB8Agent is to make it possible to be a 
     dynamic goal in the future.
-    """    
+    """
     def __init__(self, name, hunter, goal_list, reaching_eps, collision=False):
         self.name = name
         self._x = np.zeros((4,1))
