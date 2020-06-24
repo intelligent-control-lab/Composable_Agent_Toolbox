@@ -52,7 +52,7 @@ class World(object):
             The instantiated sensor.
         """
         SensorClass = getattr(importlib.import_module("world.sensor"), spec["type"])
-        return SensorClass(agent, self.agents, spec)
+        return SensorClass(agent, self.agents, spec["spec"])
 
     def reset(self):
         """Reset the physics engine.
@@ -73,9 +73,9 @@ class World(object):
             A dict mapping agent_name to a measurement group.
             Each group is also a dict that mapping sensor_name to measurements, e.g.
             {
-                'robot':{'state_sensor': {'pos': array([[0], [0]]), 'vel': array([[0], [1]])}, 
+                'robot':{'cartesian_sensor': {'pos': array([[0], [0]]), 'vel': array([[0], [1]])}, 
                          'obstacle_sensor': {'human': array([[0], [10]])}},
-                'human':{'state_sensor': (array([[0],[10]]), array([[0],[0]]))}
+                'human':{'cartesian_sensor': (array([[0],[10]]), array([[0],[0]]))}
             }
         """
         measurement_groups = {}

@@ -29,6 +29,6 @@ class Environment(object):
         for i in range(len(env_info)):
             x.append(env_info[i][0])
             y.append(env_info[i][1])
-        plt.scatter(x,y,s=100)
+        plt.scatter(x,y,s=100, color=['red','blue'])
         plt.pause(0.1)
         plt.draw()
