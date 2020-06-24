@@ -1,6 +1,7 @@
 import numpy as np
 import world
 import matplotlib.pyplot as plt
+import importlib
 class Environment(object):
     def __init__(self, env_spec, agents):
         '''
@@ -9,13 +10,15 @@ class Environment(object):
         some sensors based on the specs.
         '''
         self.dt = env_spec['dt']
-        self.world = world.World(env_spec)
+        WorldClass = getattr(importlib.import_module("world"), env_spec["world"]["type"])
+        self.world = WorldClass(env_spec["world"]["spec"])
         for i in range(len(agents)):
             self.world.add_agent(agents[i], env_spec['agent_env_spec'][agents[i].name])
 
     def reset(self):
         env_info, sensor_data = self.world.reset()
         return self.dt, env_info, sensor_data
+
     def step(self, controls):
         env_info, sensor_data = self.world.simulate(controls, self.dt)
         self.render(env_info)
@@ -26,9 +29,16 @@ class Environment(object):
         plt.axis([0, 100, 0, 100])
         x = []
         y = []
-        for i in range(len(env_info)):
-            x.append(env_info[i][0])
-            y.append(env_info[i][1])
-        plt.scatter(x,y,s=100, color=['red','blue'])
+        for name, pos in env_info.items():
+            if 'goal' not in name:
+                x.append(pos[0])
+                y.append(pos[1])
+        for name, pos in env_info.items():
+            if 'goal' in name:
+                x.append(pos[0])
+                y.append(pos[1])
+        
+        cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
+        plt.scatter(x,y,s=100, color=cs[:len(x)])
         plt.pause(0.1)
         plt.draw()
