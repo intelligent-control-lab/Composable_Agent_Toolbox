@@ -1,5 +1,21 @@
 # Benchmark
-Benchmark for planner, controller, model, estimator, etc.
+Benchmark for model-based planning and control. 
+
+### Model
+
+Symbolic models for linear/nonlinear systems;
+
+### Planner
+
+Optimization-based planners;
+
+### Estimator
+
+Estimation and prediction of states and parameters;
+
+### Controller
+
+Feedback control, feedforward control, safe control;
 
 ## Requirements
 
