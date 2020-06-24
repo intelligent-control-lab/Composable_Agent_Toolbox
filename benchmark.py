@@ -3,17 +3,30 @@ import evaluator, agent, environment
 
 if __name__ == "__main__":
 
-    agent_module_spec = {
-        "task": {(1,1):10, (2,2):20}, # we define task as a state-goal mapping here, but better design is needed
-        "model": "Model",
-        "estimator": "Estimator",
-        "planner": "Planner",
-        "controller": {"feedback": "PID", "params": {"kp": [1, 1], "ki": [0, 0], "kd": [0, 0]}},
-        "sensors": [{"type":"PVSensor", "alias":"state_sensor", "noise_var":0.1}, 
-                    {"type":"RadarSensor", "alias":"obstacle_sensor", "noise_var":0.1}], #an agent can have multiple sensors
+    agent1_module_spec = {
+        "name":       "robot",
+        "task":      {"type":"ReachingTask",    "spec":{"reaching_eps":1, "goal_range":[[10,10,0,0],[90,90,0,0]]}},
+        "model":     {"type":"Model",           "spec":{}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{}},
+        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
+        "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
+        "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
+                     {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
+                     {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}], #an agent can have multiple sensors
     }
-    agent1_module_spec = {**agent_module_spec, **{"name":"robot"}}
-    agent2_module_spec = {**agent_module_spec, **{"name":"human"}}
+
+    agent2_module_spec = {
+        "name":       "human",
+        "task":      {"type":"ReachingTask",    "spec":{"reaching_eps":1, "goal_range":[[10,10,0,0],[90,90,0,0]]}},
+        "model":     {"type":"Model",           "spec":{}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{}},
+        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
+        "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
+        "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
+                     {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
+                     {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}], #an agent can have multiple sensors
+    }
+
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
     agent_env_spec = {"robot":{"type":"BB8Agent", "init_x":np.vstack([ 0, 0, 0, 0])},
                       "human":{"type":"BB8Agent", "init_x":np.vstack([ 0,10, 0, 0])}
