@@ -24,6 +24,15 @@ print(pen_model.u) # print out the symbolic vector of model control
 print(pen_model.cont_model) # print out the continous dynamic equations
 print(pen_model.disc_model) # print out the discrete time dynamic equations
 print(pen_model.measure_func) # print out the measurement function
+
+print('Before evaluating the model, let us test the linearization scheme')
+print(pen_model.lin_model)
+pen_model.linearize_dynamics(x_sub=[m.pi, 1], u_sub=[0.01])
+print('This is the after')
+print(pen_model.lin_model)
+print(' ')
+
+print('Testing the process time')
 start1 = time.process_time() # get an initial start time to check to the see the computational time needed for subs-based system evaluation
 evaled = pen_model.evaluate_dynamics([m.pi, 1], [0.01], [2, 9.81, 9.81]) # Evaluate using the subs command
 end1 = (time.process_time()-start1) # get the end time to check computational cost

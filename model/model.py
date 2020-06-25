@@ -51,6 +51,14 @@ class ModelBase(ABC):
         lam_func = sp.lambdify(self.all_syms,func)
         return lam_func
 
+    def _take_jacobian(self, func, VARS):
+        '''
+        this method linearizes the system dynamics by taking the jacobian of func with respect to argument X and returns a symbolic object
+        '''
+
+        # Leverages the SymPy dynamics structure
+        return func.jacobian(VARS)
+
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
         evaluate the dynamics with a specific values substituted for the state and the parameters
@@ -113,7 +121,8 @@ class NonlinModelCntlAffine(ModelBase):
         self.time_sample = time_sample
         self.disc_flag = disc_flag
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
-
+        self.lin_model = None # Only populate if we actually linearize
+        self.lin_measure_model = None # Only populate if we actually linearize
 
         if self.use_library:
             # Perform a look-up in the dynamics library 
@@ -149,6 +158,7 @@ class NonlinModelCntlAffine(ModelBase):
 
             if self.disc_flag:  # Discretize the System
                 self.disc_model = super()._discretize_dyn() # Discretizes the dynamics with a forward-Euler approximation
+                self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
             else: 
@@ -252,3 +262,37 @@ class NonlinModelCntlAffine(ModelBase):
         evaluate_dynamics function
         '''
         return ModelBase.evaluate_measurement(self, x_sub)
+
+    def linearize_dynamics(self, **kwargs):
+        '''
+        linearize the dynamics of a nonlinear continuous model with respect to the state and control
+        '''
+        jacobian_x = super()._take_jacobian(self.cont_model, self.x) # Take the Jacobian wrt the states
+        jacobian_u = super()._take_jacobian(self.cont_model, self.u) # Take the Jacobian wrt the control
+
+        x_sub = kwargs.get('x_sub', sp.zeros(self.shape_x[0], self.shape_x[1])) # Pull the substitution arguments, if provided, else assume linearization around zero state
+        u_sub = kwargs.get('u_sub', sp.zeros(self.shape_u[0], self.shape_u[1])) # Pull the substitution arguments, if provided, else assume linearization around zero control
+ 
+        x_sub = sp.Matrix(x_sub) # Casting this to a SymPy List for subtraction later
+        u_sub = sp.Matrix(u_sub) # Casting this to a SymPy List for subtraction later
+
+        evaled = self.cont_model.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
+        jacobian_x = jacobian_x.subs(self.x[0], x_sub[0])
+        jacobian_u = jacobian_u.subs(self.u[0], u_sub[0])
+        counter = 0 # This is a counter to iterate through the elements in the state vector
+        for i in self.x:
+            evaled = evaled.subs(i, x_sub[counter]) # Sub in each corresponding element in the state vector with that in passed x_sub arg
+            jacobian_x = jacobian_x.subs(i, x_sub[counter])
+            jacobian_u = jacobian_u.subs(i, x_sub[counter])
+            counter += 1 # increment counter
+        counter = 0 # reset counter for use in the controls substitution
+        for i in self.u:
+            evaled = evaled.subs(i, u_sub[counter]) # Sub in each corresponding element in the control vector with that in passed u_sub arg
+            jacobian_x = jacobian_x.subs(i, u_sub[counter])
+            jacobian_u = jacobian_u.subs(i, u_sub[counter])
+            counter += 1 # increment counter
+
+        ss_val = evaled # This is the steady-state component
+
+        self.lin_model = ss_val + jacobian_x*(self.x - x_sub) + jacobian_u*(self.u - u_sub)
+        self.lin_measure_model = sp.eye(self.shape_x[0])*(self.x-x_sub)
