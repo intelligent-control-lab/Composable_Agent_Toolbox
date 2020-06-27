@@ -11,14 +11,19 @@ import sys
 # None
 
 # Project-specific Imports
-# Ugly, but we need to do it
-sys.path.append("..") # Adds higher directories to python modules path 
-from model import *
+
+import model
 
 # Start the actual test
 
 # Declare a system model:
-ball_model = LinearModel(0, 'Ballbot', 0.01, 1)
+spec = {
+    "use_library"   : 0,
+    "model_name"    : 'Ballbot',
+    "time_sample"   : 0.01,
+    "disc_flag"     : 1
+}
+ball_model = model.LinearModel(spec)
 print(ball_model.model_name) # print out the model name
 print(ball_model.u) # print out the symbolic vector of model control
 print(ball_model.cont_model) # print out the continous dynamic equations

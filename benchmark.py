@@ -9,7 +9,7 @@ if __name__ == "__main__":
     agent1_module_spec = {
         "name":       "robot",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"Model",           "spec":{}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
         "estimator": {"type":"NaiveEstimator",  "spec":{}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     agent2_module_spec = {
         "name":       "human",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"Model",           "spec":{}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
         "estimator": {"type":"NaiveEstimator",  "spec":{}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
@@ -71,5 +71,3 @@ if __name__ == "__main__":
         record.append(env_info)
 
     evaluator.evaluate(record)
-
- 
