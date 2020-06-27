@@ -18,7 +18,7 @@ class ModelBase(ABC):
     Classes derived from the model base need to implement copies
     of all abstract methods, lest a TypeError arises.
     '''
-
+    
     @abstractmethod
     def __init__(self):
         pass
@@ -103,7 +103,7 @@ class NonlinModelCntlAffine(ModelBase):
     '''
     class for nonlinear control affine models of form x_dot = f(x) + g(x)u
     '''
-    def __init__(self, use_library, model_name, time_sample, disc_flag):
+    def __init__(self, spec):
         '''
         class constructor for model class.
 
@@ -115,10 +115,10 @@ class NonlinModelCntlAffine(ModelBase):
         '''
 
         # Flag for denoting hand-defined dynamics
-        self.use_library = use_library
-        self.model_name = model_name
-        self.time_sample = time_sample
-        self.disc_flag = disc_flag
+        self.use_library = spec["use_library"]
+        self.model_name = spec["model_name"]
+        self.time_sample = spec["time_sample"]
+        self.disc_flag = spec["disc_flag"]
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
         self.lin_model = None # Only populate if we actually linearize
         self.lin_measure_model = None # Only populate if we actually linearize
@@ -286,7 +286,7 @@ class NonlinModelCntlAffine(ModelBase):
             evaled = self.cont_model.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
 
         self.jacobian_x = jacobian_x # Store the Jacobian with respect to x
-        self.jacobina_u = jacobian_u # Store the Jacobian with respect to u
+        self.jacobian_u = jacobian_u # Store the Jacobian with respect to u
 
         jacobian_x = jacobian_x.subs(self.x[0], x_sub[0])
         jacobian_u = jacobian_u.subs(self.u[0], u_sub[0])
@@ -318,7 +318,7 @@ class LinearModel(ModelBase):
     '''
     class for Linear Models of form x_dot = Ax + Bu
     '''
-    def __init__(self, use_library, model_name, time_sample, disc_flag):
+    def __init__(self, spec):
         '''
         class constructor for model class.
 
@@ -330,10 +330,10 @@ class LinearModel(ModelBase):
         '''
 
         # Flag for denoting hand-defined dynamics
-        self.use_library = use_library
-        self.model_name = model_name
-        self.time_sample = time_sample
-        self.disc_flag = disc_flag
+        self.use_library = spec["use_library"]
+        self.model_name = spec["model_name"]
+        self.time_sample = spec["time_sample"]
+        self.disc_flag = spec["disc_flag"]
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
 
         if self.use_library:
@@ -459,20 +459,6 @@ class LinearModel(ModelBase):
 
         # Currently, this returns a full-state feedback system, future implementations will likely require different measurement functions
         return sp.eye(self.shape_x[0])*self.x
-
-    def evaluate_dynamics(self, x_sub, u_sub, params_sub):
-        ''' 
-        provide an interface for use with the superclass
-        evaluate_dynamics function
-        '''
-        return ModelBase.evaluate_dynamics(self, x_sub, u_sub, params_sub)
-
-    def evaluate_measurement(self, x_sub):
-        ''' 
-        provide an interface for use with the superclass
-        evaluate_dynamics function
-        '''
-        return ModelBase.evaluate_measurement(self, x_sub)
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         ''' 

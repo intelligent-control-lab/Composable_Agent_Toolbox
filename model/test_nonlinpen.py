@@ -11,14 +11,21 @@ import sys
 # None
 
 # Project-specific Imports
-# Ugly, but we need to do it
-sys.path.append("..") # Adds higher directories to python modules path 
-from model import *
+
+import model
+#sys.path.append("..") # Adds higher directories to python modules path 
+#from model import *
 
 # Start the actual test
 
 # Declare a system model:
-pen_model = NonlinModelCntlAffine(0, 'nonlin_pen', 0.01, 1)
+spec = {
+    "use_library"   : 0,
+    "model_name"    : 'nonlin_pen',
+    "time_sample"   : 0.01,
+    "disc_flag"     : 1
+}
+pen_model = model.NonlinModelCntlAffine(spec)
 print(pen_model.model_name) # print out the model name
 print(pen_model.u) # print out the symbolic vector of model control
 print(pen_model.cont_model) # print out the continous dynamic equations
@@ -31,9 +38,6 @@ pen_model.linearize_dynamics(x_sub=[m.pi, 1], u_sub=[0.01])
 print('This is the after')
 print(pen_model.lin_model)
 print(' ')
-
-print('The Jacobian with respect to the state')
-print(pen_model.jacobian_x)
 
 print('Testing the process time')
 start1 = time.process_time() # get an initial start time to check to the see the computational time needed for subs-based system evaluation

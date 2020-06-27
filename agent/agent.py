@@ -1,26 +1,41 @@
-import sensor, estimator, planner, controller, model
+import sensor, estimator, planner, controller, model, task
 import numpy as np
+import importlib
 class Agent(object):
     def __init__(self, module_spec):
-       self.instantiate_by_spec(module_spec)
+        self.instantiate_by_spec(module_spec)
+        self.replanning_timer = self.planner.replanning_cycle
     
+    def _class_by_name(self, module_name, class_name):
+        """Return the class handle by name of the class
+        """
+        ModuleClass = getattr(importlib.import_module(module_name), class_name)
+        return ModuleClass
+
     def instantiate_by_spec(self, module_spec):
-        self.task = module_spec['task']
-        self.model = model.Model(module_spec['model'])
-        self.estimator = estimator.Estimator(module_spec['estimator'], self.model)
-        self.planner = planner.Planner(module_spec['planner'], self.model)
-        self.controller = controller.Controller(module_spec['controller'], self.model)
+        """Instantiate modules based on user given specs
+        """
+        self.name = module_spec["name"]
+        self.model      = self._class_by_name("model",      module_spec["model"     ]["type"])(module_spec["model"      ]["spec"])
+        self.task       = self._class_by_name("task",       module_spec["task"      ]["type"])(module_spec["task"       ]["spec"], self.model)
+        self.estimator  = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.model)
+        self.planner    = self._class_by_name("planner",    module_spec["planner"   ]["type"])(module_spec["planner"    ]["spec"], self.model)
+        self.controller = self._class_by_name("controller", module_spec["controller"]["type"])(module_spec["controller" ]["spec"], self.model)
         self.sensors = []
-        for i in range(len(module_spec['sensors'])):
-            self.sensors.append(sensor.Sensor(module_spec['sensors'][i]))
+        for i in range(len(module_spec["sensors"])):
+            self.sensors.append(sensor.Sensor(module_spec["sensors"][i]))
 
     def get_goal(self, task_state):
         return np.zeros((4,1))
 
     def action(self, dt, sensors_data):
-        est_state, est_parameter = self.estimator.estimate(sensors_data[0])
-        goal = self.get_goal((est_state, est_state))
-        agent_goal_state = self.planner.planning(dt, goal, est_state)
-        control = self.controller.control(dt, est_state, agent_goal_state)
-
+        est_data, est_param = self.estimator.estimate(sensors_data)
+        goal = self.task.goal(est_data)
+        if self.replanning_timer == self.planner.replanning_cycle:
+            self.planned_traj = self.planner.planning(dt, goal, est_data)
+            self.replanning_timer = 0
+        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
+        self.replanning_timer += 1
+        control = self.controller.control(dt, est_data, next_traj_point, est_param)
+        
         return control
