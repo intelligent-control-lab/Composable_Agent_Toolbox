@@ -369,7 +369,7 @@ class LinearModel(ModelBase):
             self.measure_func = self._declare_func_measure() # Defines y = C*x - Currently only supports Full State Feedback
 
             if self.disc_flag:  # Discretize the System
-                self.disc_model = super()._discretize_dyn() # Discretizes the dynamics with a forward-Euler approximation
+                self.disc_model = super()._discretize_dyn(self.cont_model) # Discretizes the dynamics with a forward-Euler approximation
                 self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
