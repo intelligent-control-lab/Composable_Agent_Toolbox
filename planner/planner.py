@@ -142,13 +142,11 @@ class OptimizationBasedPlanner(Planner):
         S = cs[0] * I + cs[1] * np.dot(np.transpose(Velocity), Velocity) + cs[2] * np.dot(np.transpose(Acceleration), Acceleration)
 
         # weight terms 
-        w1 = 1
-        w2 = 1
 
         # quadratic term
-        H = w1 * Q + w2 * S 
+        H =  Q + S 
         # linear term
-        f = -2 * w1 * np.dot(Q, x_origin)
+        f = -2 * np.dot(Q, x_origin)
 
 
         b = np.ones((h * n_ob, 1)) * (-minimal_dis)
@@ -158,7 +156,7 @@ class OptimizationBasedPlanner(Planner):
         b = matrix(b,(len(b),1),'d')
 
         # reference trajctory cost 
-        J0 = w1 * np.dot(np.transpose(x_rs - x_origin), np.dot(Q, (x_rs - x_origin))) + w2 * np.dot(np.transpose(x_rs), np.dot(S, x_rs))
+        J0 =  np.dot(np.transpose(x_rs - x_origin), np.dot(Q, (x_rs - x_origin))) + np.dot(np.transpose(x_rs), np.dot(S, x_rs))
         J = float('inf')
         dlt = float('inf')
         cnt = 0
@@ -214,7 +212,7 @@ class OptimizationBasedPlanner(Planner):
             x_ts = np.reshape(x_ts, (len(x_rs),1))
 
             # ipdb.set_trace()
-            J = w1 * np.dot(np.transpose(x_ts - x_origin), np.dot(Q, (x_ts - x_origin))) + w2 * np.dot(np.transpose(x_ts), np.dot(S, x_ts))
+            J = np.dot(np.transpose(x_ts - x_origin), np.dot(Q, (x_ts - x_origin))) + np.dot(np.transpose(x_ts), np.dot(S, x_ts))
             dlt = min(abs(J - J0), np.linalg.norm(x_ts - x_rs))
             J0 = J
             x_rs = x_ts
