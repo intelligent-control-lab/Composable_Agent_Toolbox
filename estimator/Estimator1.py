@@ -76,31 +76,30 @@ class Estimator(Estimator_Base):
 		else:
 			self.EKF = Zero_Estimator(self.spec,self.model)
 
-
-
 class Unscented_Kalman_Filter(Estimator_Base):
 
 	def __init__(self,estimator_params,model):
-		self.name 				 = 'UKF'
-		self.params 			 = estimator_params
-		self.model  			 = model
-		self._Rww    			 = estimator_params['Rww'] # passing covariances as a dictionary
-		self._Rvv    			 = estimator_params['Rvv'] # passing covariances as a dictionary
-		self._alpha_ukf 		 = estimator_params['alpha_ukf']
-		self._kappa_ukf 		 = estimator_params['kappa_ukf']
-		self._beta_ukf 		 	 = estimator_params['beta_ukf']
+		self.name                = 'UKF'
+		self.params              = estimator_params
+		self.model               = model
+		self._Rww                = estimator_params['Rww'] # passing covariances as a dictionary
+		self._Rvv                = estimator_params['Rvv'] # passing covariances as a dictionary
+		self._alpha_ukf          = estimator_params['alpha_ukf']
+		self._kappa_ukf          = estimator_params['kappa_ukf']
+		self._beta_ukf           = estimator_params['beta_ukf']
 
 	def param_tuning(self,params):
-		self._Rww 				 = params['Rww']
-		self._Rvv 				 = params['Rvv']
+		self._Rww                = params['Rww']
+		self._Rvv                = params['Rvv']
 		return True
 
 
-	def estimate(self,posterior_pos,posterior_state_cov,sensor_data):
-		z_meas 					 = sensor_data
-		X						 = self.get_sigma_points(posterior_pos,posterior_state_cov)							
-		priori_pos_sigma		 = self.forward_propagate_dynamics(X)													
-		weighted_pos_mean		 = self.compute_weighted_mean(priori_pos_sigma)
+	def estimate(self,posterior_pos,posterior_state_cov,z_meas):
+		# This is the main estimate function, it takes the state and state covariance and measuremnets
+		# and returns state and covariance at the next time step
+		X                        = self.get_sigma_points(posterior_pos,posterior_state_cov)							
+		priori_pos_sigma         = self.forward_propagate_dynamics(X)													
+		weighted_pos_mean        = self.compute_weighted_mean(priori_pos_sigma)
 		weighted_pos_covariance  = self.compute_weighted_covariance(weighted_pos_mean,priori_pos_sigma,self._Rww)
 		X                        = self.get_sigma_points(weighted_pos_mean,weighted_pos_covariance);
 		Z                        = self.measurement_function(X) ; 
@@ -111,43 +110,49 @@ class Unscented_Kalman_Filter(Estimator_Base):
 		posterior_pos            = weighted_pos_mean + np.matmul(K,z_meas-weighted_meas_mean)          ; 
 		P_post                   = weighted_pos_covariance - np.matmul(np.matmul(K,weighted_meas_covariance),K.transpose())    ;
 
+
 		return posterior_pos,P_post
 
 
 	def get_sigma_points(self,mu,E):
-		N 						= len(mu)
-		X						= np.zeros((N,(2*N)+1))
-		X[:,0]					= mu
-		lambda_ukf				= ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
-		Z 						= sqrtm((N + lambda_ukf)*E);		
+		# This function gets 2N+1 sigma points centered around the mean mu with variance in multiples of E
+		# They are collected in X
+		N                       = len(mu)
+		X                       = np.zeros((N,(2*N)+1))
+		X[:,0]                  = mu
+		lambda_ukf              = ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
+		Z                       = sqrtm((N + lambda_ukf)*E);
+		
 		for i in range(N):
-			X[:,i+1] = mu + Z[:,i]
+			X[:,i+1]            = mu + Z[:,i]
 			
 		for i in range(N):
-			X[:,i+1+N] = mu - Z[:,i]
+			X[:,i+1+N]          = mu - Z[:,i]
 		
 		return X
 
 
 	def compute_weighted_mean(self,X):
-		N,C						= X.shape
-		lambda_ukf				= ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
-		w 						= (0.5/(N+lambda_ukf))*np.ones((C,))
-		w[0]	 				= lambda_ukf/(N+lambda_ukf);
-		mu 						= np.zeros((N,))
+		# This function calculates the weighted mean of the sigma points X, 
+		# X[0,:] is the mean
+		N,C                     = X.shape
+		lambda_ukf              = ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
+		w                       = (0.5/(N+lambda_ukf))*np.ones((C,))
+		w[0]                    = lambda_ukf/(N+lambda_ukf);
+		mu                      = np.zeros((N,))
 		
 		for i in range(C):
-			mu = mu + w[i]*X[:,i]	
+			mu                  = mu + w[i]*X[:,i]	
 
 		return mu
 
 
 	def compute_weighted_covariance(self,mu,X,F):
-		N,C						= X.shape
-		lambda_ukf				= ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
-		w 						= (0.5/(N+lambda_ukf))*np.ones((C,))
-		w[0]	 				= (lambda_ukf/(N+lambda_ukf)) + (1-(self._alpha_ukf**2) + self._beta_ukf);
-		P 						= np.zeros((N,N))
+		N,C                     = X.shape
+		lambda_ukf              = ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
+		w                       = (0.5/(N+lambda_ukf))*np.ones((C,))
+		w[0]                    = (lambda_ukf/(N+lambda_ukf)) + (1-(self._alpha_ukf**2) + self._beta_ukf);
+		P                       = np.zeros((N,N))
 		for i in range(C):
 			Z = X[:,i] - mu
 			P = P + w[i]*np.outer(Z,Z)
@@ -157,12 +162,13 @@ class Unscented_Kalman_Filter(Estimator_Base):
 
 
 	def compute_other_covariance(self,weighted_pos_mean,X,weighted_meas_mean,Z):
-		Nx,N						= X.shape
-		Nz,rr 						= Z.shape
-		P 	 	 					= np.zeros((Nx,Nz))
-		lambda_ukf					= ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
-		w 							= (0.5/(N+lambda_ukf))*np.ones((N,))
-		w[0]	 					= (lambda_ukf/(N+lambda_ukf)) + (1-(self._alpha_ukf**2) + self._beta_ukf);
+		# This function computes statistical covariance based on sigma points
+		Nx,N                        = X.shape
+		Nz,rr                       = Z.shape
+		P                           = np.zeros((Nx,Nz))
+		lambda_ukf                  = ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
+		w                           = (0.5/(N+lambda_ukf))*np.ones((N,))
+		w[0]                        = (lambda_ukf/(N+lambda_ukf)) + (1-(self._alpha_ukf**2) + self._beta_ukf);
 
 		for i in range(N):
 			G = X[:,i] - weighted_pos_mean
@@ -172,9 +178,10 @@ class Unscented_Kalman_Filter(Estimator_Base):
 
 		return P
 
-
 	def reset(self):
 		return True
+
+
 
 
 # put underscore to internal variables
