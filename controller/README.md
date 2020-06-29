@@ -13,8 +13,25 @@ User-defined controller classes:
 
 - PID
 - Vel_FF
+- LQR
 
-## How to Use
+## Prerequisites
+
+[Python Control System library](https://github.com/python-control/python-control/tree/0.8.3)
+
+Conda
+
+```bash
+conda install -c conda-forge control
+```
+
+Pip
+
+```bash
+pip install control
+```
+
+## Usage
 
 ### 1. Create a controller
 

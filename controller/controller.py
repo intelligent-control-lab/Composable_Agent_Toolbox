@@ -1,14 +1,18 @@
 import numpy as np
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from .controller_manager import Controller_Manager
+import control # Python Control System Library
 
 # Controller Base Class
-class Controller_Base(object):
+class Controller_Base(ABC):
     '''
     This is the basic controller class template.
     One should complete the __init__(), control() and reset() function to instantiate a controller.
+
+    Attributes:
+        _name
+        _type
     '''
-    __metaclass__ = ABCMeta
 
     _name = ''
     _type = '' # Coordination controller, Feedforward controller, Feedback controller, Safety controller ...
@@ -45,6 +49,12 @@ class Zero_Controller(Controller_Base):
     '''
     This is a blank controller class.
     The Zero_Controller always returns 0 as controller output.
+
+    Attributes:
+        _name
+        _type
+        _spec
+        _model
     '''
     def __init__(self, spec, model):
         self._name = 'Zero'
@@ -70,8 +80,20 @@ class Controller(Controller_Base):
 
     E.g. a PID controller specs:
     {"feedback": "PID", "params": {"feedback": {"kp": [1, 1], "ki": [0, 0], "kd": [0, 0]}}}
+
+    Attributes:
+        _name
+        _type
+        _spec
+        _model
+        coordination
+        feedforward
+        feedback
+        safety
     '''
     def __init__(self, spec, model):
+        self._name = 'Controller'
+        self._type = 'Synthetic'
         self._spec = spec
         self._model = model
 
@@ -132,6 +154,18 @@ class Controller(Controller_Base):
 class PID(Controller_Base):
     '''
     A multi-channel PID controller.
+
+    Attributes:
+        _name
+        _type
+        _params
+        _model
+        _kp
+        _ki
+        _kd
+        _e
+        _e_last
+        _sum_e
     '''
     def __init__(self, params, model):
         self._name = 'PID'
@@ -171,6 +205,14 @@ class PID(Controller_Base):
 class Vel_FF(Controller_Base):
     '''
     A multi-channel velocity feedforward controller.
+
+    Attributes:
+        _name
+        _type
+        _params
+        _model
+        _kv
+        _goal_x_last
     '''
     def __init__(self, params, model):
         self._name = 'Vel_FF'
@@ -187,3 +229,77 @@ class Vel_FF(Controller_Base):
         output = np.diag(self._kv) * (goal_x - self._goal_x_last) / dt
         self._goal_x_last = goal_x
         return output
+
+
+# LQR Controller Class
+class LQR(Controller_Base):
+    '''
+    An infinite-horizon, continuous-time LQR LQR controller.
+    For a continuous time system, the state-feedback law u = -Kx minimizes the quadratic cost function
+        J(u) = ∫_0^∞(x^TQx+u^TRu+2x^TNu)dt
+    subject to the system dynamics
+        dx/dt = Ax + Bu
+
+    Attributes:
+        _name
+        _type
+        _params
+        _model
+        _Q
+        _R
+        *_N
+        _K
+    '''
+    def __init__(self, params, model):
+        self._name = 'LQR'
+        self._type = 'feedback'
+        self._params = params
+        self._model = model
+        if 'Q' in self._params:
+            self._Q = self._params['Q']
+        else:
+            raise Exception('No value of Q in params')
+        
+        if 'R' in self._params:
+            self._R = self._params['R']
+        else:
+            raise Exception('No value of R in params')
+
+        if 'N' in self._params:
+            self._N = self._params['N']
+
+    def reset(self):
+        self._Q = np.zeros(self._model.A.shape)
+        self._R = np.zeros((self._model.B.shape[1], self._model.B.shape[1]))
+        self._K = np.zeros((self._model.B.shape[1], self._model.A.shape[0]))
+        if hasattr(self, '_N'):
+            self._N = np.zeros((self._model.A.shape[0], self._model.B.shape[1]))
+        
+        return True
+
+    def param_tuning(self, params):
+        if 'Q' in params:
+            self._Q = params['Q']
+        else:
+            raise Exception('No value of Q in params')
+        
+        if 'R' in params:
+            self._R = params['R']
+        else:
+            raise Exception('No value of R in params')
+
+        if 'N' in params:
+            self._N = params['N']
+        
+        return True
+
+    def control(self, dt, x, goal_x, est_params):
+        if hasattr(self, '_N'):
+            K, S, E = control.lqr(self._model.A, self._model.B, self._Q, self._R, self._N)
+        else:
+            K, S, E = control.lqr(self._model.A, self._model.B, self._Q, self._R)
+        
+        self._K = K        
+        output = - self._K * x
+        return output
+        
