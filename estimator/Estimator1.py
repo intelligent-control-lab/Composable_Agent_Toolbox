@@ -96,7 +96,8 @@ class Unscented_Kalman_Filter(Estimator_Base):
 		return True
 
 
-	def estimate(self,posterior_pos,posterior_state_cov,z_meas):
+	def estimate(self,posterior_pos,posterior_state_cov,sensor_data):
+		z_meas 					 = sensor_data
 		X						 = self.get_sigma_points(posterior_pos,posterior_state_cov)							
 		priori_pos_sigma		 = self.forward_propagate_dynamics(X)													
 		weighted_pos_mean		 = self.compute_weighted_mean(priori_pos_sigma)
@@ -110,7 +111,6 @@ class Unscented_Kalman_Filter(Estimator_Base):
 		posterior_pos            = weighted_pos_mean + np.matmul(K,z_meas-weighted_meas_mean)          ; 
 		P_post                   = weighted_pos_covariance - np.matmul(np.matmul(K,weighted_meas_covariance),K.transpose())    ;
 
-
 		return posterior_pos,P_post
 
 
@@ -119,8 +119,7 @@ class Unscented_Kalman_Filter(Estimator_Base):
 		X						= np.zeros((N,(2*N)+1))
 		X[:,0]					= mu
 		lambda_ukf				= ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
-		Z 						= sqrtm((N + lambda_ukf)*E);
-		
+		Z 						= sqrtm((N + lambda_ukf)*E);		
 		for i in range(N):
 			X[:,i+1] = mu + Z[:,i]
 			
