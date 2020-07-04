@@ -2,6 +2,7 @@ import numpy as np
 import evaluator, agent, environment
 import time
 import progressbar
+import ipdb
 
 if __name__ == "__main__":
 
@@ -11,7 +12,7 @@ if __name__ == "__main__":
         "task":      {"type":"ReachingTask",    "spec":{}},
         "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
         "estimator": {"type":"NaiveEstimator",  "spec":{}},
-        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
+        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
         "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         "task":      {"type":"ReachingTask",    "spec":{}},
         "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
         "estimator": {"type":"NaiveEstimator",  "spec":{}},
-        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
+        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":20, "replanning_cycle":10, "dim":2, "n_ob":0}},
         "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
@@ -67,6 +68,7 @@ if __name__ == "__main__":
         for agent in agents:
             actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
+        ipdb.set_trace()
         dt, env_info, measurement_groups = env.step(actions)
         record.append(env_info)
 

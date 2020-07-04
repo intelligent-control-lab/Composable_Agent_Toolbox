@@ -2,7 +2,7 @@
 import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
-from src.utils import *
+from .src.utils import *
 import ipdb
 
 solvers.options['show_progress'] = False
@@ -14,11 +14,11 @@ class Planner(object):
         self.model = model
         self.cache = {}
     def planning(self, dt, goal, agent_state):
-        agent_next_state = [goal] * 100
+        agent_next_state = agent_state
         return agent_next_state
 
     def re_planning(self, dt, goal, agent_state):
-        agent_next_state = [goal] * 100
+        agent_next_state = agent_state
         return agent_next_state
 
     def plan(self, ineq, eq, agent_state):
@@ -39,10 +39,14 @@ class OptimizationBasedPlanner(Planner):
         super().__init__(spec, model)
         self.spec = spec
         self.model = model
+        self.replanning_cycle = spec['replanning_cycle']
+        self.horizon = spec['horizon']
         self.cache = {}
 
-    def planning(self, goal, agent_start_state):
-        ref_traj = self.plan(self.ineq, self.eq, agent_start_state, goal)
+    def planning(self, dt, goal, agent_start_state):
+        target = goal[0:2,0]
+        state = agent_start_state['state_sensor_est']['state'][0:2,0]
+        ref_traj = self.plan(self.ineq, self.eq, state, target)
         return ref_traj
 
     def re_planning(self, dt, goal, agent_state):
@@ -82,7 +86,7 @@ class OptimizationBasedPlanner(Planner):
         
         # flatten the input x 
         x = x.flatten()
-        dist = np.linalg.norm(x - obs_p) - obs_r
+        dist = np.linalg.norm(x - obs_p) - obs_r - 0.5
         return dist
 
     def eq(self, x):
@@ -96,8 +100,8 @@ class OptimizationBasedPlanner(Planner):
     def CFS(
         self, 
         x_ref,
-        cq = [10,0,0], 
-        cs = [0,0,1], 
+        cq = [1,0,0], 
+        cs = [0,10,10], 
         minimal_dis = 0, 
         ts = 1, 
         maxIter = 30,
@@ -219,10 +223,10 @@ class OptimizationBasedPlanner(Planner):
             if cnt >= maxIter:
                 break
 
-            traj = x_rs[: h * dimension].reshape(h, dimension)
-            plt.clf()
-            plt.plot(traj[:,0],traj[:,1])
-            plt.pause(0.05)
+            # traj = x_rs[: h * dimension].reshape(h, dimension)
+            # plt.clf()
+            # plt.plot(traj[:,0],traj[:,1])
+            # plt.pause(0.05)
 
         # return the reference trajectory        
         x_rs = x_rs[: h * dimension]
@@ -276,6 +280,8 @@ if __name__ == '__main__':
     CFS  = OptimizationBasedPlanner(args, model)
     traj = CFS.planning(args['goal'], args['state'])
     print(traj)
+    plt.plot(traj[:,0],traj[:,1])
+    plt.show()
 
 
 
