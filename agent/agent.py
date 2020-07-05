@@ -5,7 +5,7 @@ class Agent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         self.replanning_timer = self.planner.replanning_cycle
-        self.last_control = None
+        self.last_control = np.zeros(self.model.shape_u)
     
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
