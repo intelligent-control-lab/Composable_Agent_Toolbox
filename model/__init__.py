@@ -1,1 +1,2 @@
-from .model import Model
+from .model import LinearModel
+from .model import NonlinModelCntlAffine

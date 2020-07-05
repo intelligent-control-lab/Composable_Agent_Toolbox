@@ -1,0 +1,51 @@
+name: benchmark
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - ca-certificates=2020.1.1=0
+  - certifi=2020.4.5.1=py38_0
+  - fastcache=1.1.0=py38h7b6447c_0
+  - gmp=6.1.2=h6c8ec71_1
+  - gmpy2=2.0.8=py38hd5f6e3b_3
+  - ld_impl_linux-64=2.33.1=h53a641e_7
+  - libedit=3.1.20181209=hc058e9b_0
+  - libffi=3.3=he6710b0_1
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - mpc=1.1.0=h10f8cd9_1
+  - mpfr=4.0.1=hdf1c602_3
+  - mpmath=1.1.0=py38_0
+  - ncurses=6.2=he6710b0_1
+  - openssl=1.1.1g=h7b6447c_0
+  - pip=20.0.2=py38_3
+  - python=3.8.3=hcff3b4d_0
+  - readline=8.0=h7b6447c_0
+  - setuptools=47.1.1=py38_0
+  - sqlite=3.31.1=h62c20be_1
+  - sympy=1.5.1=py38_0
+  - tk=8.6.8=hbc83047_0
+  - wheel=0.34.2=py38_0
+  - xz=5.2.5=h7b6447c_0
+  - zlib=1.2.11=h7b6447c_3
+  - pip:
+    - astroid==2.4.1
+    - cffi==1.14.0
+    - cycler==0.10.0
+    - isort==4.3.21
+    - kiwisolver==1.2.0
+    - lazy-object-proxy==1.4.3
+    - matplotlib==3.2.1
+    - mccabe==0.6.1
+    - numpy==1.18.5
+    - progressbar2==3.51.3
+    - pycparser==2.20
+    - pylint==2.5.2
+    - pymunk==5.6.0
+    - pyparsing==2.4.7
+    - python-dateutil==2.8.1
+    - python-utils==2.4.0
+    - six==1.15.0
+    - toml==0.10.1
+    - wrapt==1.12.1
+
