@@ -20,7 +20,8 @@ class Extended_Kalman_Filter:
 		self._Rvv 				 = params['Rvv']
 		return True
 
-	def estimate(self,posterior_pos,posterior_state_cov,z_meas):
+	def estimate(self,z_meas):
+		# extract the numpy arrays from this zmeas
 		# check Chase's code, see which method gives next state
 		priori_pos               = self.forward_propagate_dynamics(posterior_pos)      							; # need to call dynamics of the paritcular robot model
 		A                        = self.linearization_forward_dynamics(posterior_pos)  							; # need to call dynamics of the paritcular robot model
@@ -32,10 +33,10 @@ class Extended_Kalman_Filter:
 		S                        = np.matmul(np.matmul(H,priori_cov),np.transpose(H)) + self._Rvv  				;
 		Sinv                     = np.linalg.inv(S)																;
 		K                        = np.matmul(np.matmul(priori_cov,np.transpose(H)),Sinv)                  		;
-		next_posterior_state     = priori_pos + np.matmul(K,innovation)                         				;
-		next_posterior_state_cov = np.matmul(I-(np.matmul(K,H)),priori_cov)                     				;
+		self.posterior_state     = priori_pos + np.matmul(K,innovation)                         				;
+		self.posterior_state_cov = np.matmul(I-(np.matmul(K,H)),priori_cov)                     				;
 
-		return next_posterior_state,next_posterior_state_cov
+		return self.posterior_state
 
 	def forward_propagate_dynamics(self,z):
 		global g,L,dt 

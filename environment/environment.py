@@ -2,6 +2,7 @@ import numpy as np
 import world
 import matplotlib.pyplot as plt
 import importlib
+
 class Environment(object):
     def __init__(self, env_spec, agents):
         '''

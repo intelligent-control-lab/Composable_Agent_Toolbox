@@ -124,6 +124,10 @@ class Controller(Controller_Base):
         feedforward_output  = self.feedforward.control(dt, x, goal_x, est_params)
         feedback_output     = self.feedback.control(dt, x, goal_x, est_params)
         safety_output       = self.safety.control(dt, x, goal_x, est_params)
+        print(coordination_output)
+        print(feedforward_output)
+        print(feedback_output)
+        print(safety_output)
         return coordination_output + feedforward_output + feedback_output + safety_output
 
 
@@ -184,4 +188,5 @@ class Vel_FF(Controller_Base):
 
     def control(self, dt, x, goal_x, est_params):
         output = np.diag(self.kv) * (goal_x - self.goal_x_last) / dt
+        print(output)
         return output

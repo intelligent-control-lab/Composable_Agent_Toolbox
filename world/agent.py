@@ -27,19 +27,18 @@ class Agent(ABC):
 class BB8Agent(Agent):
     
     def _f(self, x):
-        return np.vstack([x[2], x[3], 0, 0])
+        return np.array([x[2], x[3], 0, 0])
 
-    def _g(self, dt):
-        B = np.matrix(np.zeros((4,2)))
-        B[0,0] = dt/2
-        B[1,1] = dt/2
-        B[2,0] = 1
-        B[3,1] = 1
+    def _g(self, x):
+        B = np.zeros((4,2))
+        B[2,0] = 0.5
+        B[3,1] = 0.5
         return B
 
     def forward(self, u, dt):
         # x = [x y dx dy], u = [ax ay]
-        dot_x = self._f(self._x) + self._g(dt) * np.vstack(u)
+        gval = self._g(self._x)
+        dot_x = self._f(self._x) + np.matmul(gval,np.asarray(u))
         self._x = self._x + dot_x * dt
     
     @property
@@ -54,7 +53,6 @@ class BB8Agent(Agent):
 
 class GoalAgent(BB8Agent):
     """The goal agent.
-
     This agent is a virtual agent represents the goal of a real agent.
     This agent only flash to a new place when the real agent reaches it.
     The reason we inheritate it from BB8Agent is to make it possible to be a 
