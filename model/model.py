@@ -12,13 +12,13 @@ import sympy as sp
 # None
 
 class AbstractModelBase(ABC):
-    ''' 
+    '''
     define an base class for developing models
 
     Classes derived from the model base need to implement copies
     of all abstract methods, lest a TypeError arises.
     '''
-    
+
     @abstractmethod
     def __init__(self):
         pass
@@ -64,43 +64,44 @@ class ModelBase(AbstractModelBase):
         # Leverages the SymPy dynamics structure
         return func.jacobian(vars)
 
+    def _sub_vals(self, func, sub_vect, sub_val):
+        '''
+        substitute the values given in sub_val for those in sub_vect in expression func.
+
+        sub_vect is a symbolic vector that will be passed for substitution
+        sub_val is list of the same size as sub_vect that has the vals we want to substitute
+        '''
+
+        # we use zip() to element to element match sub_vect and sub_val
+        sub_dict = dict(zip(sub_vect, sub_val))
+        return func.subs(sub_dict)
+
+
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
         evaluate the dynamics with a specific values substituted for the state and the parameters
 
-        Note that this is a particularly slow way of evaluating the dynamics, but it does work if you want the symbolic objects
+        Particularly slow way of evaluating the dynamics, but it does work if you want the symbolic objects
         '''
         if self.disc_flag:
-            evaled = self.disc_model.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
-            counter = 0 # This is a counter to iterate through the elements in the state vector
-            for i in self.x:
-                evaled = evaled.subs(i, x_sub[counter]) # Sub in each corresponding element in the state vector with that in passed x_sub arg
-                counter += 1 # increment counter
-            counter = 0 # reset counter for use in the controls substitution
-            for i in self.u:
-                evaled = evaled.subs(i, u_sub[counter]) # Sub in each corresponding element in the control vector with that in passed u_sub arg
-                counter += 1 # increment counter
-            counter = 0 # reset counter for use in the parameters substitution
-            for i in self.params:
-                evaled = evaled.subs(i, params_sub[counter]) # Sub in each corresponding element in the parameter vector with that in the passed parameter arg
-                counter += 1
-            return [evaled, np.array(evaled).astype(np.float64)] # return a symbolic math object (for manipulation) as well as a casted numpy object
-        else:
-            # Evaluate the expression using a continuous time flag
-            evaled = self.cont_model.subs(self.x, x_sub)
-            evaled = evaled.subs(self.u, u_sub)
-            evaled = evaled.subs(self.params, params_sub)
+            evaled = self._sub_vals(self.disc_model, self.x, x_sub) # Symbolically Evaluate States
+            evaled = self._sub_vals(evaled, self.u, u_sub) # Symbolically Evaluate Controls
+            evaled = self._sub_vals(evaled, self.params, params_sub) # Symbolically Evaluate params
+            # return a symbolic math object (for manipulation) as well as a casted numpy object
             return [evaled, np.array(evaled).astype(np.float64)]
+
+        # Pythonic Else - Evaluate the expression using a continuous time flag
+        evaled = self._sub_vals(self.cont_model, self.x, x_sub)
+        evaled = self._sub_vals(evaled, self.u, u_sub)
+        evaled = self._sub_vals(evaled, self.params, params_sub)
+        # return a symbolic math object (for manipulation) as well as a casted numpy object
+        return [evaled, np.array(evaled).astype(np.float64)]
 
     def evaluate_measurement(self, x_sub):
         '''
         evaluate the measurement function with a specific value substituted fro the state and parameters. Currently assumes full-state feedback
         '''
-        evaled = self.measure_func.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
-        counter = 0 # This is a counter to iterate through the elements in the state vector
-        for i in self.x:
-            evaled = evaled.subs(i, x_sub[counter]) # sub in each corresponding element in the state vector with that in passed x_sub arg
-            counter += 1
+        evaled = self._sub_vals(self.measure_func, self.x, x_sub) # Symbolically Evaluate States
         return [evaled, np.array(evaled).astype(np.float64)] # return a symbolic math object (for symbolic manipulation) as well as a casted numpy object    
 
 class NonlinModelCntlAffine(ModelBase):
@@ -130,6 +131,8 @@ class NonlinModelCntlAffine(ModelBase):
         self.lin_measure_model_lam = None # Only populate if we actually linearize
         self.jac_x_lam = None # Only populate if we actually linearize
         self.jac_u_lam = None # Only populate if we actually linearize
+        self.jacobian_x = None # Only populate if we actually linearize
+        self.jacobian_u = None # Only populate if we actually linearize
 
         if self.use_library:
             # Perform a look-up in the dynamics library
@@ -257,14 +260,14 @@ class NonlinModelCntlAffine(ModelBase):
         return sp.eye(self.shape_x[0])*self.x
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
-        ''' 
+        '''
         provide an interface for use with the superclass
         evaluate_dynamics function
         '''
         return ModelBase.evaluate_dynamics(self, x_sub, u_sub, params_sub)
 
     def evaluate_measurement(self, x_sub):
-        ''' 
+        '''
         provide an interface for use with the superclass
         evaluate_dynamics function
         '''
@@ -274,8 +277,10 @@ class NonlinModelCntlAffine(ModelBase):
         '''
         linearize the dynamics of a nonlinear continuous model with respect to the state and control
         '''
-        x_sub = kwargs.get('x_sub', sp.zeros(self.shape_x[0], self.shape_x[1])) # Pull the substitution arguments, if provided, else assume linearization around zero state
-        u_sub = kwargs.get('u_sub', sp.zeros(self.shape_u[0], self.shape_u[1])) # Pull the substitution arguments, if provided, else assume linearization around zero control
+        # Pull the substitution arguments, if provided, else assume linearization around zero state
+        x_sub = kwargs.get('x_sub', sp.zeros(self.shape_x[0], self.shape_x[1]))
+        # Pull the substitution arguments, if provided, else assume linearization around zero control
+        u_sub = kwargs.get('u_sub', sp.zeros(self.shape_u[0], self.shape_u[1]))
 
         x_sub = sp.Matrix(x_sub) # Casting this to a SymPy List for subtraction later
         u_sub = sp.Matrix(u_sub) # Casting this to a SymPy List for subtraction later
@@ -283,29 +288,25 @@ class NonlinModelCntlAffine(ModelBase):
         if self.disc_flag:
             jacobian_x = super()._take_jacobian(self.disc_model, self.x) # Take the Jacobian wrt the states
             jacobian_u = super()._take_jacobian(self.disc_model, self.u) # Take the Jacobian wrt the control
-            evaled = self.disc_model.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
+            evaled = self._sub_vals(self.disc_model, self.x, x_sub) # sub state to generate Steady State Value
+            evaled = self._sub_vals(evaled, self.u, u_sub) # sub control to generate Steady State Value
         else:
             jacobian_x = super()._take_jacobian(self.cont_model, self.x) # Take the Jacobian wrt the states
             jacobian_u = super()._take_jacobian(self.cont_model, self.u) # Take the Jacobian wrt the control
-            evaled = self.cont_model.subs(self.x[0], x_sub[0]) # Do a first element substitution so we can get an object to iterate over
+            evaled = self._sub_vals(self.cont_model, self.x, x_sub) # sub state to generate Steady State Value
+            evaled = self._sub_vals(evaled, self.u, u_sub) # sub control to generate Steady State Value            
 
         self.jacobian_x = jacobian_x # Store the Jacobian with respect to x
         self.jacobian_u = jacobian_u # Store the Jacobian with respect to u
 
+        # Symbolic Jacobian's for us in symbolic manipulation
+        jacobian_x = self._sub_vals(jacobian_x, self.x, x_sub)
+        jacobian_u = self._sub_vals(jacobian_u, self.u, u_sub)
+        evaled = self._sub_vals(evaled, self.x, self.u)
+
+        # Evaluate the symbolic Jacobian at the linearization point
         jacobian_x = jacobian_x.subs(self.x[0], x_sub[0])
         jacobian_u = jacobian_u.subs(self.u[0], u_sub[0])
-        counter = 0 # This is a counter to iterate through the elements in the state vector
-        for i in self.x:
-            evaled = evaled.subs(i, x_sub[counter]) # Sub in each corresponding element in the state vector with that in passed x_sub arg
-            jacobian_x = jacobian_x.subs(i, x_sub[counter])
-            jacobian_u = jacobian_u.subs(i, x_sub[counter])
-            counter += 1 # increment counter
-        counter = 0 # reset counter for use in the controls substitution
-        for i in self.u:
-            evaled = evaled.subs(i, u_sub[counter]) # Sub in each corresponding element in the control vector with that in passed u_sub arg
-            jacobian_x = jacobian_x.subs(i, u_sub[counter])
-            jacobian_u = jacobian_u.subs(i, u_sub[counter])
-            counter += 1 # increment counter
 
         ss_val = evaled # This is the steady-state component
 
@@ -315,8 +316,10 @@ class NonlinModelCntlAffine(ModelBase):
         self.lin_model_lam = super()._convert_funcs2lam(self.lin_model)
         self.lin_measure_model_lam = super()._convert_funcs2lam(self.lin_measure_model)
 
-        self.jac_x_lam = super()._convert_funcs2lam(self.jacobian_x) # This is a lambda function for Jacobian of x
-        self.jac_u_lam = super()._convert_funcs2lam(self.jacobian_u) # This is a lambda function for Jacobian of u
+        # Generate lambda function for Jacobian of x
+        self.jac_x_lam = super()._convert_funcs2lam(self.jacobian_x)
+        # Generate lambda function for Jacobian of u
+        self.jac_u_lam = super()._convert_funcs2lam(self.jacobian_u)
 
 class LinearModel(ModelBase):
     '''
@@ -377,7 +380,7 @@ class LinearModel(ModelBase):
                 self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
-            else: 
+            else:
                 # Evaluate the system in a continuous form:
                 pass
 
@@ -484,4 +487,4 @@ class LinearModel(ModelBase):
 # y_val = 2.0 
 # z_val = 3.0
 # values = {"x": x_val, "y":y_val, "z":z_val}
-# exp.subs(values)
+# 
