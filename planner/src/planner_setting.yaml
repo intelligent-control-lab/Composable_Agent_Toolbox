@@ -1,8 +1,0 @@
-# Experiment settings
-
-# planning settings
-dim: 2
-horizon: 15
-obsr: 1
-obsp: [0, 4]
-n_ob: 1
