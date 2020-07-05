@@ -11,7 +11,7 @@ import sympy as sp
 # Application Specific Imports
 # None
 
-class ModelBase(ABC):
+class AbstractModelBase(ABC):
     ''' 
     define an base class for developing models
 
@@ -35,6 +35,11 @@ class ModelBase(ABC):
     def _declare_params(self):
         pass
 
+
+class ModelBase(AbstractModelBase):
+    '''
+    split classes so that we have an abstract model base and regular ModelBase
+    '''
     def _discretize_dyn(self, func):
         '''
         use a first order Euler Approximation to discretize the system dynamics
@@ -48,16 +53,16 @@ class ModelBase(ABC):
         '''
 
         # This parses through all the symbols and returns an anonymous function that takes a single iterable input of three elements, each also being a list of state, control, and parameters in that order
-        lam_func = sp.lambdify(self.all_syms,func)
+        lam_func = sp.lambdify(self.all_syms, func)
         return lam_func
 
-    def _take_jacobian(self, func, VARS):
+    def _take_jacobian(self, func, vars):
         '''
         this method linearizes the system dynamics by taking the jacobian of func with respect to argument X and returns a symbolic object
         '''
 
         # Leverages the SymPy dynamics structure
-        return func.jacobian(VARS)
+        return func.jacobian(vars)
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
@@ -78,12 +83,12 @@ class ModelBase(ABC):
             counter = 0 # reset counter for use in the parameters substitution
             for i in self.params:
                 evaled = evaled.subs(i, params_sub[counter]) # Sub in each corresponding element in the parameter vector with that in the passed parameter arg
-                counter += 1                
+                counter += 1
             return [evaled, np.array(evaled).astype(np.float64)] # return a symbolic math object (for manipulation) as well as a casted numpy object
-        else: 
+        else:
             # Evaluate the expression using a continuous time flag
             evaled = self.cont_model.subs(self.x, x_sub)
-            evaled = evaled.subs(self.u, u_sub)            
+            evaled = evaled.subs(self.u, u_sub)
             evaled = evaled.subs(self.params, params_sub)
             return [evaled, np.array(evaled).astype(np.float64)]
 
@@ -97,7 +102,6 @@ class ModelBase(ABC):
             evaled = evaled.subs(i, x_sub[counter]) # sub in each corresponding element in the state vector with that in passed x_sub arg
             counter += 1
         return [evaled, np.array(evaled).astype(np.float64)] # return a symbolic math object (for symbolic manipulation) as well as a casted numpy object    
-
 
 class NonlinModelCntlAffine(ModelBase):
     '''
@@ -123,12 +127,12 @@ class NonlinModelCntlAffine(ModelBase):
         self.lin_model = None # Only populate if we actually linearize
         self.lin_measure_model = None # Only populate if we actually linearize
         self.lin_model_lam = None # Only populate if we actually linearize
-        self.lin_measure_model_lam = None # Only populate if we actually linearize        
+        self.lin_measure_model_lam = None # Only populate if we actually linearize
         self.jac_x_lam = None # Only populate if we actually linearize
         self.jac_u_lam = None # Only populate if we actually linearize
 
         if self.use_library:
-            # Perform a look-up in the dynamics library 
+            # Perform a look-up in the dynamics library
             pass
         else:
             # Initialize States
@@ -164,7 +168,7 @@ class NonlinModelCntlAffine(ModelBase):
                 self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
                 self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
-            else: 
+            else:
                 # Evaluate the system in a continuous form:
                 pass
 
@@ -231,7 +235,7 @@ class NonlinModelCntlAffine(ModelBase):
 
         # This is expecting a user-defined input, so if you have a different model, you will need to change this
         f_expr = sp.Matrix([[self.x[1]], [-1*sp.sin(self.x[0])*self.params[2]/self.params[1]]])
- 
+
         return f_expr
 
     def _declare_func_g(self):
@@ -302,7 +306,7 @@ class NonlinModelCntlAffine(ModelBase):
             jacobian_x = jacobian_x.subs(i, u_sub[counter])
             jacobian_u = jacobian_u.subs(i, u_sub[counter])
             counter += 1 # increment counter
- 
+
         ss_val = evaled # This is the steady-state component
 
         # Provide symbolic linear model
@@ -313,7 +317,7 @@ class NonlinModelCntlAffine(ModelBase):
 
         self.jac_x_lam = super()._convert_funcs2lam(self.jacobian_x) # This is a lambda function for Jacobian of x
         self.jac_u_lam = super()._convert_funcs2lam(self.jacobian_u) # This is a lambda function for Jacobian of u
- 
+
 class LinearModel(ModelBase):
     '''
     class for Linear Models of form x_dot = Ax + Bu
@@ -461,15 +465,23 @@ class LinearModel(ModelBase):
         return sp.eye(self.shape_x[0])*self.x
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
-        ''' 
+        '''
         provide an interface for use with the superclass
         evaluate_dynamics function
         '''
         return ModelBase.evaluate_dynamics(self, x_sub, u_sub, params_sub)
 
     def evaluate_measurement(self, x_sub):
-        ''' 
+        '''
         provide an interface for use with the superclass
         evaluate_dynamics function
         '''
         return ModelBase.evaluate_measurement(self, x_sub)
+
+
+# For later, when working on substitutions:
+# x_val = 1.0 
+# y_val = 2.0 
+# z_val = 3.0
+# values = {"x": x_val, "y":y_val, "z":z_val}
+# exp.subs(values)
