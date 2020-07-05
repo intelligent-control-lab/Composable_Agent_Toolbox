@@ -44,9 +44,11 @@ class OptimizationBasedPlanner(Planner):
         self.cache = {}
 
     def planning(self, dt, goal, agent_start_state):
+        self.dt = dt
         target = goal[0:2,0]
         state = agent_start_state['state_sensor_est']['state'][0:2,0]
         ref_traj = self.plan(self.ineq, self.eq, state, target)
+        ref_traj = self.pos2vel(ref_traj)
         return ref_traj
 
     def re_planning(self, dt, goal, agent_state):
@@ -233,6 +235,21 @@ class OptimizationBasedPlanner(Planner):
         plt.show()
         return x_rs.reshape(h, dimension)
 
+    def pos2vel(self, traj):
+        '''
+        get the velocity reference from the position reference
+        '''
+        ref_traj = []
+        for i in range(self.spec['horizon']-1):
+            pos1 = traj[i,:]
+            pos2 = traj[i+1,:]
+            diff = pos2 - pos1
+            vel = diff / self.dt
+            traj_tmp = np.hstack((pos1, vel))
+            ref_traj = vstack_wrapper(ref_traj, traj_tmp)
+        # concatenate the final pos
+        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[self.spec['horizon']-1,:],np.zeros(self.spec['dim']))))
+        return ref_traj
 
 
 class SamplingBasedPlanner(Planner):
@@ -279,6 +296,7 @@ if __name__ == '__main__':
 
     CFS  = OptimizationBasedPlanner(args, model)
     traj = CFS.planning(args['goal'], args['state'])
+    traj = CFS.pos2vel(traj)
     print(traj)
     plt.plot(traj[:,0],traj[:,1])
     plt.show()

@@ -36,6 +36,7 @@ class Agent(object):
             self.planned_traj = self.planner.planning(dt, goal, est_data)
             self.replanning_timer = 0
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
+        ipdb.set_trace()
         self.replanning_timer += 1
         control = self.controller.control(dt, est_data, next_traj_point, est_param)
         
