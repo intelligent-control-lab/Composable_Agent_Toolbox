@@ -1,6 +1,7 @@
 import sensor, estimator, planner, controller, model, task
 import numpy as np
 import importlib
+
 class Agent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
