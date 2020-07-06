@@ -4,10 +4,6 @@ from grave import plot_network
 from grave.style import use_attributes
 
 
-dependencies:
-    "control":
-        
-
 def hilighter(event):
     # if we did not hit a node, bail
     if not hasattr(event, 'nodes') or not event.nodes:
