@@ -1,0 +1,22 @@
+Planner:
+  requirement:
+    module:
+      model
+    property:
+    function:
+  public:
+    property:
+      planner.horizon
+      planner.replanning_cycle
+    function:
+      planner.re_planning(dt, goal, agent_state)
+
+OptimizationBasedPlanner(Planner):
+  public:
+    function:
+      planner.planning(dt, goal, agent_start_state)
+
+SamplingBasedPlanner(Planner):
+  public:
+    function:
+      planner.plan(ineq, eq, agent_state, goal)
