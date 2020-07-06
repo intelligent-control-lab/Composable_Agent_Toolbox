@@ -2,7 +2,6 @@ import numpy as np
 import os
 import yaml
 import re
-import ipdb
 
 def jac_num(ineq, x, eps=1e-6):
     '''

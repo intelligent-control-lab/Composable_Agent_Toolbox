@@ -2,8 +2,7 @@
 import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
-from src.utils import *
-import ipdb
+from .src.utils import *
 
 solvers.options['show_progress'] = False
 
@@ -14,11 +13,10 @@ class Planner(object):
         self.model = model
         self.cache = {}
     def planning(self, dt, goal, agent_state):
-        agent_next_state = [goal] * 100
+        agent_next_state = agent_state
         return agent_next_state
-
     def re_planning(self, dt, goal, agent_state):
-        agent_next_state = [goal] * 100
+        agent_next_state = agent_state
         return agent_next_state
 
     def plan(self, ineq, eq, agent_state):
@@ -39,10 +37,16 @@ class OptimizationBasedPlanner(Planner):
         super().__init__(spec, model)
         self.spec = spec
         self.model = model
+        self.replanning_cycle = spec['replanning_cycle']
+        self.horizon = spec['horizon']
         self.cache = {}
 
-    def planning(self, goal, agent_start_state):
-        ref_traj = self.plan(self.ineq, self.eq, agent_start_state, goal)
+    def planning(self, dt, goal, agent_start_state):
+        self.dt = dt
+        target = goal[0:2,0]
+        state = agent_start_state['state_sensor_est']['state'][0:2,0]
+        ref_traj = self.plan(self.ineq, self.eq, state, target)
+        ref_traj = self.pos2vel(ref_traj)
         return ref_traj
 
     def re_planning(self, dt, goal, agent_state):
@@ -59,8 +63,8 @@ class OptimizationBasedPlanner(Planner):
         goal = np.array(goal)
         traj = np.zeros((self.spec['horizon'], self.spec['dim']))
         for i in range(self.spec['horizon']):
-            traj[i, :] = agent_state + i / self.spec['horizon'] * (goal - agent_state)
-
+            traj[[i],:] = (agent_state + i / self.spec['horizon'] * (goal - agent_state)).T
+        
         return traj
 
     def plan(self, ineq, eq, agent_state, goal):
@@ -82,7 +86,7 @@ class OptimizationBasedPlanner(Planner):
         
         # flatten the input x 
         x = x.flatten()
-        dist = np.linalg.norm(x - obs_p) - obs_r
+        dist = np.linalg.norm(x - obs_p) - obs_r - 0.5
         return dist
 
     def eq(self, x):
@@ -96,8 +100,8 @@ class OptimizationBasedPlanner(Planner):
     def CFS(
         self, 
         x_ref,
-        cq = [10,0,0], 
-        cs = [0,0,1], 
+        cq = [1,0,0], 
+        cs = [0,10,10], 
         minimal_dis = 0, 
         ts = 1, 
         maxIter = 30,
@@ -219,16 +223,31 @@ class OptimizationBasedPlanner(Planner):
             if cnt >= maxIter:
                 break
 
-            traj = x_rs[: h * dimension].reshape(h, dimension)
-            plt.clf()
-            plt.plot(traj[:,0],traj[:,1])
-            plt.pause(0.05)
+            # traj = x_rs[: h * dimension].reshape(h, dimension)
+            # plt.clf()
+            # plt.plot(traj[:,0],traj[:,1])
+            # plt.pause(0.05)
 
         # return the reference trajectory        
         x_rs = x_rs[: h * dimension]
         plt.show()
         return x_rs.reshape(h, dimension)
 
+    def pos2vel(self, traj):
+        '''
+        get the velocity reference from the position reference
+        '''
+        ref_traj = []
+        for i in range(self.spec['horizon']-1):
+            pos1 = traj[i,:]
+            pos2 = traj[i+1,:]
+            diff = pos2 - pos1
+            vel = diff / self.dt
+            traj_tmp = np.hstack((pos1, vel))
+            ref_traj = vstack_wrapper(ref_traj, traj_tmp)
+        # concatenate the final pos
+        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[self.spec['horizon']-1,:],np.zeros(self.spec['dim']))))
+        return ref_traj
 
 
 class SamplingBasedPlanner(Planner):
@@ -275,7 +294,10 @@ if __name__ == '__main__':
 
     CFS  = OptimizationBasedPlanner(args, model)
     traj = CFS.planning(args['goal'], args['state'])
+    traj = CFS.pos2vel(traj)
     print(traj)
+    plt.plot(traj[:,0],traj[:,1])
+    plt.show()
 
 
 

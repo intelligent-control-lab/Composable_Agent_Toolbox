@@ -1,10 +1,12 @@
 import sensor, estimator, planner, controller, model, task
 import numpy as np
 import importlib
+
 class Agent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         self.replanning_timer = self.planner.replanning_cycle
+        self.last_control = np.zeros(self.model.shape_u)
     
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
@@ -29,7 +31,7 @@ class Agent(object):
         return np.zeros((4,1))
 
     def action(self, dt, sensors_data):
-        est_data, est_param = self.estimator.estimate(sensors_data)
+        est_data, est_param = self.estimator.estimate(sensors_data, self.last_control)
         goal = self.task.goal(est_data)
         if self.replanning_timer == self.planner.replanning_cycle:
             self.planned_traj = self.planner.planning(dt, goal, est_data)
@@ -37,5 +39,6 @@ class Agent(object):
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
         self.replanning_timer += 1
         control = self.controller.control(dt, est_data, next_traj_point, est_param)
+        self.last_control = control
         
         return control
