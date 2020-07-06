@@ -66,7 +66,7 @@ class Zero_Controller(Controller_Base):
         return True
 
     def control(self, dt, x, goal_x, est_params):
-        return np.zeros(self._model.u_shape)
+        return np.zeros(self._model.shape_u)
 
 
 # Controller Class
@@ -177,14 +177,14 @@ class PID(Controller_Base):
         self._kp = self._params['kp']
         self._ki = self._params['ki']
         self._kd = self._params['kd']
-        self._e      = np.zeros(self._model.u_shape)
-        self._e_last = np.zeros(self._model.u_shape)
-        self._sum_e  = np.zeros(self._model.u_shape)
+        self._e      = np.zeros(self._model.shape_u)
+        self._e_last = np.zeros(self._model.shape_u)
+        self._sum_e  = np.zeros(self._model.shape_u)
 
     def reset(self):
-        self._e      = np.zeros(self._model.u_shape)
-        self._e_last = np.zeros(self._model.u_shape)
-        self._sum_e  = np.zeros(self._model.u_shape)
+        self._e      = np.zeros(self._model.shape_u)
+        self._e_last = np.zeros(self._model.shape_u)
+        self._sum_e  = np.zeros(self._model.shape_u)
         return True
 
     def param_tuning(self, params):
@@ -194,7 +194,7 @@ class PID(Controller_Base):
         return True
 
     def control(self, dt, x, goal_x, est_params):
-        self._e = np.array(goal_x).reshape(len(goal_x), 1) - np.array(x).reshape(len(x), 1)
+        self._e = np.vstack(goal_x) - np.vstack(x)
         self._sum_e += self._e * dt
         output = np.diag(self._kp) @ self._e + np.diag(self._ki) @ self._sum_e + np.diag(self._kd) @ (self._e - self._e_last) / dt
         return output

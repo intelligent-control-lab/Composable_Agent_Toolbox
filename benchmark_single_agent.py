@@ -9,15 +9,16 @@ if __name__ == "__main__":
     agent1_module_spec = {
         "name":       "robot",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":"Ballbot", "time_sample":0.01, "disc_flag":1}},
         "estimator": {"type":"NaiveEstimator",  "spec":{}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
-        "controller":{"type":"NaiveController", "spec":{"speed_factor":10}},
+        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [1, 1], "ki": [0, 0], "kd": [0, 0] } }}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
                      {"type":"GoalSensor",      "spec":{"alias":"goal_sensor",     "noise_var":0.0}}],
     }
+
 
     agent_specs = [agent1_module_spec] # specs for two agents
 

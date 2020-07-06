@@ -1,3 +1,4 @@
+import numpy as np
 class Controller_Manager(object):
     '''
     Define the structure of the controller.
@@ -9,7 +10,7 @@ class Controller_Manager(object):
         self.feedback = feedback
         self.safety = safety
 
-    def build_controller(self, dt, x, goal_x, est_params):
+    def build_controller(self, dt, est_data, goal_x, est_params):
         '''
         Modify this function according to the controller structure.
         
@@ -21,5 +22,10 @@ class Controller_Manager(object):
         # feedforward_output  = self.feedforward.control(dt, coordination_output['x'], coordination_output['goal_x'], est_params)
         # feedback_output     = self.feedback.control(dt, x, goal_x, est_params)
         # safety_output       = self.safety.control(dt, x[0], goal_x[0], est_params)
+        x = est_data["state_sensor_est"]["state"]
+        x = np.vstack(x)
+        goal_x = np.vstack(goal_x)
+        x = x[[0,1],:]
+        goal_x = goal_x[[0,1],:]
         feedback_output = self.feedback.control(dt, x, goal_x, est_params)
         return feedback_output
