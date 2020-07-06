@@ -116,6 +116,9 @@ class Controller(Controller_Base):
             self.safety = globals()[self._spec['safety']](self._spec['params']['safety'], self._model)
         else:
             self.safety = Zero_Controller(self._spec, self._model)
+
+        # build the controller manager depends on "controller_manager.py"
+        self._controller_manager = Controller_Manager(self.coordination, self.feedforward, self.feedback, self.safety)
     
     def reset(self, item):
         '''
@@ -146,8 +149,7 @@ class Controller(Controller_Base):
         return True
 
     def control(self, dt, x, goal_x, est_params):
-        controller_manager = Controller_Manager(self.coordination, self.feedforward, self.feedback, self.safety)
-        return controller_manager.build_controller(dt, x, goal_x, est_params)
+        return self._controller_manager.build_controller(dt, x, goal_x, est_params)
 
 
 # A PID Controller Class Example
@@ -194,7 +196,7 @@ class PID(Controller_Base):
     def control(self, dt, x, goal_x, est_params):
         self._e = np.array(goal_x).reshape(len(goal_x), 1) - np.array(x).reshape(len(x), 1)
         self._sum_e += self._e * dt
-        output = np.diag(self._kp) * self._e + np.diag(self._ki) * self._sum_e + np.diag(self._kd) * (self._e - self._e_last) / dt
+        output = np.diag(self._kp) @ self._e + np.diag(self._ki) @ self._sum_e + np.diag(self._kd) @ (self._e - self._e_last) / dt
         return output
 
     def get_error(self, x, goal_x):
@@ -226,7 +228,7 @@ class Vel_FF(Controller_Base):
         return True
 
     def control(self, dt, x, goal_x, est_params):
-        output = np.diag(self._kv) * (goal_x - self._goal_x_last) / dt
+        output = np.diag(self._kv) @ (goal_x - self._goal_x_last) / dt
         self._goal_x_last = goal_x
         return output
 
@@ -300,6 +302,6 @@ class LQR(Controller_Base):
             K, S, E = control.lqr(self._model.A, self._model.B, self._Q, self._R)
         
         self._K = K        
-        output = - self._K * x
+        output = - self._K @ x
         return output
         
