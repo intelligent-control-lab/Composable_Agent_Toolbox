@@ -17,8 +17,9 @@ class Controller_Manager(object):
         feedback_output = self.feedback.control(dt, x[0], goal_x[0], est_params)
         return feedback_output
         '''
-        coordination_output = self.coordination.control(dt, x, goal_x, est_params)
-        feedforward_output  = self.feedforward.control(dt, coordination_output['x'], coordination_output['goal_x'], est_params)
-        feedback_output     = self.feedback.control(dt, x, goal_x, est_params)
-        safety_output       = self.safety.control(dt, x[0], goal_x[0], est_params)
-        return coordination_output + feedforward_output + feedback_output + safety_output
+        # coordination_output = self.coordination.control(dt, x, goal_x, est_params)
+        # feedforward_output  = self.feedforward.control(dt, coordination_output['x'], coordination_output['goal_x'], est_params)
+        # feedback_output     = self.feedback.control(dt, x, goal_x, est_params)
+        # safety_output       = self.safety.control(dt, x[0], goal_x[0], est_params)
+        feedback_output = self.feedback.control(dt, x, goal_x, est_params)
+        return feedback_output
