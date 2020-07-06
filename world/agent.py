@@ -27,10 +27,10 @@ class Agent(ABC):
 class BB8Agent(Agent):
     
     def _f(self, x):
-        return np.array([x[2], x[3], 0, 0])
+        return np.vstack([x[2], x[3], 0, 0])
 
     def _g(self, x):
-        B = np.zeros((4,2))
+        B = np.matrix(np.zeros((4,2)))
         B[2,0] = 0.5
         B[3,1] = 0.5
         return B
@@ -38,7 +38,7 @@ class BB8Agent(Agent):
     def forward(self, u, dt):
         # x = [x y dx dy], u = [ax ay]
         gval = self._g(self._x)
-        dot_x = self._f(self._x) + np.matmul(gval,np.asarray(u))
+        dot_x = self._f(self._x) + gval*np.vstack(u)
         self._x = self._x + dot_x * dt
     
     @property
