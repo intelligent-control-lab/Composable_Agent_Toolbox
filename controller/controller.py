@@ -156,8 +156,6 @@ class PID(Controller_Base):
         return True
 
     def control(self, dt, x, goal_x, est_params):
-        print(x)
-        print(goal_x)
         self.e = np.array(goal_x).reshape(len(goal_x), 1) - np.array(x).reshape(len(x), 1)
         self.sum_e += self.e * dt
         output = np.diag(self.kp) * self.e + np.diag(self.ki) * self.sum_e + np.diag(self.kd) * (self.e - self.e_last) / dt

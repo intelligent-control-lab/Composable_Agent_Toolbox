@@ -3,7 +3,6 @@ import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
 from .src.utils import *
-import ipdb
 
 solvers.options['show_progress'] = False
 
@@ -16,7 +15,6 @@ class Planner(object):
     def planning(self, dt, goal, agent_state):
         agent_next_state = agent_state
         return agent_next_state
-
     def re_planning(self, dt, goal, agent_state):
         agent_next_state = agent_state
         return agent_next_state
@@ -65,8 +63,8 @@ class OptimizationBasedPlanner(Planner):
         goal = np.array(goal)
         traj = np.zeros((self.spec['horizon'], self.spec['dim']))
         for i in range(self.spec['horizon']):
-            traj[i, :] = agent_state + i / self.spec['horizon'] * (goal - agent_state)
-
+            traj[[i],:] = (agent_state + i / self.spec['horizon'] * (goal - agent_state)).T
+        
         return traj
 
     def plan(self, ineq, eq, agent_state, goal):

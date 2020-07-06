@@ -1,0 +1,22 @@
+ModelBase:
+  requirement:
+    module:
+    property:
+    function:
+  public:
+    property:
+      model.x
+      model.u
+      model.shape_u
+      model.f_expr
+      model.g_expr
+      model.cont_model
+    function:
+      model.evaluate_dynamics(x_sub, u_sub, params_sub)
+      model.evaluate_measurement(x_sub)
+
+NonlinModelCntlAffine(ModelBase):
+  public:
+    function:
+      model.linearize_dynamics(x_sub, u_sub)
+
