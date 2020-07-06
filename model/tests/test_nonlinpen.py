@@ -59,6 +59,10 @@ print('Number of Seconds for lambda function method')
 print(end2)
 print('Lambda Function')
 print(pen_model.measure_func_lam)
-print(pen_model.measure_func_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]])) # Example of the evaluation of the lambdify-generated measurement equations
+ans = pen_model.measure_func_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]])
+print(ans) # Example of the evaluation of the lambdify-generated measurement equations
+print(ans.shape)
+print('The type of Ans')
+print(type(ans))
 print('List of Symbols')
 print(pen_model.symbol_dict)

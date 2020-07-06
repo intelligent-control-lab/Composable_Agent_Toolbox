@@ -53,7 +53,7 @@ class ModelBase(AbstractModelBase):
         '''
 
         # This parses through all the symbols and returns an anonymous function that takes a single iterable input of three elements, each also being a list of state, control, and parameters in that order
-        lam_func = sp.lambdify(self.all_syms, func)
+        lam_func = sp.lambdify(self.all_syms, func, 'numpy')
         return lam_func
 
     def _take_jacobian(self, func, vars):
