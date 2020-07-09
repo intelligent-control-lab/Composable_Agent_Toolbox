@@ -1,22 +1,38 @@
-Planner:
-  requirement:
-    module:
-      model
-    property:
-    function:
-  public:
-    property:
-      planner.horizon
-      planner.replanning_cycle
-    function:
-      planner.re_planning(dt, goal, agent_state)
+module:
+  planner
 
-OptimizationBasedPlanner(Planner):
-  public:
-    function:
-      planner.planning(dt, goal, agent_start_state)
+class:
+  PlannerTest:
+    requirement:
+      module:
+        - model
+      property:
+        - model.A
+    public:
+      property:
+        - x
 
-SamplingBasedPlanner(Planner):
-  public:
-    function:
-      planner.plan(ineq, eq, agent_state, goal)
+  Planner:
+    requirement:
+      module:
+        - model
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+    public:
+      property:
+        - x: [state_x]
+        - goal_x: [cartesian_goal_x]
+        - planner.horizon
+        - planner.replanning_cycle
+      function:
+        - planner.re_planning(dt, goal, agent_state)
+
+  OptimizationBasedPlanner(Planner):
+    public:
+      function:
+        - planner.planning(dt, goal, agent_start_state)
+
+  SamplingBasedPlanner(Planner):
+    public:
+      function:
+        - planner.plan(ineq, eq, agent_state, goal)

@@ -1,78 +1,93 @@
+module:
+    controller
 
-Controller(Controller_Base):
-  requirement:
-    module:
-      - model
-    property:
-      - x
-      - goal_x
-      - model.u_shape
-      - model.A
-      - model.B
-    function:
-      - model.evaluate_dynamics(x_sub, u_sub, params_sub)
-  public:
-    function:
-      - control = controller.control(dt, x, goal_x, est_params)
+class:
 
+  ControllerTest:
+    requirement:
+      module:
+        - model
+        - planner
+      property:
+        - x
+        - model.A
+    public:
+      function:
+        - control = control(x, goal_x)
 
-PID(Controller_Base):
-  requirement:
-    module:
-      model
-    property:
-      - [state_x, cartesian_x]
-      - [state_goal_x, cartesian_goal_x]
-      - model.u_shape
-      - model.A
-      - model.B
-    function:
-      - model.evaluate_dynamics(x_sub, u_sub, params_sub)
-    property_dependency:
-      cartesian_goal_x:
-        - cartesian_x
-      state_goal_x:
-        - state_x
-
-  public:
-    function:
-      - control = controller.control(dt, x, goal_x, est_params)
+  Controller(Controller_Base):
+    requirement:
+      module:
+        - model
+      property:
+        - x
+        - goal_x
+        - model.shape_u
+        - model.A
+        - model.B
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+    public:
+      function:
+        - control = controller.control(dt, x, goal_x, est_params)
 
 
-Vel_FF(Controller_Base):
-  requirement:
-    module:
-      model
-    property:
-      - [state_goal_x, cartesian_goal_x]
-      - model.u_shape
-      - model.A
-      - model.B
-    function:
-      - model.evaluate_dynamics(x_sub, u_sub, params_sub)
+  PID(Controller_Base):
+    requirement:
+      module:
+        - model
+        - planner
+      property:
+        - x: [state_x, cartesian_x]
+        - goal_x: [state_goal_x, cartesian_goal_x]
+        - model.shape_u
+        - model.A
+        - model.B
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+      property_dependency:
+        - cartesian_goal_x: [cartesian_x]
+        - cartesian_x: [cartesian_goal_x]
+        - state_goal_x: [state_x]
+        - state_x: [state_goal_x]
 
-  public:
-    function:
-      - control = controller.control(dt, x, goal_x, est_params)
+    public:
+      function:
+        - control = controller.control(dt, x, goal_x, est_params)
 
-LQR(Controller_Base):
-  requirement:
-    module:
-      model
-    property:
-      - [state_x, cartesian_x]
-      - [state_goal_x, cartesian_goal_x]
-      - model.u_shape
-      - model.A
-      - model.B
-    function:
-      - model.evaluate_dynamics(x_sub, u_sub, params_sub)
-    property_dependency:
-      cartesian_goal_x:
-        - cartesian_x
-      state_goal_x:
-        - state_x
 
-  public:
-    function:
-      - control = controller.control(dt, x, goal_x, est_params)
+  Vel_FF(Controller_Base):
+    requirement:
+      module:
+        - model
+      property:
+        - goal_x: [state_goal_x, cartesian_goal_x]
+        - model.shape_u
+        - model.A
+        - model.B
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+
+    public:
+      function:
+        - control = controller.control(dt, x, goal_x, est_params)
+
+  LQR(Controller_Base):
+    requirement:
+      module:
+        - model
+      property:
+        - x: [state_x, cartesian_x]
+        - goal_x: [state_goal_x, cartesian_goal_x]
+        - model.shape_u
+        - model.A
+        - model.B
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+      property_dependency:
+        - cartesian_goal_x: [cartesian_x]
+        - state_goal_x: [state_x]
+
+    public:
+      function:
+        - control = controller.control(dt, x, goal_x, est_params)

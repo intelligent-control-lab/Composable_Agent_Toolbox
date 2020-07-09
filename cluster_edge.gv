@@ -1,0 +1,22 @@
+digraph G {
+	compound=true
+	subgraph cluster0 {
+		a
+		b
+		c
+		d
+	}
+	subgraph cluster1 {
+		e -> g
+		e -> f
+	}
+	a -> b
+	a -> c
+	b -> d
+	c -> d
+	b -> f [lhead=cluster1]
+	d -> e
+	c -> g [lhead=cluster1 ltail=cluster0]
+	c -> e [ltail=cluster0]
+	d -> h
+}
