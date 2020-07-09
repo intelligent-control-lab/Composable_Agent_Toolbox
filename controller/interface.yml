@@ -14,35 +14,23 @@ class:
     public:
       function:
         - control = control(x, goal_x)
-
-  Controller(Controller_Base):
+  
+  Controller_Base:
     requirement:
       module:
         - model
       property:
-        - x
-        - goal_x
         - model.shape_u
         - model.A
         - model.B
-      function:
-        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
-    public:
-      function:
-        - control = controller.control(dt, x, goal_x, est_params)
-
-
+  
   PID(Controller_Base):
     requirement:
       module:
-        - model
         - planner
       property:
         - x: [state_x, cartesian_x]
         - goal_x: [state_goal_x, cartesian_goal_x]
-        - model.shape_u
-        - model.A
-        - model.B
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
       property_dependency:
@@ -55,6 +43,14 @@ class:
       function:
         - control = controller.control(dt, x, goal_x, est_params)
 
+
+  Controller(Controller_Base):
+    requirement:
+      function:
+        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
+    public:
+      function:
+        - control = controller.control(dt, x, goal_x, est_params)
 
   Vel_FF(Controller_Base):
     requirement:

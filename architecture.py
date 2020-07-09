@@ -6,64 +6,125 @@ import os
 import os.path
 import yaml
 import graphviz as gz
+from yaml import Loader, Dumper
+import re
 
-
-def inheritance():
-    pass
 
 def add_edge(edges, a, b):
     if a not in edges.keys():
         edges[a] = []
     edges[a].append(b)
 
-def check_attr(dic, attr):
+def check_attr_list(dic, attr):
     dic[attr] = [] if attr not in dic.keys() or dic[attr] is None else dic[attr]
 
+def check_attr_dict(dic, attr):
+    dic[attr] = {} if attr not in dic.keys() or dic[attr] is None else dic[attr]
+
+
+def inheritance(interfaces):
+    """ Execute inheritance
+
+    Suppose an entry named "Sbsb(Baba)" is in the interface.
+    We will create a new entry named "Sbsb" with all additional requirements 
+    inheritated from "Baba" entry.
+    """
+    for module_name, interface in interfaces.items():
+        for clas in list(interface.keys()):
+            words = re.split('\W+',clas)
+            if len(words) == 2 or words[0] in interface.keys(): # no base class or already merged
+                continue
+            merge(interface, words[0], words[1]) 
+
+def merge_dict_list(merged, x):
+    """ merge x into merged recursively.
+
+    x is either a dict or a list
+    """
+    if type(x) is list:
+        return merged + x
+
+    for key in x.keys():
+        if key not in merged.keys():
+            merged[key] = x[key]
+        else:
+            merged[key] = merge_dict_list(merged[key], x[key])
+            
+    return merged
+
+def merge(interface, subc, base):
+    """ merge the base class attrs into subclass attrs.
+
+    If the base class inheritate from other class, get base class merged first.
+    """
+    words = re.split('\W+',base)
+    if len(words) == 3:
+        merge(interface, base, words[1])
+
+    merged = interface[subc+"("+base+")"].copy()
+    merge_dict_list(merged, interface[base])
+    interface[subc] = merged    
+
 def parse():
-    interfaces = []
+    interfaces = {}
     for dirpath, dirnames, filenames in os.walk("."):
         inteface_yamls = [f for f in filenames if f.endswith("interface.yml")]
         for filename in inteface_yamls:
             path = os.path.join(dirpath, filename)
             f = open(path, 'r')
-            data = yaml.load(f)
-            interfaces.append(data)
+            data = yaml.load(f, Loader=Loader)
+            interfaces[data["module"]] = data["class"]
 
-    #TODO: Implement inheritance
-    specified = ["PID(Controller_Base)", "Planner", "ModelBase"]
+    # the interfaces are written in inheritance manner. Get the inheritance of classes first.
+    inheritance(interfaces)
+
+    spec = {
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{}},
+        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
+        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [1, 1], "ki": [0, 0], "kd": [0.5, 0.5] } }}},
+    }
+    
+    specified = {
+        "controller":{"PID":{"x":"state_x", "goal_x":"state_goal_x"}, },
+        "planner":{"OptimizationBasedPlanner":{{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}}}, 
+        "model":{"ModelBase":{}}
+    }
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]
-
+    
     module_reqs = {}
     edges = {}
     groups = {}
     given_modules = set()
     property_deps = {}
+    #TODO: ask users to disambiguate properties with multiple choices.
 
-    # go through all yaml
-    #TODO: should only go through files of user given modules.
-    for module in interfaces:
-        module_name = module["module"]
+    # go through yamls of user specified modules
+    for module_name, interface in interfaces.items():
+        if module_name not in specified.keys():
+            continue
         given_modules.add(module_name)
         module_reqs[module_name] = []
         used = False
-        for clas in module["class"].keys():
-            if clas not in specified:
+        for clas in interface.keys():
+            if clas not in specified[module_name].keys():
                 continue
             used = True
             # print("====after continue")
+            
+            check_attr_dict(interface[clas], "requirement")
+            check_attr_dict(interface[clas], "public")
 
-            requirement = module["class"][clas]["requirement"]
-            public = module["class"][clas]["public"]
+            requirement = interface[clas]["requirement"]
+            public = interface[clas]["public"]
 
-            check_attr(requirement, "module")
-            print('requirement["module"]')
-            print(requirement["module"])
-            check_attr(requirement, "property")
-            check_attr(requirement, "function")
-            check_attr(requirement, "property_dependency")
+            check_attr_list(requirement, "module")
+            check_attr_list(requirement, "property")
+            check_attr_list(requirement, "function")
+            check_attr_list(requirement, "property_dependency")
 
-            check_attr(public, "property")
-            check_attr(public, "function")
+            check_attr_list(public, "property")
+            check_attr_list(public, "function")
 
             for module_req in requirement["module"]:
                 module_reqs[module_name].append(module_req)
@@ -81,7 +142,6 @@ def parse():
                 else:
                     add_edge(edges, propert, module_name)
             
-            
             for propert in public["property"] + public["function"]:
                 # A module can provide multiple forms of a state in the same time.
                 if type(propert) is dict:
@@ -93,8 +153,6 @@ def parse():
                     add_edge(edges, module_name, propert)
             
             for deps in requirement["property_dependency"]:
-                print("deps")
-                print(deps)
                 prop = list(deps.keys())[0]
                 for dep in deps[prop]:
                     add_edge(property_deps, dep, prop)
@@ -119,12 +177,12 @@ def parse():
 #             print(module)
         
 #         print("===output")
-#         check_attr(edges, module)
+#         check_attr_list(edges, module)
 #         if len(edges[module]) == 0:
 #             return
 #         with g.subgraph() as s:
 #             s.attr(rank='same')
-#             check_attr(edges, module)
+#             check_attr_list(edges, module)
 #             for b in edges[module]:
 #                 # if b in belongs:
 #                 #     b = belongs[b]
@@ -150,7 +208,7 @@ def get_nodes_modules_properties_in_edges(edges, module_reqs):
             properties.add(a)
         for b in bs:
             nodes.add(b)
-            check_attr(in_edges, b)
+            check_attr_list(in_edges, b)
             in_edges[b].append(a)
             if b not in modules:
                 properties.add(a)
@@ -160,20 +218,17 @@ def get_nodes_modules_properties_in_edges(edges, module_reqs):
 
 
 def draw_deps(edges, module_reqs, groups, property_deps):
-    g = gz.Digraph('G', filename='deps.gv')
+    g = gz.Digraph('G', filename='img/deps.gv')
     g.attr(compound='true', rankdir="LR")
 
     # group multiple choice properties into one node
     belongs = {}
     for group in groups.keys():
-        print("======")
-        print('cluster_'+group)
         with g.subgraph(name='cluster_'+group) as s:
             s.node(group, style="invis", shape="point") # invisible dummy node
             for node in groups[group]:
                 s.node(node, shape="box")
                 belongs[node] = group
-                print(node)
             s.attr(label=group)
 
 
@@ -199,9 +254,6 @@ def draw_deps(edges, module_reqs, groups, property_deps):
         for b in property_deps[a]:
             if a in has_source and b not in has_source:
                 g.node(a, shape='box', style="filled", fillcolor="pink", color="pink")
-                print("a")
-                print(a)
-                print(b)
 
     # draw dependencies
     for a,bs in edges.items():

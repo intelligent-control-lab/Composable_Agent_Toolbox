@@ -30,7 +30,7 @@ class:
   OptimizationBasedPlanner(Planner):
     public:
       function:
-        - planner.planning(dt, goal, agent_start_state)
+        - planner.planning(dt, goal, agent_state)
 
   SamplingBasedPlanner(Planner):
     public:
