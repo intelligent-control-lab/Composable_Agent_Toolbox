@@ -86,8 +86,8 @@ def parse():
     }
     
     specified = {
-        "controller":{"PID":{"x":"state_x", "goal_x":"state_goal_x"}, },
-        "planner":{"OptimizationBasedPlanner":{{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}}}, 
+        "controller":{"PID":{"x":"state_x", "goal_x":"state_goal_x"}},
+        "planner":{"OptimizationBasedPlanner":{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}}, 
         "model":{"ModelBase":{}}
     }
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]

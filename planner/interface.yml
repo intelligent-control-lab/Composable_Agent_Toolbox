@@ -20,8 +20,6 @@ class:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
     public:
       property:
-        - x: [state_x]
-        - goal_x: [cartesian_goal_x]
         - planner.horizon
         - planner.replanning_cycle
       function:
@@ -29,6 +27,9 @@ class:
 
   OptimizationBasedPlanner(Planner):
     public:
+      property:
+        - x: [state_x, cartesian_x]
+        - goal_x: [state_goal_x, cartesian_goal_x]
       function:
         - planner.planning(dt, goal, agent_state)
 
