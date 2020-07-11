@@ -92,6 +92,9 @@ def parse():
     }
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]
     
+    # disambiguate multiple choice properties
+
+
     module_reqs = {}
     edges = {}
     groups = {}
