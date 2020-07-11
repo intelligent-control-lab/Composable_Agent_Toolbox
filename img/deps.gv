@@ -1,30 +1,20 @@
 digraph G {
 	compound=true rankdir=LR
-	subgraph cluster_x {
-		x [shape=point style=invis]
-		state_x [shape=box]
-		cartesian_x [shape=box]
-		label=x
-	}
-	subgraph cluster_goal_x {
-		goal_x [shape=point style=invis]
-		state_goal_x [shape=box]
-		cartesian_goal_x [shape=box]
-		label=goal_x
-	}
-	planner [color=lightskyblue fillcolor=lightskyblue shape=box style=filled]
 	model [color=lightskyblue fillcolor=lightskyblue shape=box style=filled]
 	controller [color=lightskyblue fillcolor=lightskyblue shape=box style=filled]
+	planner [color=lightskyblue fillcolor=lightskyblue shape=box style=filled]
+	controller [shape=box]
+	"evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)" [shape=box]
+	cartesian_goal_x [shape=box]
 	"model.A" [shape=box]
+	"model.shape_u" [shape=box]
 	planner [shape=box]
 	"model.B" [shape=box]
-	"evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)" [shape=box]
 	model [shape=box]
-	"model.shape_u" [shape=box]
-	controller [shape=box]
+	cartesian_x [shape=box]
 	"model.shape_u" [color=pink fillcolor=pink shape=box style=filled]
-	x -> controller [color=gray50 ltail=cluster_x]
-	goal_x -> controller [color=gray50 ltail=cluster_goal_x]
+	cartesian_x -> controller [color=gray50]
+	cartesian_goal_x -> controller [color=gray50]
 	"model.shape_u" -> controller [color=gray50]
 	"model.A" -> controller [color=gray50]
 	"model.B" -> controller [color=gray50]
@@ -50,12 +40,8 @@ digraph G {
 	model -> "evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)" [color=gray50]
 	"evaled = model.evaluate_measurement(x_sub)" [color=peachpuff fillcolor=peachpuff shape=box style=filled]
 	model -> "evaled = model.evaluate_measurement(x_sub)" [color=gray50]
-	state_x [color=peachpuff fillcolor=peachpuff shape=box style=filled]
-	planner -> state_x [color=gray50]
 	cartesian_x [color=peachpuff fillcolor=peachpuff shape=box style=filled]
 	planner -> cartesian_x [color=gray50]
-	state_goal_x [color=peachpuff fillcolor=peachpuff shape=box style=filled]
-	planner -> state_goal_x [color=gray50]
 	cartesian_goal_x [color=peachpuff fillcolor=peachpuff shape=box style=filled]
 	planner -> cartesian_goal_x [color=gray50]
 	"planner.horizon" [color=peachpuff fillcolor=peachpuff shape=box style=filled]

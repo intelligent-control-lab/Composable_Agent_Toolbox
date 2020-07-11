@@ -20,6 +20,7 @@ def check_attr_list(dic, attr):
 
 def check_attr_dict(dic, attr):
     dic[attr] = {} if attr not in dic.keys() or dic[attr] is None else dic[attr]
+    
 
 
 def inheritance(interfaces):
@@ -65,6 +66,67 @@ def merge(interface, subc, base):
     merge_dict_list(merged, interface[base])
     interface[subc] = merged    
 
+
+def fill_hole(interfaces):
+    """ Add missing attribute to interfaces
+    """
+    for module_name, interface in interfaces.items():
+        for clas in interface.keys():
+
+            check_attr_dict(interfaces[module_name][clas], "requirement")
+            check_attr_dict(interfaces[module_name][clas], "public")
+
+            requirement = interfaces[module_name][clas]["requirement"]
+            public = interfaces[module_name][clas]["public"]
+
+            check_attr_list(requirement, "module")
+            check_attr_list(requirement, "property")
+            check_attr_list(requirement, "function")
+            check_attr_list(requirement, "property_dependency")
+
+            check_attr_list(public, "property")
+            check_attr_list(public, "function")
+    
+
+def disambiguate_list(l, spec):
+    ret = []
+    for propert in l:
+        if type(propert) is dict:
+            prop = list(propert.keys())[0]
+            choices = propert[prop]
+            if prop not in spec:
+                print(prop, " not specified, please choose a semantic meaning")
+                exit()
+            ret.append(spec[prop])
+        else:
+            ret.append(propert)
+    l = ret
+    return ret
+
+def disambiguate(interfaces, specified):
+    """
+    # Some property can be satisfied by multiple forms, like state_x and cartesian_x,
+                # The requirement is met as long as one of them is provided.
+                # So we allow the requirement to be the format like {x:[state_x, cartesian_x]}
+                # This dict has only one key and one value (list of choices).
+                # The user should specify the choice.
+    """
+    for module_name, interface in interfaces.items():
+        if module_name not in specified.keys():
+            continue
+        for clas in interface.keys():
+            if clas not in specified[module_name].keys():
+                continue
+
+            requirement = interfaces[module_name][clas]["requirement"]
+            public = interfaces[module_name][clas]["public"]
+
+            requirement["property"] = disambiguate_list(requirement["property"], specified[module_name][clas])
+            requirement["function"] = disambiguate_list(requirement["function"], specified[module_name][clas])
+            public["property"] = disambiguate_list(public["property"], specified[module_name][clas])
+            public["function"] = disambiguate_list(public["function"], specified[module_name][clas])
+            
+
 def parse():
     interfaces = {}
     for dirpath, dirnames, filenames in os.walk("."):
@@ -86,22 +148,22 @@ def parse():
     }
     
     specified = {
-        "controller":{"PID":{"x":"state_x", "goal_x":"state_goal_x"}},
+        "controller":{"PID":{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}},
         "planner":{"OptimizationBasedPlanner":{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}}, 
         "model":{"ModelBase":{}}
     }
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]
     
-    # disambiguate multiple choice properties
+    fill_hole(interfaces)
 
+    # disambiguate multiple choice properties
+    disambiguate(interfaces, specified)
 
     module_reqs = {}
     edges = {}
     groups = {}
     given_modules = set()
     property_deps = {}
-    #TODO: ask users to disambiguate properties with multiple choices.
-
     # go through yamls of user specified modules
     for module_name, interface in interfaces.items():
         if module_name not in specified.keys():
@@ -113,47 +175,18 @@ def parse():
             if clas not in specified[module_name].keys():
                 continue
             used = True
-            # print("====after continue")
-            
-            check_attr_dict(interface[clas], "requirement")
-            check_attr_dict(interface[clas], "public")
-
+           
             requirement = interface[clas]["requirement"]
             public = interface[clas]["public"]
-
-            check_attr_list(requirement, "module")
-            check_attr_list(requirement, "property")
-            check_attr_list(requirement, "function")
-            check_attr_list(requirement, "property_dependency")
-
-            check_attr_list(public, "property")
-            check_attr_list(public, "function")
 
             for module_req in requirement["module"]:
                 module_reqs[module_name].append(module_req)
             
             for propert in requirement["property"] + requirement["function"]:
-                # Some property can be satisfied by multiple forms, like state_x and cartesian_x,
-                # The requirement is met as long as one of them is provided.
-                # So we allow the requirement to be the format like {x:[state_x, cartesian_x]}
-                # This dict has only one key and one value (list of choices).
-                if type(propert) is dict:
-                    prop = list(propert.keys())[0]
-                    choices = propert[prop]
-                    groups[prop] = choices
-                    add_edge(edges, prop, module_name)
-                else:
-                    add_edge(edges, propert, module_name)
+                add_edge(edges, propert, module_name)
             
             for propert in public["property"] + public["function"]:
-                # A module can provide multiple forms of a state in the same time.
-                if type(propert) is dict:
-                    prop = list(propert.keys())[0]
-                    choices = propert[prop]
-                    for choice in choices:
-                        add_edge(edges, module_name, choice)
-                else:
-                    add_edge(edges, module_name, propert)
+                add_edge(edges, module_name, propert)
             
             for deps in requirement["property_dependency"]:
                 prop = list(deps.keys())[0]
@@ -163,9 +196,8 @@ def parse():
         if not used:
             module_reqs.pop(module_name)
 
-    # print(edges)
     return edges, module_reqs, groups, property_deps
-            
+
 #     def set_rank(module):
 #         if module in drawed:
 #             return
