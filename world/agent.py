@@ -37,9 +37,9 @@ class BB8Agent(Agent):
 
     def forward(self, u, dt):
         # x = [x y dx dy], u = [ax ay]
-        gval = self._g(self._x)
-        dot_x = self._f(self._x) + gval*np.vstack(u)
-        self._x = self._x + dot_x * dt
+        
+        dot_x   = self._f(self._x) + (self._g(self._x)*np.vstack(u))
+        self._x = self._x + (dot_x * dt)
     
     @property
     def pos(self):

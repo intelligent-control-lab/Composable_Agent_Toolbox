@@ -449,6 +449,7 @@ class LinearModel(ModelBase):
 
         # This is expecting a user-defined input, so if you have a different model, you will need to change this
         B = sp.Matrix([[0,0], [0,0],[1/self.params[0], 0],[0,1/self.params[0]]])
+        
 
         return B
 
