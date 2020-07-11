@@ -13,7 +13,9 @@ class NaiveController(object):
         return state_goal
 
     def control(self, dt, est_data, cartesian_goal, est_params):
-        state      = est_params["state_est"]
+        cartesian_goal = np.vstack(cartesian_goal)
+        state = est_params["state_est"]
+        state = np.vstack(state)
         state_goal = self.model_inverse(est_data, est_params, cartesian_goal)
         # state_goal = np.vstack([20,20,0,0])
 
