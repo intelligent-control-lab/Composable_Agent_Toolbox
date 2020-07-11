@@ -9,10 +9,10 @@ if __name__ == "__main__":
     agent1_module_spec = {
         "name":       "robot",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{}},
-        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
-        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [1, 1], "ki": [0, 0], "kd": [0.5, 0.5] } }}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([ 0.0, 0.0, 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"time_sample":0.01,"kp":3,"kv":4}},
+        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
+        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [5, 5], "ki": [0, 0], "kd": [0, 0] } }}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
@@ -22,10 +22,10 @@ if __name__ == "__main__":
     agent2_module_spec = {
         "name":       "human",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{}},
-        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":20, "replanning_cycle":10, "dim":2, "n_ob":0}},
-        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [1, 1], "ki": [0, 0], "kd": [0.5, 0.5] } }}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([ 20.,0., 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"time_sample":0.01,"kp":3,"kv":4}},
+        "planner":   {"type":"NaivePlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
+        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [5, 5], "ki": [0, 0], "kd": [0, 0] } }}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    agent_env_spec = {"robot":{"type":"BB8Agent", "init_x":np.vstack([ 0, 0, 0, 0])},
-                      "human":{"type":"BB8Agent", "init_x":np.vstack([ 0,10, 0, 0])}
+    agent_env_spec = {"robot":{"type":"BB8Agent", "init_x":np.vstack([ 0., 0., 0., 0.])},
+                      "human":{"type":"BB8Agent", "init_x":np.vstack([ 20.,0., 0., 0.])}
                     }
     reaching_world_spec = {
         "friction": 0,
-        "reaching_eps": 1,
+        "reaching_eps": 0.1,
         "agent_goal_lists":{
             "robot": [[10,20],[20,10],[30,20],[40,10]],
             "human": [[20,30],[20,20],[40,30],[40,20]],
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     }
     env_spec = {
         "world": {"type":"ReachingWorld", "spec":reaching_world_spec},
-        "dt": 0.1,
+        "dt": 0.02,
         "agent_env_spec": agent_env_spec
     }
     evaluator = evaluator.Evaluator(agent_specs, env_spec)

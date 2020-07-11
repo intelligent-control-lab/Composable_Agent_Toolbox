@@ -390,7 +390,7 @@ class LinearModel(ModelBase):
         shape_x = x.shape # Get the shape of x and return it
 
         # Declare your states with given names
-        state_dict = {x1:'x position', x2:'x velocity', x3: 'y position', x4: 'y velocity'}
+        state_dict = {x1:'x position', x2:'y position', x3: 'x velocity', x4: 'y velocity'}
 
         # return the states in aggregation and the shape of the state vector:
         return [x, shape_x, state_dict]
@@ -438,7 +438,7 @@ class LinearModel(ModelBase):
         '''
 
         # This is expecting a user-defined input, so if you have a different model, you will need to change this
-        A = sp.Matrix([[0,1,0,0], [0,0,0,0], [0,0,0,1],[0,0,0,0]])
+        A = sp.Matrix([[0,0,1,0], [0,0,0,1], [0,0,0,0],[0,0,0,0]])
  
         return A
 
@@ -448,7 +448,8 @@ class LinearModel(ModelBase):
         '''
 
         # This is expecting a user-defined input, so if you have a different model, you will need to change this
-        B = sp.Matrix([[0,0], [1/self.params[0], 0], [0,0],[0,1/self.params[0]]])
+        B = sp.Matrix([[0,0], [0,0],[1/self.params[0], 0],[0,1/self.params[0]]])
+        
 
         return B
 

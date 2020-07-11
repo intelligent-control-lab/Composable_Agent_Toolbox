@@ -4,7 +4,8 @@ class NaiveController(object):
         self.name = 'PD'
         self.spec = spec
         self.model = model
-        self.speed_factor = spec["speed_factor"]
+        self.kp = spec["kp"]
+        self.kv = spec["kv"]
     def model_inverse(self, est_data, est_params, cartesian_goal):
         """This function represents the inverse function in the model
         """
@@ -16,6 +17,10 @@ class NaiveController(object):
         state = est_params["state_est"]
         state = np.vstack(state)
         state_goal = self.model_inverse(est_data, est_params, cartesian_goal)
-        e = state_goal - state
-        u = e[[0,1],:] + e[[2,3],:] * dt * self.speed_factor
+        # state_goal = np.vstack([20,20,0,0])
+
+        e          = (state_goal - state)
+        e          = np.ravel(e)
+        u          = self.kp*e[0:2] + self.kv*e[2:4]
         return u
+    
