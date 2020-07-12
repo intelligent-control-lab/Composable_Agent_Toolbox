@@ -126,7 +126,6 @@ def disambiguate(interfaces, specified):
             public["property"] = disambiguate_list(public["property"], specified[module_name][clas])
             public["function"] = disambiguate_list(public["function"], specified[module_name][clas])
             
-
 def parse():
     interfaces = {}
     for dirpath, dirnames, filenames in os.walk("."):
@@ -140,17 +139,12 @@ def parse():
     # the interfaces are written in inheritance manner. Get the inheritance of classes first.
     inheritance(interfaces)
 
-    spec = {
-        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{}},
-        "planner":   {"type":"OptimizationBasedPlanner",    "spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
-        "controller":{"type":"Controller",      "spec":{"feedback": "PID", "params": { "feedback": { "kp": [1, 1], "ki": [0, 0], "kd": [0.5, 0.5] } }}},
-    }
-    
     specified = {
         "controller":{"PID":{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}},
         "planner":{"OptimizationBasedPlanner":{"x":"cartesian_x", "goal_x":"cartesian_goal_x"}}, 
-        "model":{"ModelBase":{}}
+        "model":{"ModelBase":{}},
+        "estimator":{"NaiveEstimator":{}},
+        "sensor":{"StateSensor":{}, "CartesianSensor":{}}
     }
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]
     
@@ -180,11 +174,15 @@ def parse():
             public = interface[clas]["public"]
 
             for module_req in requirement["module"]:
+                if module_req not in specified.keys():
+                    print("Missing specification: ",module_req)
+                    exit()
+
                 module_reqs[module_name].append(module_req)
-            
+
             for propert in requirement["property"] + requirement["function"]:
                 add_edge(edges, propert, module_name)
-            
+
             for propert in public["property"] + public["function"]:
                 add_edge(edges, module_name, propert)
             
@@ -198,36 +196,9 @@ def parse():
 
     return edges, module_reqs, groups, property_deps
 
-#     def set_rank(module):
-#         if module in drawed:
-#             return
-#         drawed.append(module)
-#         for req_module in module_reqs[module]:
-#             set_rank(req_module)
-        
-#         print("===module")
-#         with g.subgraph() as s:
-#             s.attr(rank='same')
-#             s.node(module)
-#             print(module)
-        
-#         print("===output")
-#         check_attr_list(edges, module)
-#         if len(edges[module]) == 0:
-#             return
-#         with g.subgraph() as s:
-#             s.attr(rank='same')
-#             check_attr_list(edges, module)
-#             for b in edges[module]:
-#                 # if b in belongs:
-#                 #     b = belongs[b]
-#                 s.node(b)
-#                 print(b)   
-#    # for module in module_reqs.keys():
-#    #     set_rank(module)
-
 def get_nodes_modules_properties_in_edges(edges, module_reqs):
-
+    """Get some useful variables
+    """
     nodes = set()
     properties = set()
     in_edges = {}
@@ -239,17 +210,41 @@ def get_nodes_modules_properties_in_edges(edges, module_reqs):
 
     for a,bs in edges.items():
         nodes.add(a)
-        if a not in modules:
+        if a not in modules:  # a is not module, then bs are all modules
             properties.add(a)
+            continue  
+        # a is module, then bs are all properties
         for b in bs:
             nodes.add(b)
             check_attr_list(in_edges, b)
             in_edges[b].append(a)
             if b not in modules:
-                properties.add(a)
+                properties.add(b)
     
     return nodes, modules, properties, in_edges
 
+
+def sort_module(module_reqs):
+    """Sort modules based on dependency relations.
+    """
+    module_sorted = []
+    module_depth = {}
+    def dfs(module_name):
+        max_depth = 0
+        if module_name in module_reqs.keys():
+            for req in module_reqs[module_name]:
+                max_depth = max(max_depth, dfs(req)+1)
+        module_depth[module_name] = max_depth
+        return max_depth
+
+    for req in module_reqs:
+        dfs(req)
+    
+    for depth in range(len(module_reqs.keys())):
+        for module, mdepth in module_depth.items():
+            if mdepth == depth:
+                module_sorted.append(module)
+    return module_sorted
 
 
 def draw_deps(edges, module_reqs, groups, property_deps):
@@ -266,7 +261,6 @@ def draw_deps(edges, module_reqs, groups, property_deps):
                 belongs[node] = group
             s.attr(label=group)
 
-
     nodes, modules, properties, in_edges = get_nodes_modules_properties_in_edges(edges, module_reqs)
     has_source = in_edges.keys()
     
@@ -276,8 +270,7 @@ def draw_deps(edges, module_reqs, groups, property_deps):
 
     # set property nodes default style
     for node in properties:
-        if node not in groups.keys(): # group node is virtual node
-            g.node(node, shape='box')
+        g.node(node, shape='box', style="filled", fillcolor="peachpuff", color="peachpuff")
 
     # find unmet requirements
     for node in properties:
@@ -293,24 +286,31 @@ def draw_deps(edges, module_reqs, groups, property_deps):
     # draw dependencies
     for a,bs in edges.items():
         for b in bs:
-            if b in nodes:
-                nodes.remove(b)
-                if b in belongs.keys() and belongs[b] in nodes:
-                    nodes.remove(belongs[b])
-            
-            if a in module_reqs.keys(): # a is a module, then b is a property
-                g.node(b, shape='box', style="filled", fillcolor="peachpuff", color="peachpuff") # a is a module ,b is an output
-            
-            if a in groups.keys(): # a is a property having multiple choices
-                g.edge(a, b, ltail = 'cluster_'+a, color='gray50')
-            else:
-                g.edge(a, b, color="gray50")
+            g.edge(a, b, color="gray50")
+
+    # draw dependencies between properties
+    for a in property_deps.keys():
+        for b in property_deps[a]:
+            if a in properties or b in properties:
+                g.edge(a, b, color="gray80", weight="100")
+    
 
     # draw invisible dependencies of modules, to draw hiearchy structure
-    for module  in module_reqs.keys():
-        for req_module in module_reqs[module]:
-            g.edge(req_module, module, style='invis')
+    module_list = sort_module(module_reqs)
+    for i in range(len(module_list)-1):
+        g.edge(module_list[i], module_list[i+1], style='invis', weight='1000')
     
+    for i in range(len(module_list)-1):
+        for output in edges[module_list[i]]:
+            g.edge(output, module_list[i+1], style='invis')
+    
+
+    # make outputs of a module show in the same level
+    for module in module_list:
+        with g.subgraph() as s:
+            s.attr(rank='same')
+            for b in edges[module]:
+                s.node(b)
 
     g.view()
     

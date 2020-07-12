@@ -1,0 +1,18 @@
+module:
+  estimator
+
+class:
+  NaiveEstimator:
+    requirement:
+      module:
+        - model
+        - sensor
+      property:
+        - state_sensor_data
+        - cartesian_sensor_data
+      function:
+        - model.dynamics
+    public:
+      property:
+        - cartesian_est
+        - state_est

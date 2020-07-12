@@ -16,6 +16,10 @@ class:
     requirement:
       module:
         - model
+        - estimator
+      property:
+        - cartesian_est
+        - state_est
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
     public:

@@ -19,7 +19,6 @@ class:
     public:
       property:
         - model.x
-        - model.u
         - model.A
         - model.B
         # - model.shape_u
