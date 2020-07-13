@@ -1,29 +1,69 @@
 # AUTH: NOREN
 # DESC: This is a test file for use/understanding of how to work with the model class
-# SUMM: This file implements a nonlinear pendulum model in a class and then does some evaluations with it
+# SUMM: Implement a nonlinear pendulum model in a class and then does some evaluations with it
 
 # Python Standard Lib imports
 import math as m
-import time 
+import time
 import sys
 
 # Third Party Imports
-# None
+import numpy as np
+import sympy as sp
 
 # Project-specific Imports
-sys.path.append("..") # Adds higher directories to python modules path 
-import model
+sys.path.append("..") # Adds higher directories to python modules path
+import model #pylint will throw a fit here because of line 15
 
 # Start the actual test
 
-# Declare a system model:
+# Declare a system model spec, NOTE THAT ORDER DOES MATTER (SYMS |--> FUNCS |--> SPEC)
+# Note: mss stands for model_spec_syms
+mss = {
+	   "states"       : sp.symbols(['x1', 'x2']),
+	   "state_dict"   : {'x1':'angle', 'x2':'angular velocity'},
+	   "cntls"	      : sp.symbols(['u1']),
+	   "cntl_dict"    : {'u1':'torque'},
+	   "params"       : sp.symbols(['m', 'l', 'g']),
+	   "param_dict"   : {'m':'mass', 'l': 'string length', 'g': 'acceleration due to gravity'},
+} # Specify the model parameters, which are loaded first
+
+# Note: msf stands for model_spec_functions
+msf = {
+	   "f_expr"	      : sp.Matrix([[mss["states"][1]], [-1*sp.sin(mss["states"][0])*mss["params"][2]/mss["params"][1]]]),
+	   "g_expr"		  : sp.Matrix([[0], [1/(mss["params"][0]*mss["params"][1]**2)]]),
+	   "m_func"		  : sp.eye(sp.Matrix(mss["states"]).shape[0])*sp.Matrix(mss["states"])
+} # Specify the model functions, which are loaded second
+
+# Combine earlier dicts to align with model lib standards.
+model_spec= {
+	   "syms"  : mss,
+	   "funcs" : msf
+} # Specify the model specs that you want to load directly - This is what is actually passed to the model
+
+# Initialization Specification
 spec = {
-    "use_library"   : 0,
-    "model_name"    : 'nonlin_pen',
-    "time_sample"   : 0.01,
-    "disc_flag"     : 1
-}
+	   "use_spec"      : 1,
+       "use_library"   : 0,
+       "model_name"    : 'nonlin_pen',
+       "time_sample"   : 0.01,
+       "disc_flag"     : 1,
+       "model_spec"    : model_spec
+} # Define specifications that initialize the model
+
+spec2 = {
+	   "use_spec"      : 0,
+       "use_library"   : 0,
+       "model_name"    : 'nonlin_pen',
+       "time_sample"   : 0.01,
+       "disc_flag"     : 1,
+       "model_spec"    : model_spec
+} # Define specifications that initialize the model
+
+# Start the actual test!
+print("Test is Starting! Hold on!!!!")
 pen_model = model.NonlinModelCntlAffine(spec)
+pen_model2 = model.NonlinModelCntlAffine(spec2)
 print(pen_model.model_name) # print out the model name
 print(pen_model.u) # print out the symbolic vector of model control
 print(pen_model.cont_model) # print out the continous dynamic equations
@@ -64,5 +104,15 @@ print(ans) # Example of the evaluation of the lambdify-generated measurement equ
 print(ans.shape)
 print('The type of Ans')
 print(type(ans))
+print('Cast')
+ans2 = np.array(ans)
+print('Print Out')
+ans2
+print(isinstance(ans2, np.ndarray))
 print('List of Symbols')
 print(pen_model.symbol_dict)
+
+evaled22 = pen_model2.disc_model_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]]) # Evaluate using the lambdify-generated functions
+print("Difference between Pendulum Model 1 and 2")
+delta = evaled22 - evaled2
+print(delta)

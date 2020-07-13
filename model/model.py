@@ -23,16 +23,17 @@ class AbstractModelBase(ABC):
     def __init__(self):
         pass
 
+    # These only need to be populated if you don't use the specification/library method
     @abstractmethod
-    def _declare_state(self):
+    def _declare_manual_state(self):
         pass
 
     @abstractmethod
-    def _declare_cntl(self):
+    def _declare_manual_cntl(self):
         pass
 
     @abstractmethod
-    def _declare_params(self):
+    def _declare_manual_params(self):
         pass
 
 
@@ -40,6 +41,51 @@ class ModelBase(AbstractModelBase):
     '''
     split classes so that we have an abstract model base and regular ModelBase
     '''
+
+    def _declare_state(self, sym_dict):
+        '''
+        declare model states in SymPy Notation if not using dynamics library
+        '''
+
+        # Declare the states in aggregated vector form:
+        x = sp.Matrix(sym_dict["states"])
+        shape_x = x.shape # Get the shape of x and return it
+
+        # Store states with given names:
+        state_dict = sym_dict["state_dict"]
+
+        # return the states in aggregation and the shape of the state vector:
+        return [x, shape_x, state_dict]
+
+    def _declare_cntl(self, sym_dict):
+        '''
+        declare model control in SymPy Notation if not using dynamics library
+        '''
+        # Declare the controls in aggregated vector form:
+        u = sp.Matrix(sym_dict["cntls"])
+        shape_u = u.shape # Get the shape of x and return it
+
+        # Declare your controls with given names
+        # cntl_dict = {u1:'torque', 'dumb_key':'torque2'}
+        cntl_dict = sym_dict["cntl_dict"]
+
+        # return the controls in aggregation and the shape of the control vector:
+        return [u, shape_u, cntl_dict]
+
+    def _declare_params(self, sym_dict):
+        '''
+        declare all model parameters in SymPy Notation if not using dynamics library
+        '''
+        # Declare the parameters in aggregate vector form
+        params = sp.Matrix(sym_dict["params"])
+        shape_params = params.shape # Get the parameter vector dimension
+
+        # Declare your parameters with given names:
+        param_dict = sym_dict["param_dict"]
+
+        # return the parameters in aggregation and the shape.
+        return [params, shape_params, param_dict]
+
     def _discretize_dyn(self, func):
         '''
         use a first order Euler Approximation to discretize the system dynamics
@@ -110,20 +156,22 @@ class NonlinModelCntlAffine(ModelBase):
     '''
     def __init__(self, spec):
         '''
-        class constructor for model class.
+        class constructor for a nonlinear model class.
 
-        This class constructor looks for two arguments:
+        This class constructor takes a spec that specifies the following options:
+            use_spec    - exp: boolean - whether to leverage a spec defintion
             use_library - exp: boolean - whether to leverage dynamics library
-            model_name - exp: string - name of the model (in dynamics library)
+            model_name  - exp: string - name of the model (in dynamics library)
             time_sample - exp: double/float - time sample value
-            disc_flag - exp: boolean - discrete time flag modifier
+            disc_flag   - exp: boolean - discrete time flag modifier
         '''
 
         # Flag for denoting hand-defined dynamics
+        self.use_spec    = spec["use_spec"]
         self.use_library = spec["use_library"]
-        self.model_name = spec["model_name"]
+        self.model_name  = spec["model_name"]
         self.time_sample = spec["time_sample"]
-        self.disc_flag = spec["disc_flag"]
+        self.disc_flag   = spec["disc_flag"]
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
         self.lin_model = None # Only populate if we actually linearize
         self.lin_measure_model = None # Only populate if we actually linearize
@@ -134,48 +182,80 @@ class NonlinModelCntlAffine(ModelBase):
         self.jacobian_x = None # Only populate if we actually linearize
         self.jacobian_u = None # Only populate if we actually linearize
 
-        if self.use_library:
-            # Perform a look-up in the dynamics library
-            pass
-        else:
-            # Initialize States
-            state_dec = self._declare_state() # Function initializes state variables
-            self.x = state_dec[0] # This defines the state vector and gives it to the model object
-            self.shape_x = state_dec[1] # This is the shape of the state vector
-            self.symbol_dict.update(state_dec[2]) # This updates the symbol dictionary to include the state symbol to mapping information
-
-            # Initialize Controls
-            cntl_dec = self._declare_cntl()
-            self.u = cntl_dec[0] # This defines the control vector
-            self.shape_u = cntl_dec[1] # This is the shape of the control vector
-            self.symbol_dict.update(cntl_dec[2]) # This updates the symbol dictionary to include the control symbol to name mapping information
-
-            # Initialize Parameters
-            params_dec = self._declare_params()
-            self.params = params_dec[0] # This defines the parameter vector
-            self.shape_params = params_dec[1] # This is the shape of the parameter vector
-            self.symbol_dict.update(params_dec[2]) # This updates the symbol dictionary to include the parameter symbol to name mapping information
-
-            # Generate a list of all in use symbols
-            self.all_syms = [[self.x, self.u, self.params]] # "Vertically stack" the states, parameter, control (really a three element list)
-
-            # Determine if this a nonlinear system or a linear system
-            # Currently, this assumes a system of the form: xdot = f(x) + g(x)u
-            self.f_expr = self._declare_func_f() # Defines f(x) as it would appear in xdot = f(x) + g(x)u
-            self.g_expr = self._declare_func_g() # Defines g(x) as it would appear in xdot = f(x) + g(x)u
-            self.cont_model = self.f_expr + self.g_expr*self.u # Actually form the Right Hand Side (RHS) xdot = f(x) + g(x)u
-            self.measure_func = self._declare_func_measure() # Defines y = C*x - Currently only supports Full State Feedback
-
-            if self.disc_flag:  # Discretize the System
-                self.disc_model = super()._discretize_dyn(self.cont_model) # Discretizes the dynamics with a forward-Euler approximation
-                self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
-                self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
-                self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
-            else:
-                # Evaluate the system in a continuous form:
+        if self.use_spec:
+            if self.use_library:
+                # Declare States
                 pass
+            else:
+                # Define parameters based from passed specs
+                state_dec = self._declare_state(spec["model_spec"]["syms"])
+                # Declare Controls
+                cntl_dec = self._declare_cntl(spec["model_spec"]["syms"])
+                # Declare Parameters
+                params_dec = self._declare_params(spec["model_spec"]["syms"])
+        else:
+            # Declare States
+            state_dec = self._declare_manual_state()
+            # Declare Controls
+            cntl_dec = self._declare_manual_cntl()
+            # Declare Parameters
+            params_dec = self._declare_manual_params()
 
-    def _declare_state(self):
+        # Complete setting up the model
+        # Initialize States
+        self.x = state_dec[0] # This defines the state vector and gives it to the model object
+        self.shape_x = state_dec[1] # This is the shape of the state vector
+        self.symbol_dict.update(state_dec[2]) # This updates the symbol dictionary to include the state symbol to mapping information
+
+        # Initialize Controls
+        self.u = cntl_dec[0] # This defines the control vector
+        self.shape_u = cntl_dec[1] # This is the shape of the control vector
+        self.symbol_dict.update(cntl_dec[2]) # This updates the symbol dictionary to include the control symbol to name mapping information
+
+        # Initialize Parameters
+        self.params = params_dec[0] # This defines the parameter vector
+        self.shape_params = params_dec[1] # This is the shape of the parameter vector
+        self.symbol_dict.update(params_dec[2]) # This updates the symbol dictionary to include the parameter symbol to name mapping information
+
+        # Generate a list of all in use symbols
+        self.all_syms = [[self.x, self.u, self.params]] # "Vertically stack" the states, parameter, control (really a three element list)
+
+        # Set up all the model functions:
+        if self.use_spec:
+            if self.use_library:
+                # Perform a look-up in the dynamics library
+                pass
+            else:
+                # Define parameters based from passed specs
+                self.f_expr = self._declare_func_f(spec["model_spec"]["funcs"])
+                self.g_expr = self._declare_func_g(spec["model_spec"]["funcs"])
+                self.measure_func = self._declare_func_measure(spec["model_spec"]["funcs"])
+        else:
+            # Manually define the functional components of the dynamic sturcture
+            self.f_expr = self._declare_manual_func_f() # Defines f(x) in xdot = f(x) + g(x)u
+            self.g_expr = self._declare_manual_func_g() # Defines g(x) in xdot = f(x) + g(x)u
+            # Defines y = C*x - Currently only supports Full State Feedback
+            self.measure_func = self._declare_manual_func_measure() 
+
+        # Finish declaring the continuous model:
+        print(self.g_expr)
+        print(type(self.g_expr))
+        print(self.u)
+        print(type(self.u))
+        print(self.x)
+        print(type(self.x))
+        self.cont_model = self.f_expr + self.g_expr*self.u # Actually form the Right Hand Side (RHS) xdot = f(x) + g(x)u
+
+        if self.disc_flag:  # Discretize the System
+            self.disc_model = super()._discretize_dyn(self.cont_model) # Discretizes the dynamics with a forward-Euler approximation
+            self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
+            self.disc_model_lam = super()._convert_funcs2lam(self.disc_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
+            self.measure_func_lam = super()._convert_funcs2lam(self.measure_func) # Converts the measurement equations into a Python Lambda function (anonymous function)
+        else:
+            # Evaluate the system in a continuous form:
+            pass
+
+    def _declare_manual_state(self):
         '''
         declare model states in SymPy Notation if not using dynamics library
         '''
@@ -193,7 +273,7 @@ class NonlinModelCntlAffine(ModelBase):
         # return the states in aggregation and the shape of the state vector:
         return [x, shape_x, state_dict]
 
-    def _declare_cntl(self):
+    def _declare_manual_cntl(self):
         '''
         declare model control in SymPy Notation if not using dynamics library
         '''
@@ -212,7 +292,7 @@ class NonlinModelCntlAffine(ModelBase):
         # return the controls in aggregation and the shape of the control vector:
         return [u, shape_u, cntl_dict]
 
-    def _declare_params(self):
+    def _declare_manual_params(self):
         '''
         declare all model parameters in SymPy Notation if not using dynamics library
         '''
@@ -231,7 +311,7 @@ class NonlinModelCntlAffine(ModelBase):
         return [params, shape_params, param_dict]
 
 
-    def _declare_func_f(self):
+    def _declare_manual_func_f(self):
         '''
         declare all the model dynamics function regularizaiton information using the SymPy notation
         '''
@@ -241,7 +321,7 @@ class NonlinModelCntlAffine(ModelBase):
 
         return f_expr
 
-    def _declare_func_g(self):
+    def _declare_manual_func_g(self):
         '''
         declare all the model dynamics function control weight information using the SymPy notation
         '''
@@ -251,13 +331,36 @@ class NonlinModelCntlAffine(ModelBase):
 
         return g_expr
 
-    def _declare_func_measure(self):
+    def _declare_manual_func_measure(self):
         '''
         declare all measurement outputs for the system
         '''
 
         # Currently, this returns a full-state feedback system, future implementations will likely require different measurement functions
         return sp.eye(self.shape_x[0])*self.x
+
+    # Opposed to the previous three functions, these take in the arguments from the specification:
+    def _declare_func_f(self, func_dict):
+        '''
+        declare all the model dynamics function regularizaiton information using the SymPy notation
+        '''
+        f_expr = func_dict["f_expr"] # Find "f_expr" function value
+        return f_expr
+
+    def _declare_func_g(self, func_dict):
+        '''
+        declare all the model dynamics in the specificiation
+        '''
+        g_expr = func_dict["g_expr"]
+
+        return g_expr
+
+    def _declare_func_measure(self, func_dict):
+        '''
+        declare all measurement outputs for the system
+        '''
+        m_func = func_dict["m_func"]
+        return m_func
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
@@ -327,25 +430,31 @@ class LinearModel(ModelBase):
     '''
     def __init__(self, spec):
         '''
-        class constructor for model class.
+        class constructor for Linear model class.
 
-        This class constructor looks for two arguments:
+        This class constructor takes a spec that specifies the following options:
+            use_spec    - exp: boolean - whether to leverage a spec defintion
             use_library - exp: boolean - whether to leverage dynamics library
-            model_name - exp: string - name of the model (in dynamics library)
+            model_name  - exp: string - name of the model (in dynamics library)
             time_sample - exp: double/float - time sample value
-            disc_flag - exp: boolean - discrete time flag modifier
+            disc_flag   - exp: boolean - discrete time flag modifier
         '''
 
         # Flag for denoting hand-defined dynamics
+        self.use_spec    = spec["use_spec"]
         self.use_library = spec["use_library"]
         self.model_name = spec["model_name"]
         self.time_sample = spec["time_sample"]
         self.disc_flag = spec["disc_flag"]
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
 
-        if self.use_library:
-            # Perform a look-up in the dynamics library 
-            pass
+        if self.use_spec:
+            if self.use_library:
+                # Perform a look-up in the dynamics library
+                pass
+            else:
+                # Perform a direct definition through specification
+                pass
         else:
             # Initialize States
             state_dec = self._declare_state() # Function initializes state variables
