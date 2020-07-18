@@ -16,7 +16,9 @@ if __name__ == "__main__":
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
-                     {"type":"GoalSensor",              "spec":{"alias":"goal_sensor",     "noise_var":0.0}}],
+                     {"type":"GoalSensor",              "spec":{"alias":"goal_sensor",     "noise_var":0.0}},
+                     {"type":"RadioSensor",             "spec":{"alias":"communication_sensor"}},
+        ],
     }
 
     agent2_module_spec = {
@@ -29,7 +31,9 @@ if __name__ == "__main__":
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
-                     {"type":"GoalSensor",              "spec":{"alias":"goal_sensor",     "noise_var":0.0}}],
+                     {"type":"GoalSensor",              "spec":{"alias":"goal_sensor",     "noise_var":0.0}},
+                     {"type":"RadioSensor",             "spec":{"alias":"communication_sensor"}},
+        ],
     }
 
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
@@ -65,6 +69,7 @@ if __name__ == "__main__":
     for it in progressbar.progressbar(range(1000)):
         actions = {}
         for agent in agents:
+            # an action is dictionary which must contain a key "control"
             actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
         dt, env_info, measurement_groups = env.step(actions)

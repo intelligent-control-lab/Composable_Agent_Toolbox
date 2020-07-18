@@ -15,6 +15,18 @@ class Sensor(ABC):
     def measure(self):
         pass
 
+class RadioSensor(Sensor):
+    def __init__(self, agent, all_agents, spec):
+        super().__init__(agent, all_agents, spec)
+    
+    def measure(self):
+        broadcast = {}
+        for name, agent in self.all_agents.items():
+            if agent != self.agent and len(agent.broadcast) > 0:
+                broadcast[name] = agent.broadcast
+        return broadcast
+
+
 class PVSensor(Sensor):
     def __init__(self, agent, all_agents, spec):
         super().__init__(agent, all_agents, spec)

@@ -20,8 +20,8 @@ class Environment(object):
         env_info, sensor_data = self.world.reset()
         return self.dt, env_info, sensor_data
 
-    def step(self, controls):
-        env_info, sensor_data = self.world.simulate(controls, self.dt)
+    def step(self, actions):
+        env_info, sensor_data = self.world.simulate(actions, self.dt)
         self.render(env_info)
         return self.dt, env_info, sensor_data
 
