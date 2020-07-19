@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     agents = []
     for i in range(len(evaluator.agent_specs)):
-        agents.append(agent.Agent(evaluator.agent_specs[i]))
+        agents.append(agent.ModelBasedAgent(evaluator.agent_specs[i]))
 
     env = environment.Environment(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()

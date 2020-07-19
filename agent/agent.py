@@ -3,7 +3,7 @@ import pdb
 import numpy as np
 import importlib
 
-class Agent(object):
+class ModelBasedAgent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         self.replanning_timer = self.planner.replanning_cycle
