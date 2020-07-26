@@ -33,6 +33,11 @@ If you already have an environment and just want to make sure existing packages 
 conda env update --name $your_env_name -f environment.yml
 ```
 
+If you want to use the Mujoco environment. Install mujoco_py with
+```
+pip install mujoco_py==2.0.2.8
+```
+
 ## Usage
 
 Change the specs and run `python benchmark.py`.
