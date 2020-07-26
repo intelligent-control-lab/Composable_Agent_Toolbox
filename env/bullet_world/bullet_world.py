@@ -25,8 +25,7 @@ class BulletWorld():
         self.spec = spec
         self.agents = {}
         self.sensor_groups = {}
-        # self.action_space = spaces.Box(np.array([-1]*4), np.array([1]*4))
-        # self.observation_space = spaces.Box(np.array([-1]*5), np.array([1]*5))
+        
     def add_agent(self, comp_agent, agent_env_spec):
         """Instantiate an agent in the environment based on the computational agent and specs.
 
