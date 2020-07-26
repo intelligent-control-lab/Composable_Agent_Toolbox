@@ -10,7 +10,7 @@ if __name__ == "__main__":
         "name":       "robot",
         "task":      {"type":"ReachingTask",    "spec":{}},
         "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([20.,0., 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":3,"kv":4}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([0.0,0.0,0.0,0.0,20.,0., 0., 0.]),"init_variance":.01*np.eye(8),"Rww":.001*np.eye(8),"Rvv":.001*np.eye(8),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":3,"kv":4}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController",      "spec":{"kp":6,"kv":8}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "name":       "human",
         "task":      {"type":"ReachingTask",    "spec":{}},
         "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.zeros((4,1)),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":3,"kv":4}},
+        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([20.0,0.0,0.0,0.0,0.,0.,0.,0.]),"init_variance":.01*np.eye(8),"Rww":.001*np.eye(8),"Rvv":.001*np.eye(8),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":3,"kv":4}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController",      "spec":{"kp":6,"kv":8}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     }
     env_spec = {
         "world": {"type":"ReachingWorld", "spec":reaching_world_spec},
-        "dt": 0.02,
+        "dt": 0.01,
         "agent_env_spec": agent_env_spec
     }
     evaluator = evaluator.Evaluator(agent_specs, env_spec)

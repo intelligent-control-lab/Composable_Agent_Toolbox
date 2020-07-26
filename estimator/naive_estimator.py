@@ -27,6 +27,13 @@ class NaiveEstimator(object):
         est_param = {
             "state_est": sensor_data["state_sensor"]["state"]
         }
+        
+        # print(sensor_data["state_sensor"])
+        # print(sensor_data["obstacle_sensor"].values())
+        # rel_param = {
+        #     "rel_est": sensor_data["obstacle_sensor"]["state"]
+        # }
+        # print(rel_param["rel_est"])
         # print(est_param["state_est"])
         return est_data, est_param
 
