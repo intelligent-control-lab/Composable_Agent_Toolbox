@@ -1,5 +1,5 @@
 import numpy as np
-import evaluator, agent, environment
+import evaluator, agent, env
 import time
 import progressbar
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     for i in range(len(evaluator.agent_specs)):
         agents.append(agent.ModelBasedAgent(evaluator.agent_specs[i]))
 
-    env = environment.Environment(env_spec, agents)
+    env = env.FlatEnv(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
