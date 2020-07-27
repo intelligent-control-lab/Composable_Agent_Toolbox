@@ -3,6 +3,7 @@ import pdb
 import numpy as np
 import importlib
 
+
 class ModelBasedAgent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
@@ -34,7 +35,7 @@ class ModelBasedAgent(object):
 
     def action(self, dt, sensors_data):
         u = self.last_control
-        est_data, est_param = self.estimator.estimate_EKF(u,sensors_data)
+        est_data, est_param = self.estimator.estimate(u,sensors_data)
         goal = self.task.goal(est_data)
         
         if self.replanning_timer == self.planner.replanning_cycle:

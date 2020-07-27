@@ -48,8 +48,10 @@ class Unscented_Kalman_Filter:
 	def get_sigma_points(self,mu,E):
 		# This function gets 2N+1 sigma points centered around the mean mu with variance in multiples of E
 		# They are collected in X
+		print(mu.shape)
 		N                       = len(mu)
 		X                       = np.zeros((N,(2*N)+1))
+		print(X.shape)
 		X[:,0]                  = mu
 		lambda_ukf              = ((self._alpha_ukf**2)*(N + self._kappa_ukf))-N;
 		Z                       = sqrtm((N + lambda_ukf)*E);
