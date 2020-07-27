@@ -1,7 +1,7 @@
 import numpy as np
 import evaluator, agent, environment
 import time
-import progressbar
+# import progressbar
 
 if __name__ == "__main__":
 
