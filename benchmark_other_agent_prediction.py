@@ -16,7 +16,9 @@ if __name__ == "__main__":
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
-                     {"type":"GoalSensor",      "spec":{"alias":"goal_sensor",     "noise_var":0.0}}],
+                     {"type":"GoalSensor",      "spec":{"alias":"goal_sensor",     "noise_var":0.0}},
+                     {"type":"RadioSensor",     "spec":{"alias":"communication_sensor"}}
+                     ],
     }
 
     agent2_module_spec = {
@@ -29,7 +31,9 @@ if __name__ == "__main__":
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
-                     {"type":"GoalSensor",      "spec":{"alias":"goal_sensor",     "noise_var":0.0}}],
+                     {"type":"GoalSensor",      "spec":{"alias":"goal_sensor",     "noise_var":0.0}},
+                     {"type":"RadioSensor",     "spec":{"alias":"communication_sensor"}}
+                     ],
     }
 
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents

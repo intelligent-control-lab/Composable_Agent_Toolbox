@@ -1,5 +1,5 @@
 import numpy as np
-from qpsolvers import solve_qp
+# from qpsolvers import solve_qp
 class NaiveController(object):
     def __init__(self, spec, model):
         self.name = 'PD'
