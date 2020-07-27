@@ -1,0 +1,23 @@
+module:
+  agent
+
+class:
+  Agent:
+    requirement:
+      module:
+        - sensor
+        - model
+        - estimator
+        - task
+        - planner
+        - controller
+      property:
+        - planner.replanning_cycle
+        - planner.horizon
+      function:
+          cartesian_traj = planner.planning(dt, goal, est_data)
+          control = controller.control(dt, x, goal_x, est_params)
+    public:
+      property:
+      function:
+        control = agent.action(dt, sensors_data)

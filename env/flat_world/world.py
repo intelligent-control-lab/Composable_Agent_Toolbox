@@ -7,8 +7,7 @@ The World class is called by the Envrionment class.
 """
 
 import numpy as np
-import world.sensor
-import world.agent
+import env.flat_world.agent
 import importlib
 class World(object):
     """The base class of the physics engine
@@ -35,14 +34,15 @@ class World(object):
         
         # Instantiate an agent by the name(string, user given) of the agent class (e.g. "Unicycle").
         # "getattr" is not a good practice, but I didn't find a better way to do it.
-        AgentClass = getattr(importlib.import_module("world.agent"), agent_env_spec["type"])
+        AgentClass = getattr(importlib.import_module("env.flat_world.agent"), agent_env_spec["type"])
         agent = AgentClass(comp_agent.name, agent_env_spec['init_x'])
 
         self.agents[agent.name] = agent
         agent_sensors = []
-        for j in range(len(comp_agent.sensors)):
-            agent_sensors.append(self._add_sensor(agent, comp_agent.sensors[j].spec))
+        for alias in comp_agent.sensors.keys():
+            agent_sensors.append(self._add_sensor(agent, comp_agent.sensors[alias].spec))
         self.sensor_groups[comp_agent.name] = agent_sensors
+
         return agent  # just in case subclasses call this function and need the agent handle.
         
     def _add_sensor(self, agent, spec):
@@ -56,7 +56,7 @@ class World(object):
         Return:
             The instantiated sensor.
         """
-        SensorClass = getattr(importlib.import_module("world.sensor"), spec["type"])
+        SensorClass = getattr(importlib.import_module("env.flat_world.sensor"), spec["type"])
         return SensorClass(agent, self.agents, spec["spec"])
 
     def reset(self):
@@ -99,20 +99,21 @@ class World(object):
             agents_pos[agent.name] = agent.pos
         return agents_pos
 
-    def simulate(self, controls, dt):
+    def simulate(self, actions, dt):
         """One step simulation in the physics engine
 
         Args:
-            controls: the action taken by the computational agents.
+            actions: a dictionary contains the action of all agents. 
+                Each action is also a dictionary, contains the control input and other information.
             dt: time separation between two steps.
         
         Returns:
             environment infomation: contains information needed by rendering and evaluator.
             measurement_groups: data of all sensors grouped by agent names.
         """
-        for name,agent in self.agents.items():
-            agent.forward(controls[name], dt)
-
+        for name, agent in self.agents.items():
+            agent.forward(actions[name], dt)
+        
         env_info = self._collect_agent_info()
         measurement_groups = self._collect_sensor_data()
         
@@ -134,7 +135,7 @@ class ReachingWorld(World):
         self.agent_goal_lists = spec["agent_goal_lists"]
         
     def add_agent(self, comp_agent, agent_env_spec):
-        """Instantiate an agent and its goal in the environment.
+        """Instantiate an agent and its goal in the env.
 
         This function instantiate a user defined agents in the physical world. 
         And sensors attached to this agent will also be instantiated by calling  _add_sensor.
@@ -149,17 +150,17 @@ class ReachingWorld(World):
         
         agent = super().add_agent(comp_agent, agent_env_spec)
         
-        goal_agent = world.agent.GoalAgent(agent.name+"_goal", agent, self.agent_goal_lists[agent.name], self.reaching_eps)
+        goal_agent = env.flat_world.agent.GoalAgent(agent.name+"_goal", agent, self.agent_goal_lists[agent.name], self.reaching_eps)
         agent.goal = goal_agent
         self.agents[goal_agent.name] = goal_agent
 
         return agent, goal_agent  # just in case subclasses call super() and need these.
 
-    def simulate(self, controls, dt):
+    def simulate(self, actions, dt):
         """One step simulation in the physics engine
 
         Args:
-            controls: the action taken by the computational agents.
+            actions: the actions taken by the computational agents.
             dt: time separation between two steps.
         
         Returns:
@@ -167,8 +168,8 @@ class ReachingWorld(World):
             measurement_groups: data of all sensors grouped by agent names.
         """
         for name, agent in self.agents.items():
-            if name in controls:
-                agent.forward(controls[name], dt)
+            if name in actions:
+                agent.forward(actions[name], dt)
             else:
                 agent.forward()
             

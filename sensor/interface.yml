@@ -1,0 +1,12 @@
+module:
+  sensor
+
+class:
+  StateSensor:
+    public:
+      property:
+        - state_sensor_data
+  CartesianSensor:
+    public:
+      property:
+        - cartesian_sensor_data

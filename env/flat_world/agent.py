@@ -7,6 +7,7 @@ class Agent(ABC):
         self.name = name
         self._x = init_x
         self.collision = collision
+        self.broadcast = {}
 
     @abstractmethod
     def forward(self):
@@ -23,7 +24,8 @@ class Agent(ABC):
     @abstractmethod
     def vel(self):
         pass
-
+    
+    
 class BB8Agent(Agent):
     
     def _f(self, x):
@@ -35,12 +37,15 @@ class BB8Agent(Agent):
         B[3,1] = 0.5
         return B
 
-    def forward(self, u, dt):
+    def forward(self, action, dt):
         # x = [x y dx dy], u = [ax ay]
-        
+        u = action['control']
         dot_x   = self._f(self._x) + (self._g(self._x)*np.vstack(u))
         self._x = self._x + (dot_x * dt)
-    
+        
+        self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+
+
     @property
     def pos(self):
         return self._x[[0,1]]
@@ -67,6 +72,7 @@ class GoalAgent(BB8Agent):
         self.reaching_eps = reaching_eps
         self.collision = collision
         self._set_pos()
+        self.broadcast = {}
 
     def _set_pos(self):
         self._x[[0,1]] = np.vstack(self.goal_list[self.goal_idx])
