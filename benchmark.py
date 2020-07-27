@@ -52,7 +52,7 @@ if __name__ == "__main__":
         }
     }
     env_spec = {
-        "world": {"type":"ReachingWorld", "spec":reaching_world_spec},
+        "world": {"type":"FlatReachingWorld", "spec":reaching_world_spec},
         "dt": 0.02,
         "agent_env_spec": agent_env_spec
     }
