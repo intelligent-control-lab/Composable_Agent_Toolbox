@@ -18,10 +18,18 @@ class EKFEstimator(object):
 
 
     def estimate(self, u,sensor_data):
+        other_agent_state = self.posterior_state
+
+
         est_data = {}
         for sensor, measurement in sensor_data.items():
             est_data[sensor+"_est"] = measurement
         est_param = {}
+
+        for name in sensor_data["communication_sensor"].keys():
+            st = sensor_data["communication_sensor"][name]
+            for things in st.keys():
+                other_agent_state = np.ravel(st[things])
 
 
         priori_state             = np.vstack(self.model.disc_model_lam([self.posterior_state, u, [2]]))               
@@ -39,7 +47,9 @@ class EKFEstimator(object):
         K                        = np.matmul(np.matmul(priori_cov,np.transpose(H)),Sinv)                        ;
         self.posterior_state     = priori_state + np.matmul(K,innovation);                                       
         self.posterior_state_cov = np.matmul(I-(np.matmul(K,H)),priori_cov)                                     ;
-        est_param["state_est"]   = np.vstack(np.ravel(self.posterior_state))
+        est_param["ego_state_est"]   = np.vstack(np.ravel(self.posterior_state))
+        est_param["other_state_est"] = np.vstack(other_agent_state)
+
         return est_data, est_param
 
 
