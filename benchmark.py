@@ -12,7 +12,7 @@ if __name__ == "__main__":
         "model":     {"type":"LinearModel",             "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
         "estimator": {"type":"EKFEstimator",          "spec":{"init_x":np.array([ 30.,20.0, 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":6,"kv":8}},
         "planner":   {"type":"OptimizationBasedPlanner","spec":{"horizon":10, "replanning_cycle":10, "dim":2, "n_ob":0}},
-        "controller":{"type":"SafeController",         "spec":{"kp":6,"kv":8}},
+        "controller":{"type":"CBFController",         "spec":{"kp":6,"kv":8}},
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.02, "disc_flag":1}},
         "estimator": {"type":"EKFEstimator",  "spec":{"init_x":np.array([50.,20.0, 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":6,"kv":8}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
-        "controller":{"type":"SafeController", "spec":{"kp":6,"kv":8}},
+        "controller":{"type":"CBFController", "spec":{"kp":6,"kv":8}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors

@@ -1,8 +1,8 @@
 import numpy as np
 from qpsolvers import solve_qp
-class SafeController(object):
+class CBFController(object):
     def __init__(self, spec, model):
-        self.name = 'PD'
+        self.name = 'ControlBarrierFunction'
         self.spec = spec
         self.model = model
         self.kp = spec["kp"]
@@ -23,19 +23,16 @@ class SafeController(object):
         e              = (state_goal - ego_state)
         e              = np.ravel(e)
         ucap           = self.kp*e[0:2] + self.kv*e[2:4]
-        Ds             = 5
+        Ds             = 1
         [A1,b1]        = self.get_Ab_for_qp(Ds,ego_state,other_state)
         A1             = A1.reshape((1,2))  
         P              = np.array([[2.0, 0.0],[0.0, 2.0]])                 
         q              = -2*ucap     
         G              = A1                      
         h              = b1        
- 
-
         ustar          = solve_qp(P,q,G,h) 
         return ustar
 
- 
     
     def get_Ab_for_qp(self,Ds,ze1,ze2):
         p1          = ze1[0:2]
