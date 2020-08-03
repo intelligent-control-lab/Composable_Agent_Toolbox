@@ -9,10 +9,10 @@ if __name__ == "__main__":
     agent1_module_spec = {
         "name":       "robot",
         "task":      {"type":"ReachingTask",    "spec":{}},
-        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1}},
-        "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([ 10, 10, 0, 0]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"time_sample":0.01,"kp":3,"kv":4}},
+        "model":     {"type":"LinearModel",     "spec":{"use_library":0, "model_name":'Ballbot', "time_sample":0.03, "disc_flag":1}},
+        "estimator": {"type":"UKFEstimator",    "spec":{"init_x":np.array([ 10, 10, 0, 0]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":3,"kv":4}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
-        "controller":{"type":"NaiveController", "spec":{"kp":3,"kv":4}},
+        "controller":{"type":"NaiveController", "spec":{"kp":6,"kv":8}},
         "sensors":  [{"type":"PVSensor",        "spec":{"alias":"cartesian_sensor","noise_var":0.1}},
                      {"type":"StateSensor",     "spec":{"alias":"state_sensor",    "noise_var":0.1}},
                      {"type":"RadarSensor",     "spec":{"alias":"obstacle_sensor", "noise_var":0.1}}, #an agent can have multiple sensors
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     }
     env_spec = {
         "world": {"type":"ReachingWorld", "spec":reaching_world_spec},
-        "dt": 0.05,
+        "dt": 0.03,
         "agent_env_spec": agent_env_spec
     }
     evaluator = evaluator.Evaluator(agent_specs, env_spec)
