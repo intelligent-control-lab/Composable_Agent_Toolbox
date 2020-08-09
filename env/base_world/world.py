@@ -19,7 +19,19 @@ class World(object):
         self.agents = {}
         self.sensor_groups = {}
         # sensors[i] : [sensor1_data, sensor2_data, ...] is the i-th agent's all sensor data.
-        
+
+    def reset(self):
+        """Reset the physics engine.
+
+        Nothing is wiped. Only data is reset.
+        """
+        self.agents = {}
+        self.sensor_groups = {}
+        self.cache = None
+        env_info = self._collect_agent_info()
+        agent_sensor_data = self._collect_sensor_data()
+        return env_info, agent_sensor_data
+    
     def add_agent(self, comp_agent, agent_env_spec):
         """Instantiate an agent in the environment based on the computational agent and specs.
 
@@ -34,8 +46,9 @@ class World(object):
         
         # Instantiate an agent by the name(string, user given) of the agent class (e.g. "Unicycle").
         # "getattr" is not a good practice, but I didn't find a better way to do it.
+        # If the following line is called from other file, python still looks for agent.py in base_wolrd folder.
         AgentClass = getattr(importlib.import_module("..agent", __name__), agent_env_spec["type"])
-        agent = AgentClass(comp_agent.name, agent_env_spec['init_x'])
+        agent = AgentClass(comp_agent.name, agent_env_spec["spec"])
 
         self.agents[agent.name] = agent
         agent_sensors = []
@@ -59,16 +72,6 @@ class World(object):
         SensorClass = getattr(importlib.import_module("..sensor", __name__), spec["type"])
         return SensorClass(agent, self.agents, spec["spec"])
 
-    def reset(self):
-        """Reset the physics engine.
-
-        Nothing is wiped. Only data is reset.
-        """
-        self.cache = None
-        env_info = self._collect_agent_info()
-        agent_sensor_data = self._collect_sensor_data()
-        return env_info, agent_sensor_data
-    
     def _collect_sensor_data(self):
         """Collect data of all sensors.
         
@@ -99,6 +102,13 @@ class World(object):
             agents_pos[agent.name] = agent.pos
         return agents_pos
 
+    def measure(self):
+
+        env_info = self._collect_agent_info()
+        measurement_groups = self._collect_sensor_data()
+        
+        return env_info, measurement_groups
+
     def simulate(self, actions, dt):
         """One step simulation in the physics engine
 
@@ -114,7 +124,3 @@ class World(object):
         for name, agent in self.agents.items():
             agent.forward(actions[name], dt)
         
-        env_info = self._collect_agent_info()
-        measurement_groups = self._collect_sensor_data()
-        
-        return env_info, measurement_groups

@@ -47,7 +47,13 @@ class FlatReachingWorld(World):
         self.agents[goal_agent.name] = goal_agent
 
         return agent, goal_agent  # just in case subclasses call super() and need these.
-
+    
+    def measure(self):
+        env_info = self._collect_agent_info()
+        measurement_groups = self._collect_sensor_data()
+        
+        return env_info, measurement_groups
+        
     def simulate(self, actions, dt):
         """One step simulation in the physics engine
 
@@ -65,7 +71,4 @@ class FlatReachingWorld(World):
             else:
                 agent.forward()
             
-        env_info = self._collect_agent_info()
-        measurement_groups = self._collect_sensor_data()
         
-        return env_info, measurement_groups

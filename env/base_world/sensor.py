@@ -15,6 +15,7 @@ class Sensor(ABC):
     def measure(self):
         pass
 
+
 class RadioSensor(Sensor):
     def __init__(self, agent, all_agents, spec):
         super().__init__(agent, all_agents, spec)
@@ -38,6 +39,7 @@ class PVSensor(Sensor):
             "vel": self._gaussian_noise(self.agent.vel, self.noise_var)
         }
         return ret
+
 
 class StateSensor(Sensor):
     def __init__(self, agent, all_agents, spec):

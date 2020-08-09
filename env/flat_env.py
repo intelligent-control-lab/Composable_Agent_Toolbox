@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import importlib
 
 class FlatEnv(object):
-    def __init__(self, env_spec, agents):
+    def __init__(self, env_spec, comp_agents):
         '''
         Each environment has several pre-defined robot classes and sensor
         classes. The add_agent function will instantiate a robot class and 
@@ -13,15 +13,20 @@ class FlatEnv(object):
         self.dt = env_spec['dt']
         WorldClass = getattr(importlib.import_module("env.flat_world"), env_spec["world"]["type"])
         self.world = WorldClass(env_spec["world"]["spec"])
-        for i in range(len(agents)):
-            self.world.add_agent(agents[i], env_spec['agent_env_spec'][agents[i].name])
+        self.env_spec = env_spec
+        self.comp_agents = comp_agents
+        self.reset()
 
     def reset(self):
-        env_info, sensor_data = self.world.reset()
+        self.world.reset()
+        for i in range(len(self.comp_agents)):
+            self.world.add_agent(self.comp_agents[i], self.env_spec['agent_env_spec'][self.comp_agents[i].name])
+        env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
     def step(self, actions):
-        env_info, sensor_data = self.world.simulate(actions, self.dt)
+        self.world.simulate(actions, self.dt)
+        env_info, sensor_data = self.world.measure()
         self.render(env_info)
         return self.dt, env_info, sensor_data
 

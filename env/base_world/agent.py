@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 
 class Agent(ABC):
  
-    def __init__(self, name, init_x, collision=True):
+    def __init__(self, name, spec, collision=True):
         self.name = name
-        self._x = init_x
+        self._x = spec['init_x']
         self.collision = collision
         self.broadcast = {}
 

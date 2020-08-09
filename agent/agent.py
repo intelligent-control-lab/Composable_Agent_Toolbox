@@ -52,7 +52,7 @@ class ModelBasedAgent(object):
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                # "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
                 "state:":est_param["ego_state_est"]
             }
 
