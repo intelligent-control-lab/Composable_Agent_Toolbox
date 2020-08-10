@@ -4,7 +4,7 @@
 
 # Python Standard Lib imports
 import math as m
-import time
+import time 
 import sys
 
 # Third Party Imports
@@ -15,13 +15,14 @@ import model
 
 # Start the actual test
 
-# Declare a system model:
+# Declare additional parameters for system model:
 spec = {
     "use_library"   : 0,
     "model_name"    : 'Ballbot',
     "time_sample"   : 0.01,
     "disc_flag"     : 1
 }
+
 ball_model = model.LinearModel(spec)
 print(ball_model.model_name) # print out the model name
 print(ball_model.u) # print out the symbolic vector of model control

@@ -43,7 +43,7 @@ model_spec= {
 
 # Initialization Specification
 spec = {
-	   "use_spec"      : 1,
+       "use_spec"      : 1,
        "use_library"   : 0,
        "model_name"    : 'nonlin_pen',
        "time_sample"   : 0.01,
@@ -52,7 +52,7 @@ spec = {
 } # Define specifications that initialize the model
 
 spec2 = {
-	   "use_spec"      : 0,
+	"use_spec"      : 0,
        "use_library"   : 0,
        "model_name"    : 'nonlin_pen',
        "time_sample"   : 0.01,
@@ -60,10 +60,20 @@ spec2 = {
        "model_spec"    : model_spec
 } # Define specifications that initialize the model
 
+spec3 = {
+	"use_spec"      : 1,
+       "use_library"   : 1,
+       "model_name"    : 'nonlin_pen',
+       "time_sample"   : 0.01,
+       "disc_flag"     : 1,
+       "model_spec"    : 'test_file_nonlinpen'
+} # Define specifications that initialize the model
+
 # Start the actual test!
 print("Test is Starting! Hold on!!!!")
 pen_model = model.NonlinModelCntlAffine(spec)
 pen_model2 = model.NonlinModelCntlAffine(spec2)
+pen_model3 = model.NonlinModelCntlAffine(spec3)
 print(pen_model.model_name) # print out the model name
 print(pen_model.u) # print out the symbolic vector of model control
 print(pen_model.cont_model) # print out the continous dynamic equations
@@ -113,6 +123,13 @@ print('List of Symbols')
 print(pen_model.symbol_dict)
 
 evaled22 = pen_model2.disc_model_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]]) # Evaluate using the lambdify-generated functions
+evaled33 = pen_model3.disc_model_lam([[m.pi, 1], [0.01], [2, 9.81, 9.81]]) # Evaluate using the lambdify-generated functions
 print("Difference between Pendulum Model 1 and 2")
 delta = evaled22 - evaled2
+print(delta)
+print("Difference between Pendulum Model 1 and 3")
+delta = evaled33 - evaled2
+print(delta)
+print("Difference between Pendulum Model 2 and 3")
+delta = evaled33 - evaled22
 print(delta)
