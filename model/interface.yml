@@ -2,31 +2,14 @@ module:
   model
   
 class:
-  AbstractModelBase:
-    requirement:
-      module:
-      property:
-      function:
-    public:
-      property:
-      function:
 
-  ModelBase(AbstractModelBase):
-    requirement:
-      module:
-      property:
-      function:
+  ModelBase:
     public:
-      property:
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
         - evaled = model.evaluate_measurement(x_sub)
 
   NonlinModelCntlAffine(ModelBase):
-    requirement:
-      module:
-      property:
-      function:
     public:
       property:
         - model.spec
@@ -55,10 +38,6 @@ class:
         - model.linearize_dynamics(x_sub, u_sub)
 
   LinearModel(ModelBase):
-    requirement:
-      module:
-      property:
-      function:
     public:
       property:
         - model.spec
@@ -83,10 +62,6 @@ class:
         - evaled = model.evaluate_measurement(x_sub)
 
   ManipulatorEquation(ModelBase):
-    requirement:
-      module:
-      property:
-      function:
     public:
       property:
         - model.spec

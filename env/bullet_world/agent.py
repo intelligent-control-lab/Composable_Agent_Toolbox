@@ -122,7 +122,6 @@ class Ball(object):
         self.model_uid = p.loadURDF(os.path.join(dir_path, "urdfs/human.urdf"), basePosition=self.init_position)
         return self.pos
 
-
 class BallGoal(object):
     def __init__(self, name, hunter, goal_list, reaching_eps, collision=False):
         self.name = name
