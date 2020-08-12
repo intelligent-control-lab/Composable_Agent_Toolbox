@@ -13,6 +13,10 @@ class:
     public:
       property:
         - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.disc_flag
         - model.x
         - model.shape_x
         - model.state_dict
@@ -32,6 +36,14 @@ class:
         - model.cont_model_lam
         - model.measure_func
         - model.measure_func_lam
+        - model.disc_model
+        - model.disc_model_lam
+        - model.lin_model
+        - model.lin_measure_model
+        - model.jacobian_x
+        - model.jac_x_lam
+        - model.jacobian_u
+        - model.jac_u_lam
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
         - evaled = model.evaluate_measurement(x_sub)
@@ -41,6 +53,10 @@ class:
     public:
       property:
         - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.disc_flag        
         - model.x
         - model.shape_x
         - model.state_dec
@@ -55,6 +71,8 @@ class:
         - model.B
         - model.cont_model
         - model.cont_model_lam
+        - model.disc_model
+        - model.disc_model_lam        
         - model.measure_func
         - model.measure_func_lam
       function:
@@ -65,6 +83,10 @@ class:
     public:
       property:
         - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.disc_flag        
         - model.x
         - model.shape_x
         - model.state_dict
@@ -83,6 +105,8 @@ class:
         - model.g_expr
         - model.cont_model
         - model.cont_model_lam
+        - model.disc_model
+        - model.disc_model_lam        
         - model.measure_func
         - model.measure_func_lam
       function:
