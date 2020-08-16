@@ -24,11 +24,19 @@ class UKFEstimator(object):
     def estimate(self, u,sensor_data):
         # This is the main estimate function, it takes the state and state covariance and measuremnets
         # and returns state and covariance at the next time step
+        
+        other_agent_state = self.posterior_state
+
+
         est_data = {}
         for sensor, measurement in sensor_data.items():
             est_data[sensor+"_est"] = measurement
         est_param = {}
-        # print(self.posterior_state.shape)
+
+        for name in sensor_data["communication_sensor"].keys():
+            st = sensor_data["communication_sensor"][name]
+            for things in st.keys():
+                other_agent_state = np.ravel(st[things])
 
 
         X                        = self.get_sigma_points(self.posterior_state,self.posterior_state_cov)
@@ -54,8 +62,10 @@ class UKFEstimator(object):
         correction               = np.matmul(K,innovation);
         self.posterior_state     = weighted_pos_mean.reshape((N,1)) + correction          ;       
         self.posterior_state_cov = weighted_pos_covariance - np.matmul(np.matmul(K,weighted_meas_covariance),K.transpose())    ;
-        est_param["state_est"]   = np.vstack(np.ravel(self.posterior_state))
-        # print(self.posterior_state.shape)
+        
+
+        est_param["ego_state_est"]   = np.vstack(np.ravel(self.posterior_state))
+        est_param["other_state_est"] = np.vstack(other_agent_state)
 
 
 

@@ -23,7 +23,7 @@ class CBFController(object):
         e              = (state_goal - ego_state)
         e              = np.ravel(e)
         ucap           = self.kp*e[0:2] + self.kv*e[2:4]
-        Ds             = 1
+        Ds             = 3
         [A1,b1]        = self.get_Ab_for_qp(Ds,ego_state,other_state)
         A1             = A1.reshape((1,2))  
         P              = np.array([[2.0, 0.0],[0.0, 2.0]])                 
