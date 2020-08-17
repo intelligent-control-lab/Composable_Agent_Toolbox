@@ -28,7 +28,6 @@ if __name__ == "__main__":
         "estimator": {"type":"NaiveEstimator",  "spec":{"init_x":np.array([50.,20.0, 0., 0.]),"init_variance":.01*np.eye(4),"Rww":.001*np.eye(4),"Rvv":.001*np.eye(4),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.01,"kp":6,"kv":8}},
         "planner":   {"type":"NaivePlanner",    "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController", "spec":{"kp":0.5,"kv":0.1}},
-        "sensors":  [],
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.0}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.0}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.0}}, #an agent can have multiple sensors
@@ -41,7 +40,8 @@ if __name__ == "__main__":
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
     agent_env_spec = {"robot":{"type":"FrankaPanda","spec":{"base_position":[0,0,0],   "init_joints":[0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08]}},
-                      "human":{"type":"Ball",       "spec":{"init_position":[1.1,0,0],}}
+                    #   "human":{"type":"Ball",       "spec":{"init_position":[1.1,0,0]}},
+                      "human":{"type":"ManualBall",       "spec":{"init_position":[1.1,0,0]}}
                     }
 
     # agent_specs = []

@@ -87,7 +87,7 @@ class BulletWorld(FlatReachingWorld):
             environment infomation: contains information needed by rendering and evaluator.
             measurement_groups: data of all sensors grouped by agent names.
         """
-
+        
         for name, agent in self.agents.items():
             if agent.requires_control:
                 agent.forward(actions[name], dt)

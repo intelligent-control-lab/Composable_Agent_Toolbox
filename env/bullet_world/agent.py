@@ -122,6 +122,52 @@ class Ball(object):
         self.model_uid = p.loadURDF(os.path.join(dir_path, "urdfs/human.urdf"), basePosition=self.init_position)
         return self.pos
 
+
+
+class ManualBall(Ball):
+    def __init__(self, name, spec, collision=True):
+        super().__init__(name, spec, collision)
+
+    def forward(self, action, dt):
+        events = p.getKeyboardEvents()
+
+        x_speed = np.array([-0.5, 0. , 0. ])
+        y_speed = np.array([ 0. , 0.5, 0. ])
+        z_speed = np.array([ 0. , 0. , 0.5])
+        control = np.array([ 0. , 0. , 0. ])
+        
+        if p.B3G_LEFT_ARROW in events and events[p.B3G_LEFT_ARROW] == p.KEY_IS_DOWN:
+            control += x_speed
+        if p.B3G_RIGHT_ARROW in events and events[p.B3G_RIGHT_ARROW] == p.KEY_IS_DOWN:
+            control -= x_speed
+        if p.B3G_UP_ARROW in events and events[p.B3G_UP_ARROW] == p.KEY_IS_DOWN:
+            control += y_speed
+        if p.B3G_DOWN_ARROW in events and events[p.B3G_DOWN_ARROW] == p.KEY_IS_DOWN:
+            control -= y_speed
+        if p.B3G_SHIFT in events and events[p.B3G_SHIFT] == p.KEY_IS_DOWN:
+            control += z_speed
+        if p.B3G_CONTROL in events and events[p.B3G_CONTROL] == p.KEY_IS_DOWN:
+            control -= z_speed
+
+        control = np.maximum(control, -1)
+        control = np.minimum(control,  1)
+
+        self.vel = np.vstack(control)
+        
+        currentPosition = self.pos
+        newPosition = [currentPosition[0] + self.vel[0] * dt,
+                       currentPosition[1] + self.vel[1] * dt,
+                       currentPosition[2] + self.vel[2] * dt]
+
+        ori = [0,0,0,1]
+        p.resetBasePositionAndOrientation(self.model_uid, newPosition, ori)
+        self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+        
+    def reset(self):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        self.model_uid = p.loadURDF(os.path.join(dir_path, "urdfs/human.urdf"), basePosition=self.init_position)
+        return self.pos
+
 class BallGoal(object):
     def __init__(self, name, hunter, goal_list, reaching_eps, collision=False):
         self.name = name
