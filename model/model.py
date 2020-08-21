@@ -454,39 +454,64 @@ class LinearModel(ModelBase):
 
         if self.use_spec:
             if self.use_library:
-                # Perform a look-up in the dynamics library
-                pass
+                model_lib_file = open(spec["model_spec"], 'rb')
+                model_library = dill.load(model_lib_file)
+                sys = model_library[spec["model_name"]]
+                state_dec = self._declare_state(sys)
+                cntl_dec = self._declare_cntl(sys)
+                params_dec = self._declare_params(sys)
+
             else:
-                # Perform a direct definition through specification
-                pass
+                # Define parameters based from passed specs
+                state_dec = self._declare_state(spec["model_spec"]["syms"])
+                # Declare Controls
+                cntl_dec = self._declare_cntl(spec["model_spec"]["syms"])
+                # Declare Parameters
+                params_dec = self._declare_params(spec["model_spec"]["syms"])
         else:
+        
             # Initialize States
-            state_dec = self._declare_state() # Function initializes state variables
+            state_dec = self._declare_manual_state()
             self.x = state_dec[0] # This defines the state vector and gives it to the model object
             self.shape_x = state_dec[1] # This is the shape of the state vector
+            self.state_dict = state_dec[2] # This is the state dictionary
             self.symbol_dict.update(state_dec[2]) # This updates the symbol dictionary to include the state symbol to mapping information
 
-            # Initialize Controls
-            cntl_dec = self._declare_cntl()
+            # Declare Controls
+            cntl_dec = self._declare_manual_cntl()
             self.u = cntl_dec[0] # This defines the control vector
             self.shape_u = cntl_dec[1] # This is the shape of the control vector
+            self.cntl_dict = cntl_dec[2] # This is the control dictionary
             self.symbol_dict.update(cntl_dec[2]) # This updates the symbol dictionary to include the control symbol to name mapping information
 
-            # Initialize Parameters
-            params_dec = self._declare_params()
+            # Declare Parameters
+            params_dec = self._declare_manual_params()
             self.params = params_dec[0] # This defines the parameter vector
             self.shape_params = params_dec[1] # This is the shape of the parameter vector
+            self.param_dict = params_dec[2] # This is the parameter dictionary
             self.symbol_dict.update(params_dec[2]) # This updates the symbol dictionary to include the parameter symbol to name mapping information
 
             # Generate a list of all in use symbols
             self.all_syms = [[self.x, self.u, self.params]] # "Vertically stack" the states, parameter, control (really a three element list)
 
-            # Determine if this a nonlinear system or a linear system
-            # Currently, this assumes a system of the form: xdot = f(x) + g(x)u
-            self.A = self._declare_func_A() # Defines f(x) as it would appear in xdot = f(x) + g(x)u
-            self.B = self._declare_func_B() # Defines g(x) as it would appear in xdot = f(x) + g(x)u
-            self.cont_model = self.A*self.x + self.B*self.u # Actually form the Right Hand Side (RHS) xdot = f(x) + g(x)u
-            self.measure_func = self._declare_func_measure() # Defines y = C*x - Currently only supports Full State Feedback
+        # Set up all the model functions:
+        if self.use_spec:
+            if self.use_library:
+                # Perform a look-up in the dynamics library
+                self.cont_model = sys["Model_CT"]
+                self.measure_func = sys["Measure Function"]
+            else:
+                # Define parameters based from passed specs
+                self.A = self._declare_func_A(spec["model_spec"]["funcs"])
+                self.B = self._declare_func_B(spec["model_spec"]["funcs"])
+                self.measure_func = self._declare_func_measure(spec["model_spec"]["funcs"])
+                self.cont_model = self.A*self.x + self.B*self.u
+        else:
+            # Currently, this assumes a system of the form: xdot = A*x + B*u
+            self.A = self._declare_manual_func_A() 
+            self.B = self._declare_manual_func_B()
+            self.cont_model = self.A*self.x + self.B*self.u
+            self.measure_func = self._declare_manual_func_measure() # Defines y = C*x - Currently only supports Full State Feedback
 
             if self.disc_flag:  # Discretize the System
                 self.disc_model = super()._discretize_dyn(self.cont_model) # Discretizes the dynamics with a forward-Euler approximation
@@ -497,7 +522,7 @@ class LinearModel(ModelBase):
                 # Evaluate the system in a continuous form:
                 pass
 
-    def _declare_state(self):
+    def _declare_manual_state(self):
         '''
         declare model states in SymPy Notation if not using dynamics library
         '''
@@ -515,7 +540,7 @@ class LinearModel(ModelBase):
         # return the states in aggregation and the shape of the state vector:
         return [x, shape_x, state_dict]
 
-    def _declare_cntl(self):
+    def _declare_manual_cntl(self):
         '''
         declare model control in SymPy Notation if not using dynamics library
         '''
@@ -534,7 +559,7 @@ class LinearModel(ModelBase):
         # return the controls in aggregation and the shape of the control vector:
         return [u, shape_u, cntl_dict]
 
-    def _declare_params(self):
+    def _declare_manual_params(self):
         '''
         declare all model parameters in SymPy Notation if not using dynamics library
         '''
@@ -552,7 +577,7 @@ class LinearModel(ModelBase):
         # return the parameters in aggregation and the shape.
         return [params, shape_params, param_dict]
 
-    def _declare_func_A(self):
+    def _declare_manual_func_A(self):
         '''
         declare all the model dynamics function regularizaiton information using the SymPy notation
         '''
@@ -562,7 +587,7 @@ class LinearModel(ModelBase):
  
         return A
 
-    def _declare_func_B(self):
+    def _declare_manual_func_B(self):
         '''
         declare all the model dynamics function control weight information using the SymPy notation
         '''
@@ -572,13 +597,36 @@ class LinearModel(ModelBase):
 
         return B
 
-    def _declare_func_measure(self):
+    def _declare_manual_func_measure(self):
         '''
         declare all measurement outputs for the system
         '''
 
         # Currently, this returns a full-state feedback system, future implementations will likely require different measurement functions
         return sp.eye(self.shape_x[0])*self.x
+
+   # Opposed to the previous three functions, these take in the arguments from the specification:
+    def _declare_func_f(self, func_dict):
+        '''
+        declare all the model dynamics function regularizaiton information using the SymPy notation
+        '''
+        A_expr = func_dict["A"] # Find "f_expr" function value
+        return A_expr
+
+    def _declare_func_B(self, func_dict):
+        '''
+        declare all the model dynamics in the specificiation
+        '''
+        B_expr = func_dict["B"]
+
+        return B_expr
+
+    def _declare_func_measure(self, func_dict):
+        '''
+        declare all measurement outputs for the system
+        '''
+        m_func = func_dict["m_func"]
+        return m_func
 
     def evaluate_dynamics(self, x_sub, u_sub, params_sub):
         '''
