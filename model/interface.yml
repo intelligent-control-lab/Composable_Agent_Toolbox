@@ -16,6 +16,7 @@ class:
         - model.use_spec
         - model.use_library
         - model.model_name
+        - model.time_sample
         - model.disc_flag
         - model.x
         - model.shape_x
@@ -45,8 +46,6 @@ class:
         - model.jacobian_u
         - model.jac_u_lam
       function:
-        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
-        - evaled = model.evaluate_measurement(x_sub)
         - model.linearize_dynamics(x_sub, u_sub)
 
   LinearModel(ModelBase):
@@ -56,6 +55,7 @@ class:
         - model.use_spec
         - model.use_library
         - model.model_name
+        - model.time_sample
         - model.disc_flag        
         - model.x
         - model.shape_x
@@ -75,9 +75,6 @@ class:
         - model.disc_model_lam        
         - model.measure_func
         - model.measure_func_lam
-      function:
-        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
-        - evaled = model.evaluate_measurement(x_sub)
 
   ManipulatorEquation(ModelBase):
     public:
@@ -86,6 +83,7 @@ class:
         - model.use_spec
         - model.use_library
         - model.model_name
+        - model.time_sample
         - model.disc_flag        
         - model.x
         - model.shape_x
@@ -109,6 +107,3 @@ class:
         - model.disc_model_lam        
         - model.measure_func
         - model.measure_func_lam
-      function:
-        - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
-        - evaled = model.evaluate_measurement(x_sub)
