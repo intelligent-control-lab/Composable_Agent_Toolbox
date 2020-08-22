@@ -15,13 +15,18 @@ import model
 
 # Start the actual test
 
+# This is a dummy placeholder
+model_spec = None
+
 # Declare additional parameters for system model:
 spec = {
-    "use_library"   : 0,
-    "model_name"    : 'Ballbot',
-    "time_sample"   : 0.01,
-    "disc_flag"     : 1
-}
+       "use_spec"      : 0,
+       "use_library"   : 0,
+       "model_name"    : 'Ballbot',
+       "time_sample"   : 0.01,
+       "disc_flag"     : 1,
+       "model_spec"    : model_spec
+} # Define specifications that initialize the model
 
 ball_model = model.LinearModel(spec)
 print(ball_model.model_name) # print out the model name
