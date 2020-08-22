@@ -13,6 +13,8 @@ import sys
 # Project-specific Imports
 
 import model
+#sys.path.append("..") # Adds higher directories to python modules path 
+#from model import *
 
 # Start the actual test
 
