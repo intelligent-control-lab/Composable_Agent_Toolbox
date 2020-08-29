@@ -17,14 +17,12 @@ class NaiveController(object):
         # it seems that cartesian goal is simply the goal itself i.e. position and velocity.
         # if we are calling it cartesian, we should omit velocity.
         cartesian_goal = np.vstack(goal)
-        state = est_params["ego_state_est"]
-        state = np.vstack(state)
+        cartesian_state = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         state_goal = self.model_inverse(est_data, est_params, cartesian_goal)
-        # state_goal = np.vstack([20,20,0,0])
 
-        e          = (state_goal - state)
+        e          = (cartesian_goal - cartesian_state)
         e          = np.ravel(e)
-        u          = self.kp*e[0:2] + self.kv*e[2:4]
+        n = len(e)
+        u          = self.kp*e[:n//2] + self.kv * e[n//2:n]
         return u
-    
-    
+        

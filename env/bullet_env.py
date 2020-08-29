@@ -22,21 +22,24 @@ class BulletEnv():
 
     def step(self, actions):
         p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING)
-        env_info, sensor_data = self.world.simulate(actions, self.dt)
+        self.world.simulate(actions, self.dt)
+        env_info, sensor_data = self.world.measure()
         self.render(env_info)
         return self.dt, env_info, sensor_data
 
     def reset(self):
-        env_info, sensor_data = self.world.reset()
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,0) # we will enable rendering after we loaded everything
+        self.world.reset()
         for i in range(len(self.comp_agents)):
             self.world.add_agent(self.comp_agents[i], self.env_spec['agent_env_spec'][self.comp_agents[i].name])
-        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,0) # we will enable rendering after we loaded everything
+        print(self.world.agents.keys())
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) # rendering's back on again
+        env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
     def render(self, env_info, mode='human'):
         view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0.7,0,0.05],
-                                                          distance=.7,
+                                                          distance=1.,
                                                           yaw=90,
                                                           pitch=-70,
                                                           roll=0,

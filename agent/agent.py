@@ -30,9 +30,6 @@ class ModelBasedAgent(object):
         for i in range(len(module_spec["sensors"])):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
-    def get_goal(self, task_state):
-        return np.zeros((4,1))
-
     def action(self, dt, sensors_data):
         u = self.last_control
         est_data, est_param = self.estimator.predict(u,sensors_data)
@@ -52,7 +49,44 @@ class ModelBasedAgent(object):
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                # "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                "state:":est_param["ego_state_est"]
+            }
+
+        return ret
+
+
+
+class UserControlAgent(object):
+    def __init__(self, module_spec):
+        self.instantiate_by_spec(module_spec)
+        self.last_control     = [0.0,0.0]
+        
+    def _class_by_name(self, module_name, class_name):
+        """Return the class handle by name of the class
+        """
+        ModuleClass = getattr(importlib.import_module(module_name), class_name)
+        return ModuleClass
+
+    def instantiate_by_spec(self, module_spec):
+        """Instantiate modules based on user given specs
+        """
+        self.name = module_spec["name"]
+        self.model      = self._class_by_name("model",      module_spec["model"     ]["type"])(module_spec["model"      ]["spec"])
+        self.estimator  = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.model)
+        self.sensors    = {}
+        
+        for i in range(len(module_spec["sensors"])):
+            self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
+
+    def action(self, dt, sensors_data):
+        u = sensors_data["control_sensor"]
+        est_data, est_param = self.estimator.estimate(u,sensors_data)
+        
+        ret = {"control"  : []}
+        
+        if "communication_sensor" in self.sensors.keys():
+            ret["broadcast"] = {
                 "state:":est_param["ego_state_est"]
             }
 

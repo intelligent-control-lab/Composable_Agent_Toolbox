@@ -1,2 +1,1 @@
-from .world import World
-from .world import ReachingWorld
+from .world import FlatReachingWorld

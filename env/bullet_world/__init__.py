@@ -1,1 +1,1 @@
-from .bullet_world import BulletWorld
+from .world import BulletWorld

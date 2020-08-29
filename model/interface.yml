@@ -2,35 +2,108 @@ module:
   model
   
 class:
-  ModelTest:
-    requirement:
-      module:
-      property:
-      function:
-    public:
-      property:
-        - model.A
 
   ModelBase:
-    requirement:
-      module:
-      property:
-      function:
     public:
-      property:
-        - model.x
-        - model.A
-        - model.B
-        # - model.shape_u
-        - model.f_expr
-        - model.g_expr
-        - model.cont_model
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
         - evaled = model.evaluate_measurement(x_sub)
 
   NonlinModelCntlAffine(ModelBase):
     public:
+      property:
+        - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.time_sample
+        - model.disc_flag
+        - model.x
+        - model.shape_x
+        - model.state_dict
+        - model.state_dec
+        - model.u
+        - model.shape_u
+        - model.cntl_dict
+        - model.cntl_dec
+        - model.params
+        - model.shape_params
+        - model.param_dict
+        - model.symbol_dict
+        - model.all_syms
+        - model.f_expr
+        - model.g_expr
+        - model.cont_model
+        - model.cont_model_lam
+        - model.measure_func
+        - model.measure_func_lam
+        - model.disc_model
+        - model.disc_model_lam
+        - model.lin_model
+        - model.lin_measure_model
+        - model.jacobian_x
+        - model.jac_x_lam
+        - model.jacobian_u
+        - model.jac_u_lam
       function:
         - model.linearize_dynamics(x_sub, u_sub)
 
+  LinearModel(ModelBase):
+    public:
+      property:
+        - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.time_sample
+        - model.disc_flag        
+        - model.x
+        - model.shape_x
+        - model.state_dec
+        - model.u
+        - model.shape_u
+        - model.cntl_dec
+        - model.params
+        - model.shape_params
+        - model.symbol_dict
+        - model.all_syms
+        - model.A
+        - model.B
+        - model.cont_model
+        - model.cont_model_lam
+        - model.disc_model
+        - model.disc_model_lam        
+        - model.measure_func
+        - model.measure_func_lam
+
+  ManipulatorEquation(ModelBase):
+    public:
+      property:
+        - model.spec
+        - model.use_spec
+        - model.use_library
+        - model.model_name
+        - model.time_sample
+        - model.disc_flag        
+        - model.x
+        - model.shape_x
+        - model.state_dict
+        - model.state_dec
+        - model.u
+        - model.shape_u
+        - model.cntl_dict
+        - model.cntl_dec
+        - model.params
+        - model.shape_params
+        - model.param_dict
+        - model.symbol_dict
+        - model.all_syms
+        - model.h_expr
+        - model.c_expr
+        - model.g_expr
+        - model.cont_model
+        - model.cont_model_lam
+        - model.disc_model
+        - model.disc_model_lam        
+        - model.measure_func
+        - model.measure_func_lam
