@@ -5,6 +5,7 @@ class:
 
   ModelBase:
     public:
+      property:
       function:
         - evaled = model.evaluate_dynamics(x_sub, u_sub, params_sub)
         - evaled = model.evaluate_measurement(x_sub)

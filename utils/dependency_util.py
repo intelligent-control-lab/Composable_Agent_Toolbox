@@ -18,7 +18,6 @@ def check_attr_dict(dic, attr):
     dic[attr] = {} if attr not in dic.keys() or dic[attr] is None else dic[attr]
     
 
-
 def inheritance(interfaces):
     """ Execute inheritance
 
@@ -40,11 +39,11 @@ def merge_dict_list(merged, x):
     """
     if type(x) is list:
         return merged + x
-
+    
     for key in x.keys():
         if key not in merged.keys():
             merged[key] = x[key]
-        else:
+        elif x[key] is not None:
             merged[key] = merge_dict_list(merged[key], x[key])
             
     return merged
@@ -127,6 +126,8 @@ def disambiguate(interfaces, specified):
 def parse(specified):
     """ Parse all inteface.yml and build the connections based on specified
     """
+
+    # find all interface.yml under all modules
     interfaces = {}
     for dirpath, dirnames, filenames in os.walk("."):
         inteface_yamls = [f for f in filenames if f.endswith("interface.yml")]
@@ -136,9 +137,8 @@ def parse(specified):
             data = yaml.load(f, Loader=Loader)
             interfaces[data["module"]] = data["class"]
 
-    # the interfaces are written in inheritance manner. Get the inheritance of classes first.
+    # The interface supports class inheritance. Get the inheritance for classes first.
     inheritance(interfaces)
-
 
     # specified = ["ControllerTest", "PlannerTest", "ModelTest"]
     
