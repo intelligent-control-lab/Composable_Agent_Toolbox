@@ -32,7 +32,7 @@ class ModelBasedAgent(object):
 
     def action(self, dt, sensors_data):
         u = self.last_control
-        est_data, est_param = self.estimator.predict(u,sensors_data)
+        est_data, est_param = self.estimator.estimate(u,sensors_data)
         goal = self.task.goal(est_data)
         
         if self.replanning_timer == self.planner.replanning_cycle:
