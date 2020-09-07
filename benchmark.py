@@ -63,9 +63,6 @@ if __name__ == "__main__":
 
     env = env.FlatEnv(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()
-    print("measurement_groups")
-    print(measurement_groups)
-    exit()
     record = []
     print("Simulation progress:")
     for it in progressbar.progressbar(range(1000)):

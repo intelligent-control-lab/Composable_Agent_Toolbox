@@ -116,7 +116,7 @@ class Controller(Controller_Base):
             self.safety = globals()[self._spec['safety']](self._spec['params']['safety'], self._model)
         else:
             self.safety = Zero_Controller(self._spec, self._model)
-
+        
         # build the controller manager depends on "controller_manager.py"
         self._controller_manager = Controller_Manager(self.coordination, self.feedforward, self.feedback, self.safety)
     
