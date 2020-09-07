@@ -1,10 +1,9 @@
 import sensor, estimator, planner, controller, model, task
-import pdb
 import numpy as np
 import importlib
+from .agent_base import AgentBase
 
-
-class ModelBasedAgent(object):
+class ModelBasedAgent(AgentBase):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         self.replanning_timer = self.planner.replanning_cycle
@@ -57,7 +56,7 @@ class ModelBasedAgent(object):
 
 
 
-class UserControlAgent(object):
+class UserControlAgent(AgentBase):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         self.last_control     = [0.0,0.0]

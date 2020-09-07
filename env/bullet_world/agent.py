@@ -29,7 +29,7 @@ class FrankaPanda(object):
 
     @property
     def state(self):
-        return self.pos
+        # return self.pos
         joint_angles = list(map(lambda x:x[0], p.getJointStates(self.model_uid, range(7))))
         return np.vstack(np.array(joint_angles))
     
