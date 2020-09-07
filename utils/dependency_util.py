@@ -4,7 +4,8 @@ import yaml
 import graphviz as gz
 from yaml import Loader, Dumper
 import re
-
+import sys
+from os.path import abspath, join, dirname
 
 def add_edge(edges, a, b):
     if a not in edges.keys():
@@ -129,7 +130,8 @@ def parse(specified):
 
     # find all interface.yml under all modules
     interfaces = {}
-    for dirpath, dirnames, filenames in os.walk("."):
+    module_root_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..') #TODO: change this after reorganization
+    for dirpath, dirnames, filenames in os.walk(module_root_path):
         inteface_yamls = [f for f in filenames if f.endswith("interface.yml")]
         for filename in inteface_yamls:
             path = os.path.join(dirpath, filename)
@@ -242,7 +244,7 @@ def sort_module(module_reqs):
 
 
 def draw_deps(edges, module_reqs, groups, property_deps):
-    g = gz.Digraph('G', filename='img/deps.gv')
+    g = gz.Digraph('G', filename=join(abspath(dirname(__file__)), '../documentation/img/deps.gv'))
     g.attr(compound='true', rankdir="LR")
 
     # group multiple choice properties into one node
