@@ -1,0 +1,15 @@
+exp_name: 'random'
+save_frames: False
+epochs: 50
+max_episode_length: 1000
+num_future_info: 0
+video_save_frequency: 2
+rotation_penalty_weight: 0.014
+distance_penalty_weight: 0.012
+velocity_reward_weight: 0.01
+stationary_penalty_weight: 1
+start_steps: 2000
+algo: 'sac'
+seed: 4
+
+base_dir: /home/qualcomm/anthony/Reinforcement-Learning-Motion-Planning-for-Autonomous-Driving

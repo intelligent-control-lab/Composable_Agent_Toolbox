@@ -1,0 +1,8 @@
+# testing settings
+base_folder: 'logs/grid_test/sac_wrapper_1_seed=5_2020-08-16_13-54-47hwmt5j_k/'
+mode: 'test'
+max_episode_length: 5000
+checkpoint_file: best_ckpt.pth
+
+hide_display: False
+env_mode: 'data_collection'

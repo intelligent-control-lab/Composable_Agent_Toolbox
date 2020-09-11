@@ -1,0 +1,6 @@
+grid:
+  seed: [4]
+  rotation_penalty_weight: [0.008, 0.016]
+  distance_penalty_weight: [0.012, 0.006]
+  velocity_reward_weight: [0.01]
+  stationary_penalty_weight: [1, 10]

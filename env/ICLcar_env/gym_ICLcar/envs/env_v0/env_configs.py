@@ -1,0 +1,25 @@
+# Game settings
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+CAPTION = "2D Car Simulation Environment"
+
+CAR_LENGTH = 10
+CAR_WIDTH = 10
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GRAY = (100, 100, 100)
+YELLOW = (255, 255, 0)
+ORANGE = (255, 125, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+ICY = (225, 225, 240) # plus/minus 10
+
+LATERAL_FORCE  = 5
+FORWARD_FORCE = 50
+
+NUM_RANGE_SENSORS = 10
+ANGLE_BETWEEN_SENSORS = 25

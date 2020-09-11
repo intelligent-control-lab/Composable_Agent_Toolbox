@@ -1,0 +1,68 @@
+# Experiment settings
+mode: 'train'
+environment_id: 'ICLcar-v2'
+seed: 1
+num_envs: 1
+log_frequency: 5
+fps: 60
+verbose: True
+render: True
+num_cpu: 4
+use_gpu: True
+
+# Logging and model saving
+log_dir: 'logs/'
+exp_name: 'test'
+save_frames: False
+video_save_frequency: 5
+
+# Training settings
+batch_size: 64
+buffer_size: 1000000
+num_iterations: 20000
+max_episode_length: 1000
+noise_stddev: 0.2
+
+# Encoder settings
+image_embedding_dimension: 512
+context_embedding_dimension: 512
+
+# RL Agent settings
+input_size: 64
+tau: 0.001
+gamma: 0.99
+actor_lr: 1e-4
+critic_lr: 1e-3
+uniform_init: [3e-4, 3e-3]
+hidden_sizes: [400, 300]
+
+# Car environment settings
+state_sources: ['lane_direction', 'center_lane']
+num_future_info: 0
+crop_size: 200
+channels: 1
+env_mode: 'rgb_array'
+hide_display: True
+act_limit: 50
+track_number: 1
+start_x: [740, 740]
+start_y: [240, 120]
+textures: ['icy', 'rocky']
+texture_files: ['icy.bmp', 'rocky.bmp']
+texture_frictions: [0.01, 3]
+use_textures: False
+
+# Spinning up settings
+algo: 'ddpg'
+
+# Shared
+epochs: 50
+start_steps: 1000
+steps_per_epoch: 2000
+update_after: 1000
+update_every: 50
+num_test_episodes: 1
+
+# SAC only
+learning_rate: 1e-3
+alpha: 0.2

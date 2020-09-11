@@ -1,0 +1,5 @@
+# Settings for human mode testing
+env_mode: 'human'
+hide_display: False
+use_textures: True
+track_number: 2
