@@ -4,7 +4,6 @@ import yaml
 import re
 from numpy import cos, sin
 from math import inf
-from ipdb import set_trace
 
 
 class cap():

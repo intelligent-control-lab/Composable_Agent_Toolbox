@@ -454,21 +454,21 @@ class OptimizationBasedPlanner(Planner):
                 break
 
             # visualization purpose
-            traj = x_rs[: h * dimension].reshape(h, dimension)
-            for t in range(h):
-                c_tmp = plt.Circle((obs_traj[t,:]), 1, color='blue')
-                ax.add_artist(c_tmp)
-            # circle2 = plt.Circle((0.5, 4), 1, color='blue')
-            # ax.clf()
-            ax.plot(traj[:,0],traj[:,1])
-            # ax.add_artist(circle1)
-            # ax.add_artist(circle2)
-            ax.set_xlim((-4, 4))
-            ax.set_ylim((0, 10))
-            # ax.add_artist(circle3)
+            # traj = x_rs[: h * dimension].reshape(h, dimension)
+            # for t in range(h):
+            #     c_tmp = plt.Circle((obs_traj[t,:]), 1, color='blue')
+            #     ax.add_artist(c_tmp)
+            # # circle2 = plt.Circle((0.5, 4), 1, color='blue')
+            # # ax.clf()
+            # ax.plot(traj[:,0],traj[:,1])
+            # # ax.add_artist(circle1)
+            # # ax.add_artist(circle2)
+            # ax.set_xlim((-4, 4))
+            # ax.set_ylim((0, 10))
+            # # ax.add_artist(circle3)
 
-            # plt.Circle((0.5, 4), 1)
-            plt.pause(0.5)
+            # # plt.Circle((0.5, 4), 1)
+            # plt.pause(0.5)
             
         
         # return the reference trajectory  
