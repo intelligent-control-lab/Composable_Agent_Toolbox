@@ -3,12 +3,12 @@ import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
 import matplotlib
-from src.utils import *
+from .src.utils import *
 from scipy import interpolate
 import math
 from math import pi 
 from ipdb import set_trace
-from src.robot import RobotProperty
+from .src.robot import RobotProperty
 
 
 solvers.options['show_progress'] = False
@@ -673,7 +673,7 @@ class SamplingBasedPlanner(Planner):
 
 
 if __name__ == '__main__':
-    from src.configs import add_planner_args
+    from .src.configs import add_planner_args
     from pprint import pprint
     import argparse
     
