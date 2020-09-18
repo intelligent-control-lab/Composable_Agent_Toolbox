@@ -12,4 +12,4 @@ class NaivePlanner(object):
         frac = (goal - pos_vel)*1./self.horizon
         for i in range(self.horizon):
             traj.append(pos_vel + frac*i)
-        return traj
+        return np.array(traj)

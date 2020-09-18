@@ -46,5 +46,7 @@ class FlatEnv(object):
         
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
         plt.scatter(x,y,s=100, color=cs[:len(x)])
-        plt.pause(0.1)
+        # plt.plot(human_traj[:,0],human_traj[:,1])
+        # plt.plot(robot_traj[:,0],robot_traj[:,1])
+        plt.pause(0.00001)
         plt.draw()

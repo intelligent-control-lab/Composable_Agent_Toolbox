@@ -33,23 +33,24 @@ class ModelBasedAgent(AgentBase):
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u,sensors_data)
         goal = self.task.goal(est_data)
-        
         if self.replanning_timer == self.planner.replanning_cycle:
+            # add the future planning information for another agent 
             self.planned_traj = self.planner.planning(dt, goal, est_data)
+            
             self.replanning_timer = 0
-        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
+        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
+        next_traj_point = np.expand_dims(next_traj_point, axis=0).T
         self.replanning_timer += 1
+
+        control = self.controller.control(dt, est_data, next_traj_point, est_param)
         
-        # control = self.controller.control(dt, est_data, next_traj_point, est_param)
-        
-        control = self.controller.control(dt, est_data, goal, est_param)
         self.last_control = control
         ret = {"control"  : control}
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
-                "state:":est_param["ego_state_est"]
+                "state":est_param["ego_state_est"]
             }
 
         return ret
@@ -86,7 +87,20 @@ class UserControlAgent(AgentBase):
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                "state:":est_param["ego_state_est"]
+                "state":est_param["ego_state_est"]
             }
 
         return ret
+
+    def get_state(self, dt, sensors_data):
+        u = self.last_control
+        est_data, est_param = self.estimator.estimate(u,sensors_data)
+        
+        state =  est_data['state_sensor_est']['state']
+
+        return state
+
+
+
+
+

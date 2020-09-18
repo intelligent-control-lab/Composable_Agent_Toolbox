@@ -1,8 +1,9 @@
 # Experiment settings
 
 # planning settings
-dim: 2
+dim: 6
 horizon: 10
-obsr: 0.5
-obsp: [0, 4]
+obsr: 1
+# obsp: [0, 4]
 n_ob: 1
+replanning_cycle: 10000
