@@ -2,7 +2,10 @@
 import numpy as np
 from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
+import matplotlib
 from .src.utils import *
+from scipy import interpolate
+import math
 
 solvers.options['show_progress'] = False
 
@@ -41,13 +44,42 @@ class OptimizationBasedPlanner(Planner):
         self.horizon = spec['horizon']
         self.cache = {}
 
-    def planning(self, dt, goal, agent_start_state):
+    def planning(self, dt, goal, sensor_est_data):
+        # only take the planned horizon trajectory
+        # set_trace()
+        print("start planning")
+        # self.obs_state = obs_state
+
+        # obs_state is the other agent pose and velocity 
+        
+        if sensor_est_data["communication_sensor_est"] != {}:
+            name = list(sensor_est_data["communication_sensor_est"].keys())[0]
+            self.obs_state = sensor_est_data["communication_sensor_est"][name]['state']
         self.dt = dt
+        self.v_max = 5 # vmax is 5m/s
         target = goal[0:2,0]
-        state = agent_start_state['state_sensor_est']['state'][0:2,0]
+        # import ipdb
+        # ipdb.set_trace()
+        state = sensor_est_data['state_sensor_est']['state'][0:2,0]
+        start_vel = np.linalg.norm(sensor_est_data['state_sensor_est']['state'][2:4,0].flatten()) 
+        # state = sensor_est_data[0:2,0]
+        # start_vel = np.linalg.norm(sensor_est_data[2:4,0].flatten()) 
+
+        # assignment of time 
+        time = self.time_assignment(target, state)
+        if sensor_est_data["communication_sensor_est"] != {}:
+            obs_traj_est = self.obs_traj_estimate(self.obs_state, time)
+        else:
+            obs_traj_est = []
+        self.obs_traj = obs_traj_est
+        # self.obs_traj = obs_traj
         ref_traj = self.plan(self.ineq, self.eq, state, target)
-        ref_traj = self.pos2vel(ref_traj)
-        return ref_traj
+        # interp_traj = self.interpolate(ref_traj,start_vel)
+        interp_traj = self.interpolate_traj(np.hstack((time,ref_traj)))
+        interp_traj_vel = self.pos2vel(interp_traj)
+        print("new planning finished ..")
+        # set_trace()
+        return interp_traj_vel
 
     def re_planning(self, dt, goal, agent_state):
         agent_next_state = agent_state
@@ -62,8 +94,9 @@ class OptimizationBasedPlanner(Planner):
         agent_state = np.array(agent_state)
         goal = np.array(goal)
         traj = np.zeros((self.spec['horizon'], self.spec['dim']))
-        for i in range(self.spec['horizon']):
-            traj[[i],:] = (agent_state + i / self.spec['horizon'] * (goal - agent_state)).T
+        traj[[0],:] = agent_state.T
+        for i in range(self.spec['horizon']-1):
+            traj[[i+1],:] = (agent_state + (i+1) / (self.spec['horizon']-1) * (goal - agent_state)).T
         
         return traj
 
@@ -73,20 +106,20 @@ class OptimizationBasedPlanner(Planner):
         traj = self.CFS(x_ref=ref_traj)
         return traj 
 
-    def ineq(self, x):
+    def ineq(self, x, obs):
         '''
         inequality constraints. 
         constraints: ineq(x) > 0
         '''
         # norm distance restriction
-        obs_p = self.spec['obsp']
-        obs_r = self.spec['obsr']
-        obs_p = np.array(obs_p)
+        obs_p = obs.flatten()
+        obs_r = self.spec['obs_r']
+        # obs_r = 1
         obs_r = np.array(obs_r)
         
         # flatten the input x 
         x = x.flatten()
-        dist = np.linalg.norm(x - obs_p) - obs_r - 0.5
+        dist = np.linalg.norm(x - obs_p) - obs_r
         return dist
 
     def eq(self, x):
@@ -96,21 +129,173 @@ class OptimizationBasedPlanner(Planner):
         '''
         pass
 
+    def time_assignment(self, goal, start):
+        v_max = self.v_max
+        dist = np.linalg.norm((goal - start))
+        total_time = dist / v_max
+        time_interval = total_time / (self.spec['horizon'] - 1)
+        time = np.zeros((self.spec['horizon'], 1))
+        tmp = 0
+        for i in range(self.spec['horizon']):
+            time[i,:] = tmp
+            tmp += time_interval
+        return time
+
+
+    def obs_traj_estimate(self, obs_state, time):
+        '''
+        estimate the future obstacle position
+        '''
+        obs_traj = np.zeros((self.spec['horizon'], self.spec['dim']))
+        pos = obs_state[0:2,:]
+        vel = obs_state[2:4,:]
+        for i in range(self.spec['horizon']):
+            pos_tmp = pos + vel*time[i,:]
+            obs_traj[i,:] = pos_tmp.transpose()
+        return obs_traj
+
+
+    def interpolate(self, x_ref, v0):
+        '''
+        to interpolate the planned trajectory 
+        '''
+        # determine how many points to interpolate 
+        # determine the velocity 
+
+        # parameters
+        # v_max = 5 # 2m/s
+        v_max = self.v_max
+        a_max = 10 # 1m/s^2
+        dt = self.dt
+
+        # interpolate 
+        # step 1: calculate the displacement
+        s_origin = np.squeeze(np.zeros((self.horizon,1)))
+        # s_origin = np.zeros((1,3))
+        for i in range(self.horizon-1):
+            pos1 = x_ref[i,:]
+            pos2 = x_ref[i+1,:]
+            dist = np.linalg.norm(pos2 - pos1)
+            s_origin[i+1] = dist + s_origin[i]
+
+        s_max = s_origin[-1]
+
+        # step 2: switch state
+        t1 = abs(v0 - v_max) / a_max
+        s1 = 0.5 * (v0 + v_max) * t1
+        t3 = v_max / a_max
+        s3 = 0.5 * v_max * t3
+        if s1 + s3 < s_max: # have constant speed segment
+            have_const_spd = True
+        else: # no constant speed segment
+            have_const_spd = False
+            if v0 >= v_max: # deccelerate till the end
+                always_dec = True
+            else: # accelerate to v_top and deccelerate
+                always_dec = False
+
+        # step 3: calculate the time sequence
+        if have_const_spd: # have constant speed segment
+            s2 = s_max - s1 - s3
+            t2 = s2 / v_max
+            tn = int((t1 + t2 + t3) / dt) # num of stamps
+            t_list = np.linspace(0, tn*dt, tn+1)
+        else: # no constant speed segment
+            if always_dec: # deccelerate till the end
+                v_top = v_max
+                t1 = (v0 - v_top) / a_max
+                s1 = 0.5 * (v0 + v_top) * t1
+                t3 = v_top / a_max
+                s3 = 0.5 * v_top * t3
+            else: # accelerate to v_top and deccelerate
+                v_top = math.sqrt(2 * a_max * s_max + 0.5 * v0 ** 2)
+                t1 = (v_top - v0) / a_max
+                s1 = 0.5 * (v0 + v_top) * t1
+                t3 = v_top / a_max
+                s3 = 0.5 * v_top * t3
+            
+            tn = int((t1 + t3) / dt) # num of stamps
+            t_list = np.linspace(0, tn*dt, tn+1)
+
+
+        # step 4: compute interpolated displacement sequence
+        s_interp = np.zeros(t_list.shape)
+        if have_const_spd: # have constant speed segment
+            for i in range(len(s_interp)):
+                if t_list[i] < t1:
+                    t_tmp = t_list[i]
+                    s_interp[i] = v0 * t_tmp + np.sign(v_max - v0) * 0.5 * a_max * t_tmp**2
+                elif t_list[i] >= t1 and t_list[i] <= t1 + t2:
+                    t_tmp = t_list[i] - t1
+                    s_interp[i] = s1 + v_max * t_tmp
+                else:
+                    t_tmp = t_list[i] - t1 - t2
+                    s_interp[i] = s1 + s2 + v_max * t_tmp - 0.5 * a_max * t_tmp**2
+        else: # no constant speed segment
+            for i in range(len(s_interp)):
+                if t_list[i] < t1:
+                    t_tmp = t_list[i]
+                    s_interp[i] = v0 * t_tmp + np.sign(v_max - v0) * 0.5 * a_max * t_tmp**2
+                else:
+                    t_tmp = t_list[i] - t1
+                    s_interp[i] = s1 + v_top * t_tmp - 0.5 * a_max * t_tmp**2
+
+        # step 5: generate interpolated trajectory
+        path_interp = np.empty((len(t_list), x_ref.shape[1]))
+        for i in range(x_ref.shape[1]):
+            f_interp = interpolate.interp1d(s_origin, x_ref[:, i], kind = 'slinear') # "nearest","zero","slinear","quadratic","cubic"
+            path_interp[:,i] = f_interp(s_interp)
+        path_interp = np.vstack((path_interp, x_ref[-1,:]))
+        return path_interp
+
+
+    def interpolate_traj(self, x_ref):
+        '''
+        to interpolate the planned trajectory using simple linear interpolation
+        input: x_ref:
+                col1: t;  col2: x;  col3: y
+        output: traj_interp:
+                col1: x_interp;  col2: y_interp
+        '''
+        # determine how many points to interpolate 
+        # determine the velocity 
+
+        # parameters
+        dt = self.dt
+
+        # interpolate 
+        # step 1: calculate the interpolated time list
+        t_end = x_ref[-1,0]
+        tn = int(t_end / dt)
+        t_list = np.linspace(0, tn*dt, tn+1)
+
+        # step 2: generate interpolated trajectory
+        traj_interp = np.empty((len(t_list), x_ref.shape[1]-1))
+        for i in range(x_ref.shape[1]-1):
+            f_interp = interpolate.interp1d(x_ref[:, 0], x_ref[:, i+1], kind = 'slinear') # "nearest","zero","slinear","quadratic","cubic"
+            traj_interp[:,i] = f_interp(t_list)
+        traj_interp = np.vstack((traj_interp, x_ref[-1,1:3]))
+        return traj_interp
+
 
     def CFS(
         self, 
         x_ref,
-        cq = [1,0,0], 
-        cs = [0,10,10], 
+        cq = [10,0,10], 
+        cs = [0,1,0.1], 
         minimal_dis = 0, 
         ts = 1, 
         maxIter = 30,
         stop_eps = 1e-3
     ):
         # without obstacle, then collision free
+        
         n_ob = self.spec['n_ob']
-        if n_ob == 0:
-            return x_ref
+        obs_traj = self.obs_traj
+        if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
+            # set_trace()
+            print(f"{len(obs_traj)} length obstacle, direct exit!!!!")
+            return np.array(x_ref)
 
         # has obstacle, the normal CFS procedure 
         x_rs = np.array(x_ref)
@@ -126,38 +311,29 @@ class OptimizationBasedPlanner(Planner):
 
         # objective terms 
         # identity
-        I = np.identity(h * dimension)
-        # velocity terms
-        Velocity = np.zeros(((h - 1) * dimension, h * dimension))
-        for i in range(len(Velocity)):
-            Velocity[i][i] = 1.0
-            Velocity[i][i + dimension] = -1.0
-        Velocity /= ts
-        # acceleration terms 
-        Acceleration = np.zeros(((h - 2) * dimension, h * dimension))
-        for i in range(len(Acceleration)):
-            Acceleration[i][i] = 1.0
-            Acceleration[i][i + dimension] = -2.0
-            Acceleration[i][i + dimension + dimension] = 1.0
-        Acceleration /= (ts * ts)
+        Q1 = np.identity(h * dimension)
+        S1 = Q1
+        # velocity term 
+        Vdiff = np.identity(h*dimension) - np.diag(np.ones((1,(h-1)*dimension))[0],dimension)
+        Q2 = np.matmul(Vdiff.transpose(),Vdiff) 
+        # Acceleration term 
+        Adiff = Vdiff - np.diag(np.ones((1,(h-1)*dimension))[0],dimension) + np.diag(np.ones((1,(h-2)*dimension))[0],dimension*2)
+        Q3 = np.matmul(Adiff.transpose(),Adiff)
+        # Vdiff = eye(nstep*dim)-diag(ones(1,(nstep-1)*dim),dim);
 
         # objective 
-        Q = cq[0] * I + cq[1] * np.dot(np.transpose(Velocity), Velocity) + cq[2] * np.dot(np.transpose(Acceleration), Acceleration)
-        S = cs[0] * I + cs[1] * np.dot(np.transpose(Velocity), Velocity) + cs[2] * np.dot(np.transpose(Acceleration), Acceleration)
-
-        # weight terms 
+        Q = Q1*cq[0]+Q2*cq[1]+Q3*cq[2];
+        S = S1*cs[0]+Q2*cs[1]+Q3*cs[2];
 
         # quadratic term
         H =  Q + S 
         # linear term
-        f = -2 * np.dot(Q, x_origin)
-
+        f = -1 * np.dot(Q, x_origin)
 
         b = np.ones((h * n_ob, 1)) * (-minimal_dis)
-
         H = matrix(H,(len(H),len(H[0])),'d')
         f = matrix(f,(len(f), 1),'d')
-        b = matrix(b,(len(b),1),'d')
+        # b = matrix(b,(len(b),1),'d')
 
         # reference trajctory cost 
         J0 =  np.dot(np.transpose(x_rs - x_origin), np.dot(Q, (x_rs - x_origin))) + np.dot(np.transpose(x_rs), np.dot(S, x_rs))
@@ -179,6 +355,10 @@ class OptimizationBasedPlanner(Planner):
         Aeq = matrix(Aeq,(len(Aeq),len(Aeq[0])),'d')
         beq = matrix(beq,(len(beq),1),'d')
 
+        # set the safety margin 
+        D = 5
+
+        # fig, ax = plt.subplots()
         # main CFS loop
         while dlt > stop_eps:
             cnt += 1
@@ -187,19 +367,28 @@ class OptimizationBasedPlanner(Planner):
             # inequality constraints 
             # l * x <= s
             Constraint = np.zeros((h * n_ob, len(x_rs)))
+            
             for i in range(h):
                 # get reference pos at time step i
-                x_r = x_rs[i * dimension : (i + 1) * dimension] 
+                if i < h-1 and i > 0:
+                    x_r = x_rs[i * dimension : (i + 1) * dimension] 
 
-                # get inequality value (distance)
-                dist = self.ineq(x_r)
+                    # get inequality value (distance)
+                    # get obstacle at this time step 
+                    obs_p = obs_traj[i,:]  
+                    dist = self.ineq(x_r,obs_p)
+                    # print(dist)
 
-                # get gradient 
-                ref_grad = jac_num(self.ineq, x_r)
+                    # get gradient 
+                    ref_grad = jac_num(self.ineq, x_r, obs_p)
+                    # print(ref_grad)
 
-                # compute
-                s = dist - np.dot(ref_grad, x_r)
-                l = -1 * ref_grad
+                    # compute
+                    s = dist - D - np.dot(ref_grad, x_r)
+                    l = -1 * ref_grad
+                if i == h-1 or i == 0: # don't need inequality constraints for lst dimension 
+                    s = np.zeros((1,1))
+                    l = np.zeros((1,2))
 
                 # update 
                 Sstack = vstack_wrapper(Sstack, s)
@@ -224,13 +413,26 @@ class OptimizationBasedPlanner(Planner):
                 break
 
             # traj = x_rs[: h * dimension].reshape(h, dimension)
-            # plt.clf()
-            # plt.plot(traj[:,0],traj[:,1])
-            # plt.pause(0.05)
+            # for t in range(h):
+            #     c_tmp = plt.Circle((obs_traj[t,:]), 1, color='blue')
+            #     ax.add_artist(c_tmp)
+            # # circle2 = plt.Circle((0.5, 4), 1, color='blue')
+            # # ax.clf()
+            # ax.plot(traj[:,0],traj[:,1])
+            # # ax.add_artist(circle1)
+            # # ax.add_artist(circle2)
+            # ax.set_xlim((-4, 4))
+            # ax.set_ylim((0, 10))
+            # # ax.add_artist(circle3)
 
-        # return the reference trajectory        
+            # # plt.Circle((0.5, 4), 1)
+            # plt.pause(0.5)
+            
+        
+        # return the reference trajectory  
+        # import ipdb
+        # ipdb.set_trace()      
         x_rs = x_rs[: h * dimension]
-        plt.show()
         return x_rs.reshape(h, dimension)
 
     def pos2vel(self, traj):
@@ -238,7 +440,8 @@ class OptimizationBasedPlanner(Planner):
         get the velocity reference from the position reference
         '''
         ref_traj = []
-        for i in range(self.spec['horizon']-1):
+        horizon = traj.shape[0]
+        for i in range(horizon-1):
             pos1 = traj[i,:]
             pos2 = traj[i+1,:]
             diff = pos2 - pos1
@@ -246,7 +449,7 @@ class OptimizationBasedPlanner(Planner):
             traj_tmp = np.hstack((pos1, vel))
             ref_traj = vstack_wrapper(ref_traj, traj_tmp)
         # concatenate the final pos
-        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[self.spec['horizon']-1,:],np.zeros(self.spec['dim']))))
+        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[horizon-1,:],np.zeros(self.spec['dim']))))
         return ref_traj
 
 
@@ -271,7 +474,7 @@ class SamplingBasedPlanner(Planner):
 
 
 if __name__ == '__main__':
-    from src.configs import add_planner_args
+    from .src.configs import add_planner_args
     from pprint import pprint
     import argparse
     
@@ -289,16 +492,28 @@ if __name__ == '__main__':
 
     pprint(args)
 
+    obs_state = 1
+    obs_traj = np.zeros((args['horizon'],2))
+    tmp = np.array([0.04,0.4])
+    set_trace()
+    for i in range(args['horizon']):
+        obs_traj[i,:] = np.array([0.5,4]) + tmp * i
+
+    # set_trace()
     # models 
     model = 1 # the place holder 
-
+   
     CFS  = OptimizationBasedPlanner(args, model)
-    traj = CFS.planning(args['goal'], args['state'])
-    traj = CFS.pos2vel(traj)
-    print(traj)
-    plt.plot(traj[:,0],traj[:,1])
-    plt.show()
 
+    dt = 0.02
+    goal = np.array([[0],[8],[0],[0]])
+    start = np.array([[0],[1],[0],[0]])
+    interp_traj_vel, ref_traj = CFS.planning(dt, goal, start, obs_traj, obs_state)
+    # traj = CFS.pos2vel(traj)
+    print(ref_traj)
+    # plt.plot(ref_traj[:,0],ref_traj[:,1])
+    # plt.show()
+    
 
 
 

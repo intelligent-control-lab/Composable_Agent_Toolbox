@@ -3,26 +3,37 @@ import os
 import yaml
 import re
 
-def jac_num(ineq, x, eps=1e-6):
+def jac_num(ineq, x, obs_p, eps=1e-6):
     '''
     compoute the jaccobian for a given function 
     used for computing first-order gradient of distance function 
     '''
-    y = ineq(x)
+    # y = ineq(x,obs_p)
 
-    # change to unified n-d array format
-    if type(y) == np.float64:
-        y = np.array([y])
+    # # change to unified n-d array format
+    # if type(y) == np.float64:
+    #     y = np.array([y])
 
-    grad = np.zeros((y.shape[0], x.shape[0]))
-    xp = x
-    for i in range(x.shape[0]):
-        xp[i] = x[i] + eps/2
-        yhi = ineq(xp)
-        xp[i] = x[i] - eps/2
-        ylo = ineq(xp)
-        grad[:,i] = (yhi - ylo) / eps
-        xp[i] = x[i]
+    # grad = np.zeros((y.shape[0], x.shape[0]))
+    # xp = x
+    # for i in range(x.shape[0]):
+    #     xp[i] = x[i] + eps/2
+    #     yhi = ineq(xp,obs_p)
+    #     xp[i] = x[i] - eps/2
+    #     ylo = ineq(xp,obs_p)
+    #     grad[:,i] = (yhi - ylo) / eps
+    #     xp[i] = x[i]
+    # return grad
+
+    # use the analytical solution 
+    obs_p = obs_p.flatten()
+    
+    # flatten the input x 
+    x = x.flatten()
+    dist = np.linalg.norm(x - obs_p)
+    grad = np.zeros((1, 2))
+    grad[:,0] = 0.5/dist*2*(x[0]-obs_p[0])
+    grad[:,1] = 0.5/dist*2*(x[1]-obs_p[1])
     return grad
 
 
