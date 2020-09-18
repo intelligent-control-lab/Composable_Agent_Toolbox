@@ -7,7 +7,6 @@ from .src.utils import *
 from scipy import interpolate
 import math
 from math import pi 
-from ipdb import set_trace
 from .src.robot import RobotProperty
 
 

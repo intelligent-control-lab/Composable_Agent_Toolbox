@@ -4,7 +4,6 @@ sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
 import numpy as np
 import evaluator, agent, env
 import time
-from ipdb import set_trace
 # import progressbar
 
 if __name__ == "__main__":
