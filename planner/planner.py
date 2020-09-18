@@ -54,8 +54,6 @@ class OptimizationBasedPlanner(Planner):
         the testing planning function to examine the correctness of 3d / 2d planning
         '''
         # only take the planned horizon trajectory
-        # set_trace()
-        print("start planning")
         self.obs_state = obs_state
         self.dt = dt
         self.v_max = 5 # vmax is 5m/s
@@ -69,16 +67,10 @@ class OptimizationBasedPlanner(Planner):
         # obstacle 
         self.obs_traj = obs_traj
         ref_traj = self.test_plan(self.ineq, self.eq, state, target)
-        print("new planning finished ..")
-        # set_trace()
         return ref_traj
 
     def planning(self, dt, goal, sensor_est_data):
         # only take the planned horizon trajectory
-        # set_trace()
-        print("start planning")
-        # self.obs_state = obs_state
-
         # obs_state is the other agent pose and velocity 
         
         if sensor_est_data["communication_sensor_est"] != {}:
@@ -87,8 +79,6 @@ class OptimizationBasedPlanner(Planner):
         self.dt = dt
         self.v_max = 5 # vmax is 5m/s
         target = goal[0:2,0]
-        # import ipdb
-        # ipdb.set_trace()
         state = sensor_est_data['state_sensor_est']['state'][0:2,0]
         start_vel = np.linalg.norm(sensor_est_data['state_sensor_est']['state'][2:4,0].flatten()) 
         # state = sensor_est_data[0:2,0]
@@ -106,7 +96,6 @@ class OptimizationBasedPlanner(Planner):
         # interp_traj = self.interpolate(ref_traj,start_vel)
         interp_traj = self.interpolate_traj(np.hstack((time,ref_traj)))
         interp_traj_vel = self.pos2vel(interp_traj)
-        print("new planning finished ..")
         return interp_traj_vel
 
     def re_planning(self, dt, goal, agent_state):
@@ -334,8 +323,6 @@ class OptimizationBasedPlanner(Planner):
         n_ob = self.spec['n_ob']
         obs_traj = self.obs_traj
         if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
-            # set_trace()
-            print(f"{len(obs_traj)} length obstacle, direct exit!!!!")
             return np.array(x_ref)
 
         # has obstacle, the normal CFS procedure 
@@ -403,7 +390,6 @@ class OptimizationBasedPlanner(Planner):
         # main CFS loop
         while dlt > stop_eps:
             cnt += 1
-            print(f"the iteration: {cnt}")
             Lstack, Sstack = [], []
             # inequality constraints 
             # l * x <= s
@@ -627,9 +613,7 @@ class OptimizationBasedPlanner(Planner):
             # plt.pause(0.5)
             
         
-        # return the reference trajectory  
-        # import ipdb
-        # ipdb.set_trace()      
+        # return the reference trajectory    
         x_rs = x_rs[: h * dimension]
         return x_rs.reshape(h, dimension)
 
