@@ -10,20 +10,24 @@ import sys
 # Third Party Imports
 # None
 
-sys.path.append("..") # Adds higher directories to python modules path
-import model
-
+sys.path.append("../..") # Adds higher directories to python modules path
+import model.models.linmodel_dyn as linmodel_dyn
 # Start the actual test
+
+# This is a dummy placeholder
+model_spec = None
 
 # Declare additional parameters for system model:
 spec = {
-    "use_library"   : 0,
-    "model_name"    : 'Ballbot',
-    "time_sample"   : 0.01,
-    "disc_flag"     : 1
-}
+       "use_spec"      : 0,
+       "use_library"   : 0,
+       "model_name"    : 'Ballbot',
+       "time_sample"   : 0.01,
+       "disc_flag"     : 1,
+       "model_spec"    : model_spec
+} # Define specifications that initialize the model
 
-ball_model = model.LinearModel(spec)
+ball_model = linmodel_dyn.LinearModel(spec)
 print(ball_model.model_name) # print out the model name
 print(ball_model.u) # print out the symbolic vector of model control
 print(ball_model.cont_model) # print out the continous dynamic equations

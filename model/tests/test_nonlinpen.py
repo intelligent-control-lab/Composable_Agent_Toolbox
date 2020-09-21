@@ -12,8 +12,8 @@ import numpy as np
 import sympy as sp
 
 # Project-specific Imports
-sys.path.append("..") # Adds higher directories to python modules path
-import model #pylint will throw a fit here because of line 15
+sys.path.append("../..") # Adds higher directories to python modules path
+import model.models.nonlinmodel_dyn as nonlinmodel_dyn  #pylint will throw a fit here because of line 15
 
 # Start the actual test
 
@@ -71,9 +71,9 @@ spec3 = {
 
 # Start the actual test!
 print("Test is Starting! Hold on!!!!")
-pen_model = model.NonlinModelCntlAffine(spec)
-pen_model2 = model.NonlinModelCntlAffine(spec2)
-pen_model3 = model.NonlinModelCntlAffine(spec3)
+pen_model = nonlinmodel_dyn.NonlinModelCntlAffine(spec)
+pen_model2 = nonlinmodel_dyn.NonlinModelCntlAffine(spec2)
+pen_model3 = nonlinmodel_dyn.NonlinModelCntlAffine(spec3)
 print(pen_model.model_name) # print out the model name
 print(pen_model.u) # print out the symbolic vector of model control
 print(pen_model.cont_model) # print out the continous dynamic equations
