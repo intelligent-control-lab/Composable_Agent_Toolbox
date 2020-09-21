@@ -1,4 +1,4 @@
-import sensor, estimator, planner, controller, model, task
+from agent import sensor
 import numpy as np
 import importlib
 from .agent_base import AgentBase

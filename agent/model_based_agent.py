@@ -1,4 +1,4 @@
-import sensor, estimator, planner, controller, model, task
+from agent import sensor
 import numpy as np
 import importlib
 from .agent_base import AgentBase
@@ -12,6 +12,7 @@ class ModelBasedAgent(AgentBase):
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
         """
+        module_name = "agent." + module_name
         ModuleClass = getattr(importlib.import_module(module_name), class_name)
         return ModuleClass
 

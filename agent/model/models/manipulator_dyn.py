@@ -10,11 +10,12 @@ import sympy as sp
 import dill
 
 # Application Specific Imports
-from model.models.models import ModelBase
+from agent.model.models.models import ModelBase
 
-class NonlinModelCntlAffine(ModelBase):
+class ManipulatorEquation(ModelBase):
     '''
-    class for nonlinear control affine models of form x_dot = f(x) + g(x)u
+    class for nonlinear control affine models of form q_ddot = h(q)^(-1) * (u - c(q, q_dot)*q_dot - g(q)) where
+    q is the joint angle, the dots refer to the time derivatives with # of d's refering to the relative degree
     '''
     def __init__(self, spec):
         '''
@@ -35,14 +36,6 @@ class NonlinModelCntlAffine(ModelBase):
         self.time_sample = spec["time_sample"]
         self.disc_flag   = spec["disc_flag"]
         self.symbol_dict = {} # Define an empty dictionary for holding the variables
-        self.lin_model = None # Only populate if we actually linearize
-        self.lin_measure_model = None # Only populate if we actually linearize
-        self.lin_model_lam = None # Only populate if we actually linearize
-        self.lin_measure_model_lam = None # Only populate if we actually linearize
-        self.jac_x_lam = None # Only populate if we actually linearize
-        self.jac_u_lam = None # Only populate if we actually linearize
-        self.jacobian_x = None # Only populate if we actually linearize
-        self.jacobian_u = None # Only populate if we actually linearize
 
         if self.use_spec:
             if self.use_library:
@@ -52,7 +45,6 @@ class NonlinModelCntlAffine(ModelBase):
                 state_dec = self._declare_state(sys)
                 cntl_dec = self._declare_cntl(sys)
                 params_dec = self._declare_params(sys)
-
             else:
                 # Define parameters based from passed specs
                 state_dec = self._declare_state(spec["model_spec"]["syms"])
@@ -98,19 +90,23 @@ class NonlinModelCntlAffine(ModelBase):
                 self.measure_func = sys["Measure Function"]
             else:
                 # Define parameters based from passed specs
-                self.f_expr = self._declare_func_f(spec["model_spec"]["funcs"])
+                self.h_expr = self._declare_func_h(spec["model_spec"]["funcs"])
+                self.c_expr = self._declare_func_c(spec["model_spec"]["funcs"])
                 self.g_expr = self._declare_func_g(spec["model_spec"]["funcs"])
                 self.measure_func = self._declare_func_measure(spec["model_spec"]["funcs"])
-                self.cont_model = self.f_expr + self.g_expr*self.u # Actually form the Right Hand Side (RHS) xdot = f(x) + g(x)u
+                self.cont_model = self.h_expr.inv() * (self.u - self.c_expr*sp.Matrix([[self.x[2]],[self.x[3]]]) - self.g_expr)
         else:
             # Manually define the functional components of the dynamic sturcture
-            self.f_expr = self._declare_manual_func_f() # Defines f(x) in xdot = f(x) + g(x)u
-            self.g_expr = self._declare_manual_func_g() # Defines g(x) in xdot = f(x) + g(x)u
+            # The expression that's defined here is: q_ddot = h(q)^(-1) * (u - c(q, q_dot)*q_dot - g(q))
+            self.h_expr = self._declare_manual_func_h() # Defines h(q) 
+            self.c_expr = self._declare_manual_func_c() # Defines c(q, q_dot)
+            self.g_expr = self._declare_manual_func_g() # Defines g(q)
             # Defines y = C*x - Currently only supports Full State Feedback
-            self.measure_func = self._declare_manual_func_measure() 
-            self.cont_model = self.f_expr + self.g_expr*self.u # Actually form the Right Hand Side (RHS) xdot = f(x) + g(x)u
+            self.measure_func = self._declare_manual_func_measure()
+            self.cont_model = self.h_expr.inv() * (self.u - self.c_expr*sp.Matrix([[self.x[2]],[self.x[3]]]) - self.g_expr)
 
-
+        self.cont_model = sp.Matrix([[self.x[2]],[self.x[3]], self.cont_model])
+        
         if self.disc_flag:  # Discretize the System
             self.disc_model = super()._discretize_dyn(self.cont_model) # Discretizes the dynamics with a forward-Euler approximation
             self.cont_model_lam = super()._convert_funcs2lam(self.cont_model) # Converts the dynamics equations into a Python Lambda function (anonymous function)
@@ -126,14 +122,14 @@ class NonlinModelCntlAffine(ModelBase):
         '''
 
         # Example placeholder is for a system with four states
-        x1, x2 = sp.symbols(['x1', 'x2'])
+        q1, q2, q1_dot, q2_dot = sp.symbols(['q1', 'q2', 'q1_dot', 'q2_dot'])
 
         # Declare the states in aggregated vector form:
-        x = sp.Matrix([x1, x2])
+        x = sp.Matrix([q1, q2, q1_dot, q2_dot])
         shape_x = x.shape # Get the shape of x and return it
 
         # Declare your states with given names
-        state_dict = {x1:'angle', x2:'angular velocity'}
+        state_dict = {q1:'joint 1 angle', q2:'joint 2 angle', q1_dot:'joint 1 angular velocity', q2_dot:'joint 2 angular velocity'}
 
         # return the states in aggregation and the shape of the state vector:
         return [x, shape_x, state_dict]
@@ -144,15 +140,14 @@ class NonlinModelCntlAffine(ModelBase):
         '''
 
         # Example placeholder is for a system with one control variable
-        u1 = sp.symbols('u1')
+        u1, u2 = sp.symbols(['u1', 'u2'])
 
         # Declare the controls in aggregated vector form:
-        u = sp.Matrix([u1])
+        u = sp.Matrix([u1, u2])
         shape_u = u.shape # Get the shape of x and return it
 
         # Declare your controls with given names
-        # cntl_dict = {u1:'torque', 'dumb_key':'torque2'}
-        cntl_dict = {u1:'torque'}
+        cntl_dict = {u1:'joint 1 torque', u2:'joint 2 torque'}
 
         # return the controls in aggregation and the shape of the control vector:
         return [u, shape_u, cntl_dict]
@@ -162,37 +157,55 @@ class NonlinModelCntlAffine(ModelBase):
         declare all model parameters in SymPy Notation if not using dynamics library
         '''
 
+
         # Example pacehold is for a system with three parameters
-        m, l, g = sp.symbols(['m', 'l', 'g'])
+        m1, l1, lc1, I1, m2, l2, lc2, I2, g = sp.symbols(['m1', 'l1', 'lc1', 'I1', 'm2', 'l2', 'lc2', 'I2', 'g'])
 
         # Declare the parameters in aggregate vector form
-        params = sp.Matrix([m, l, g])
+        params = sp.Matrix([m1, l1, lc1, I1, m2, l2, lc2, I2, g])
         shape_params = params.shape # Get the parameter vector dimension
 
         # Declare your parameters with given names:
-        param_dict = {m:'mass', l: 'string length', g: 'acceleration due to gravity'}
+        param_dict = {m1: 'mass of link 1', l1: 'total length of link 1', lc1: 'length to center of mass of link 1 from joint 1', I1: 'inertia of Link 1', m2: 'mass of link 2', l2: 'total length of link 2', lc2: 'length to center of mass of link 2 from joint 2', I2: 'inertial of link 2', g: 'acceleration due to gravity'}
 
         # return the parameters in aggregation and the shape.
         return [params, shape_params, param_dict]
 
 
-    def _declare_manual_func_f(self):
+    def _declare_manual_func_h(self):
         '''
         declare all the model dynamics function regularizaiton information using the SymPy notation
         '''
+        H11 = self.params[0]*self.params[2]**2 + self.params[3] + self.params[4]*(self.params[1]**2 + self.params[6]**2 + 2*self.params[1]*self.params[6]*sp.cos(self.x[1])) + self.params[7]
+        H12 = self.params[4]*self.params[1]*self.params[6]*sp.cos(self.x[1]) + self.params[4]*self.params[6]**2 + self.params[7]
+        H22 = self.params[4]*self.params[6]**2 + self.params[7]
+        # Define Inertial Matrix
+        h_expr = sp.Matrix([[H11, H12], [H12, H22]])
 
-        # This is expecting a user-defined input, so if you have a different model, you will need to change this
-        f_expr = sp.Matrix([[self.x[1]], [-1*sp.sin(self.x[0])*self.params[2]/self.params[1]]])
+        return h_expr
 
-        return f_expr
+    def _declare_manual_func_c(self):
+        '''
+        declare all the model dynamics function regularizaiton information using the SymPy notation
+        '''
+        h = self.params[4]*self.params[1]*self.params[6]*sp.sin(self.x[1])
+        C11 = -1*h*self.x[3]
+        C12 = -1*h*self.x[2] + -1*h*self.x[3]
+        C21 = h * self.x[2]
+        C22 = 0
+        # Define Inertial Matrix
+        c_expr = sp.Matrix([[C11, C12], [C21, C22]])
+
+        return c_expr
 
     def _declare_manual_func_g(self):
         '''
         declare all the model dynamics function control weight information using the SymPy notation
         '''
-
-        # This is expecting a user-defined input, so if you have a different model, you will need to change this
-        g_expr = sp.Matrix([[0], [1/(self.params[0]*self.params[1]**2)]])
+        G11 = self.params[0]*self.params[2]*self.params[8]*sp.cos(self.x[0]) + self.params[4]*self.params[8]*(self.params[6]*sp.cos(self.x[0] + self.x[1]) + self.params[1]*sp.cos(self.x[0]))
+        G21 = self.params[4]*self.params[6]*self.params[8]*sp.cos(self.x[0] + self.x[1])
+        # This is expecting a user-defined input
+        g_expr = sp.Matrix([[G11], [G21]])
 
         return g_expr
 
@@ -205,18 +218,26 @@ class NonlinModelCntlAffine(ModelBase):
         return sp.eye(self.shape_x[0])*self.x
 
     # Opposed to the previous three functions, these take in the arguments from the specification:
-    def _declare_func_f(self, func_dict):
+    def _declare_func_h(self, func_dict):
         '''
         declare all the model dynamics function regularizaiton information using the SymPy notation
         '''
-        f_expr = func_dict["f_expr"] # Find "f_expr" function value
-        return f_expr
+        h_expr = func_dict["h_expr"] # Find "f_expr" function value
+        return h_expr
+
+    def _declare_func_c(self, func_dict):
+        '''
+        declare all the model dynamics function regularizaiton information using the SymPy notation
+        '''
+        c_expr = func_dict["c_expr"] # Find "c_expr" function value
+
+        return c_expr
 
     def _declare_func_g(self, func_dict):
         '''
         declare all the model dynamics in the specificiation
         '''
-        g_expr = func_dict["g_expr"]
+        g_expr = func_dict["g_expr"] # Find the "g_expr" function value
 
         return g_expr
 
@@ -240,51 +261,3 @@ class NonlinModelCntlAffine(ModelBase):
         evaluate_dynamics function
         '''
         return ModelBase.evaluate_measurement(self, x_sub)
-
-    def linearize_dynamics(self, **kwargs):
-        '''
-        linearize the dynamics of a nonlinear continuous model with respect to the state and control
-        '''
-        # Pull the substitution arguments, if provided, else assume linearization around zero state
-        x_sub = kwargs.get('x_sub', sp.zeros(self.shape_x[0], self.shape_x[1]))
-        # Pull the substitution arguments, if provided, else assume linearization around zero control
-        u_sub = kwargs.get('u_sub', sp.zeros(self.shape_u[0], self.shape_u[1]))
-
-        x_sub = sp.Matrix(x_sub) # Casting this to a SymPy List for subtraction later
-        u_sub = sp.Matrix(u_sub) # Casting this to a SymPy List for subtraction later
-
-        if self.disc_flag:
-            jacobian_x = super()._take_jacobian(self.disc_model, self.x) # Take the Jacobian wrt the states
-            jacobian_u = super()._take_jacobian(self.disc_model, self.u) # Take the Jacobian wrt the control
-            evaled = self._sub_vals(self.disc_model, self.x, x_sub) # sub state to generate Steady State Value
-            evaled = self._sub_vals(evaled, self.u, u_sub) # sub control to generate Steady State Value
-        else:
-            jacobian_x = super()._take_jacobian(self.cont_model, self.x) # Take the Jacobian wrt the states
-            jacobian_u = super()._take_jacobian(self.cont_model, self.u) # Take the Jacobian wrt the control
-            evaled = self._sub_vals(self.cont_model, self.x, x_sub) # sub state to generate Steady State Value
-            evaled = self._sub_vals(evaled, self.u, u_sub) # sub control to generate Steady State Value            
-
-        self.jacobian_x = jacobian_x # Store the Jacobian with respect to x
-        self.jacobian_u = jacobian_u # Store the Jacobian with respect to u
-
-        # Symbolic Jacobian's for us in symbolic manipulation
-        jacobian_x = self._sub_vals(jacobian_x, self.x, x_sub)
-        jacobian_u = self._sub_vals(jacobian_u, self.u, u_sub)
-        evaled = self._sub_vals(evaled, self.x, self.u)
-
-        # Evaluate the symbolic Jacobian at the linearization point
-        jacobian_x = jacobian_x.subs(self.x[0], x_sub[0])
-        jacobian_u = jacobian_u.subs(self.u[0], u_sub[0])
-
-        ss_val = evaled # This is the steady-state component
-
-        # Provide symbolic linear model
-        self.lin_model = ss_val + jacobian_x*(self.x - x_sub) + jacobian_u*(self.u - u_sub)
-        self.lin_measure_model = x_sub + sp.eye(self.shape_x[0])*(self.x-x_sub)
-        self.lin_model_lam = super()._convert_funcs2lam(self.lin_model)
-        self.lin_measure_model_lam = super()._convert_funcs2lam(self.lin_measure_model)
-
-        # Generate lambda function for Jacobian of x
-        self.jac_x_lam = super()._convert_funcs2lam(self.jacobian_x)
-        # Generate lambda function for Jacobian of u
-        self.jac_u_lam = super()._convert_funcs2lam(self.jacobian_u)

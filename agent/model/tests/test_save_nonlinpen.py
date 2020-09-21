@@ -9,8 +9,8 @@ import sympy as sp
 import dill
 
 # Project-specific Imports
-sys.path.append("../..") # Adds higher directories to python modules path
-import model.models.nonlinmodel_dyn as nonlinmodel_dyn  #pylint will throw a fit here because of line 15
+sys.path.append("../../..") # Adds higher directories to python modules path
+import agent.model.models.nonlinmodel_dyn as nonlinmodel_dyn  #pylint will throw a fit here because of line 15
 
 
 # Start the actual test

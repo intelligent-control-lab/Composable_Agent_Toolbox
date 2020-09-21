@@ -10,7 +10,7 @@ import sympy as sp
 import dill
 
 # Application Specific Imports
-from model.models.models import ModelBase
+from agent.model.models.models import ModelBase
 
 class LinearModel(ModelBase):
     '''

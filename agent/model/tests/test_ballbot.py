@@ -10,8 +10,8 @@ import sys
 # Third Party Imports
 # None
 
-sys.path.append("../..") # Adds higher directories to python modules path
-import model.models.linmodel_dyn as linmodel_dyn
+sys.path.append("../../..") # Adds higher directories to python modules path
+import agent.model.models.linmodel_dyn as linmodel_dyn
 # Start the actual test
 
 # This is a dummy placeholder
