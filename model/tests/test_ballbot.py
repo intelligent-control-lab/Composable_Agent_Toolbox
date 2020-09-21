@@ -10,8 +10,8 @@ import sys
 # Third Party Imports
 # None
 
-sys.path.append("..") # Adds higher directories to python modules path
-import model
+sys.path.append("../models/") # Adds higher directories to python modules path
+import linmodel_dyn
 
 # Start the actual test
 
@@ -28,7 +28,7 @@ spec = {
        "model_spec"    : model_spec
 } # Define specifications that initialize the model
 
-ball_model = model.LinearModel(spec)
+ball_model = linmodel_dyn.LinearModel(spec)
 print(ball_model.model_name) # print out the model name
 print(ball_model.u) # print out the symbolic vector of model control
 print(ball_model.cont_model) # print out the continous dynamic equations
