@@ -12,14 +12,16 @@ if __name__ == "__main__":
     # The module specs for agents, specifies which task, model, planner, controller, sensor to use.
     agent1_module_spec = {
         "name":         "robot",
-        "model_path":   join(abspath(dirname(__file__)), '../agent/saved_models/FetchReach-v1/model.pt'),
-        "env_params":   {
-                        "obs":          10, 
-                        "goal":         3, 
-                        "action":       4, 
-                        "action_max":   torch.tensor([1., 1., 1., 1.], dtype=torch.float32),
+        "policy":       {"type":"ActorCriticPolicy", "spec":{"model_path": join(abspath(dirname(__file__)), '../agent/saved_models/FetchReach-v1/model.pt'),
+                                                             "env_params": {
+                                                                            "obs":          10, 
+                                                                            "goal":         3, 
+                                                                            "action":       4, 
+                                                                            "action_max":   torch.tensor([1., 1., 1., 1.], dtype=torch.float32),
+                                                                            },
+                                                            }
                         },
-        "sensors":      [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.0}},
+        "sensors":      [{"type":"PVSensor",               "spec":{"alias":"cartesian_sensor","noise_var":0.0}},
                         {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.0}},
                         {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.0}}, #an agent can have multiple sensors
                         {"type":"GoalSensor",              "spec":{"alias":"goal_sensor",     "noise_var":0.0}},
