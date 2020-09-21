@@ -12,8 +12,8 @@ import numpy as np
 import sympy as sp
 
 # Project-specific Imports
-sys.path.append("../models/") # Adds higher directories to python modules path
-import manipulator_dyn
+sys.path.append("../..") # Adds higher directories to python modules path
+import model.models.manipulator_dyn as manipulator_dyn  #pylint will throw a fit here because of line 15
 
 # Start the actual test
 
