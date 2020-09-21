@@ -10,7 +10,7 @@ import sympy as sp
 import dill
 
 # Application Specific Imports
-from models import ModelBase
+from model.models.models import ModelBase
 
 class NonlinModelCntlAffine(ModelBase):
     '''

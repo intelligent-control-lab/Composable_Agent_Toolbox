@@ -1,4 +1,4 @@
-import model.models.models
-import model.models.linmodel_dyn  
-import model.models.manipulator_dyn 
-import model.models.nonlinmodel_dyn
+from model.models.models import *
+from model.models.linmodel_dyn   import *
+from model.models.manipulator_dyn  import *
+from model.models.nonlinmodel_dyn import *
