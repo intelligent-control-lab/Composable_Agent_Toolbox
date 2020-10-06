@@ -2,7 +2,7 @@ import numpy as np
 import env.flat_world
 import matplotlib.pyplot as plt
 import importlib
-
+import time
 class FlatEnv(object):
     def __init__(self, env_spec, comp_agents):
         '''
@@ -24,10 +24,11 @@ class FlatEnv(object):
         env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
-    def step(self, actions):
+    def step(self, actions, render=True):
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
-        self.render(env_info)
+        if render:
+            self.render(env_info)
         return self.dt, env_info, sensor_data
 
     def render(self, env_info):
@@ -48,5 +49,5 @@ class FlatEnv(object):
         plt.scatter(x,y,s=100, color=cs[:len(x)])
         # plt.plot(human_traj[:,0],human_traj[:,1])
         # plt.plot(robot_traj[:,0],robot_traj[:,1])
-        plt.pause(0.00001)
         plt.draw()
+        plt.pause(0.001)

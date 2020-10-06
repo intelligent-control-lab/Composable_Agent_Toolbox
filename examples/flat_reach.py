@@ -39,6 +39,9 @@ if __name__ == "__main__":
     }
 
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
+    agents = []
+    for i in range(len(agent_specs)):
+        agents.append(agent.ModelBasedAgent(agent_specs[i]))
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
@@ -59,10 +62,6 @@ if __name__ == "__main__":
         "agent_env_spec": agent_env_spec
     }
     evaluator = evaluator.Evaluator(agent_specs, env_spec)
-
-    agents = []
-    for i in range(len(evaluator.agent_specs)):
-        agents.append(agent.ModelBasedAgent(evaluator.agent_specs[i]))
 
     env = env.FlatEnv(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()

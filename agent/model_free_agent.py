@@ -2,7 +2,6 @@ from agent import sensor
 import numpy as np
 import importlib
 from .agent_base import AgentBase
-import torch
 
 #Notice: The model we use here is not trained on our environment. It is just for illustration use.
 class ModelFreeAgent(AgentBase):
