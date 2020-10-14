@@ -49,7 +49,20 @@ If you want to use the Mujoco env. Install mujoco_py with
 pip install mujoco_py==2.0.2.8
 ```
 
+To use Carla, you'll need to run a headless simulator beforehand and add the python module to your `PYTHONPATH`.
+See the [carla package installation docs][carla-install-doc] to download a package release.
+
+
+```bash
+# See https://carla.readthedocs.io/en/latest/build_docker/ for more info
+docker run --rm -p 2000-2002:2000-2002 -it --gpus all --name carla_sim carlasim/carla:0.9.6 ./CarlaUE4.sh -opengl
+# Make sure the carla python module is available to python3
+export PYTHONPATH=$PYTHONPATH:<path_to_carla_package>/PythonAPI/carla/dist/carla-0.9.6-py3.5-linux-x86_64.egg
+```
+
 ## Usage
 
 See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/examples) for more information.
 
+
+[carla-install-doc]: https://carla.readthedocs.io/en/latest/start_quickstart/#b-package-installation
