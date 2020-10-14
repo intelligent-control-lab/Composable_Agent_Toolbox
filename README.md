@@ -6,7 +6,7 @@ Composable benchmark for intelligent agents. The design can support
 ### Model
 The model module contains structured differentiable functions that either represent system dynamics or control policies.
 The model can be analytical (i.e., ODEs, basis functions) or numerical (i.e., neural networks).
-For now, we implemented analytical models for system dyanmics, which are encoded symbolically. 
+For now, we implemented analytical models for system dynamics, which are encoded symbolically. 
 Both linear/nonlinear systems are supported.
 
 ### Planner
@@ -35,13 +35,13 @@ The python version is 3.8. But the code should be compatible with all 3.x versio
 We specified the dependencies in `env.yml`. You can reproduce the conda environment by
 
 ```bash
-conda env create --name $your_env_name -f env.yml
+conda env create --name $your_env_name -f environment.yml
 ```
 
 If you already have an environment and just want to make sure existing packages align with the specification. Run
 
 ```bash
-conda env update --name $your_env_name -f env.yml
+conda env update --name $your_env_name -f environment.yml
 ```
 
 If you want to use the Mujoco env. Install mujoco_py with
