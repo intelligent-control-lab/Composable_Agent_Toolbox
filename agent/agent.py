@@ -1,30 +1,25 @@
-from agent import sensor
+import sensor, estimator, planner, controller, model, task
+import pdb
 import numpy as np
 import importlib
-from .agent_base import AgentBase
 
-class ModelBasedAgent(AgentBase):
+
+class ModelBasedAgent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
-
-        nu = (module_spec["model"]["spec"]["control_input_dim"])
         self.replanning_timer = self.planner.replanning_cycle
-        self.last_control     = np.zeros((nu,1))  
-        # the size of last_control should be equal to the number of control inputs, 
-        # for flat_world with discs, each robot has two inputs, for franka arm, we assume direct control over end-eff, so 
-        # the control input is 3D
+        self.last_control     = [0.0,0.0,0.0]
         
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
         """
-        module_name = "agent." + module_name
         ModuleClass = getattr(importlib.import_module(module_name), class_name)
         return ModuleClass
 
     def instantiate_by_spec(self, module_spec):
         """Instantiate modules based on user given specs
         """
-        self.name = module_spec["name"]
+        self.name       = module_spec["name"]
         self.model      = self._class_by_name("model",      module_spec["model"     ]["type"])(module_spec["model"      ]["spec"])
         self.task       = self._class_by_name("task",       module_spec["task"      ]["type"])(module_spec["task"       ]["spec"], self.model)
         self.estimator  = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.model)
@@ -39,36 +34,33 @@ class ModelBasedAgent(AgentBase):
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u,sensors_data)
         goal = self.task.goal(est_data)
-        if self.replanning_timer == self.planner.replanning_cycle:
-            # add the future planning information for another agent 
-            self.planned_traj = self.planner.planning(dt, goal, est_data)
-            
-            self.replanning_timer = 0
-        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-        next_traj_point = np.expand_dims(next_traj_point, axis=0).T
-        self.replanning_timer += 1
-
-        control = self.controller.control(dt, est_data, next_traj_point, est_param)
         
+        # if self.replanning_timer == self.planner.replanning_cycle:
+        #     self.planned_traj = self.planner.planning(dt, goal, est_data)
+        #     self.replanning_timer = 0
+        # next_traj_point = self.planned_traj[min(self.replanning_timer, self.planner.horizon-1)]  # After the traj ran out, always use the last traj point for reference.
+        # self.replanning_timer += 1
+        
+        # control = self.controller.control(dt, est_data, next_traj_point, est_param)
+        
+        control = self.controller.control(dt, est_data, goal, est_param)
         self.last_control = control
         ret = {"control"  : control}
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
-                "state":est_param["ego_state_est"]
+                # "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                "state:":est_param["ego_state_est"]
             }
 
         return ret
 
 
 
-class UserControlAgent(AgentBase):
+class UserControlAgent(object):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
-        nu = (module_spec["model"]["spec"]["control_input_dim"])
-        self.last_control     = np.zeros((nu,1))  
-        
+        self.last_control     = [0.0,0.0,0.0]
         
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
@@ -95,20 +87,7 @@ class UserControlAgent(AgentBase):
         
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                "state":est_param["ego_state_est"]
+                "state:":est_param["ego_state_est"]
             }
 
         return ret
-
-    def get_state(self, dt, sensors_data):
-        u = self.last_control
-        est_data, est_param = self.estimator.estimate(u,sensors_data)
-        
-        state =  est_data['state_sensor_est']['state']
-
-        return state
-
-
-
-
-
