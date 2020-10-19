@@ -4,12 +4,10 @@ from cvxopt import matrix, solvers
 import matplotlib.pyplot as plt
 import matplotlib
 from .src.utils import *
-# from src.utils import *
 from scipy import interpolate
 import math
 from math import pi 
 from .src.robot import RobotProperty
-# from src.robot import RobotProperty
 
 
 solvers.options['show_progress'] = False
@@ -51,50 +49,25 @@ class OptimizationBasedPlanner(Planner):
         self.cache = {}
 
 
-    # def test_planning(self, dt, goal, agent_start_state, obs_traj, obs_state):
-    def planning_arm(self, dt, goal, sensor_est_data):
-
+    def test_planning(self, dt, goal, agent_start_state, obs_traj, obs_state):
         '''
         the testing planning function to examine the correctness of 3d / 2d planning
         '''
-        # hardcode:
-        obs_state = 1
-        obs_traj = []
-        for i in range(self.spec['horizon']):
-            tmp = cap()
-            tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-            tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-            tmp.r = 0.2
-            obs_traj.append(tmp)
-
-        # get the current state
-        # set_trace() 
-        dim = self.dim
-        state = sensor_est_data['state_sensor_est']['state'][0:dim,0].reshape([dim,1])
-
         # only take the planned horizon trajectory
         self.obs_state = obs_state
         self.dt = dt
         self.v_max = 5 # vmax is 5m/s
-        
-        # hard code goal 
-        goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
+        # target = goal[0:2,0]
         target = goal 
-        # target = goal 
+
+        # state = agent_start_state[0:2,0]
+        # start_vel = np.linalg.norm(agent_start_state[2:4,0].flatten()) 
+        state = agent_start_state
 
         # obstacle 
         self.obs_traj = obs_traj
         ref_traj = self.test_plan(self.ineq, self.eq, state, target)
-        interp_traj = self.interpolate_joint(ref_traj)
-
-        # calculate the end effector Cartesian position 
-        endeffector_traj = self.endpose_traj(interp_traj)
-
-        # interpolate the compute the velocity 
-        interp_traj_vel = self.pos2vel(endeffector_traj)
-        return interp_traj_vel
-
-
+        return ref_traj
 
     def planning(self, dt, goal, sensor_est_data):
         # only take the planned horizon trajectory
@@ -175,7 +148,7 @@ class OptimizationBasedPlanner(Planner):
         inequality constraints. 
         constraints: ineq(x) > 0
         '''
-        # obs = np.reshape(obs,(3,1))
+        obs = np.reshape(obs,(3,1))
         dist = distance_arm(x,DH,base,obs,cap)
         return dist
 
@@ -185,19 +158,6 @@ class OptimizationBasedPlanner(Planner):
         constraints: eq(x) = 0
         '''
         pass
-
-    def endpose_traj(self, joint_traj):
-        '''
-        generate the end effector trajctory give the joint trajectory 
-        '''
-        horizon = joint_traj.shape[0]
-        epos_traj = np.empty((horizon,3)) # Cartesian is 3 dimensional 
-        for i in range(horizon):
-            epos = forkine(joint_traj[i,:].transpose(),self.robot.DH,self.robot.base)
-            epos_traj[i,:] = epos.transpose()
-        return epos_traj
-
-
 
     def time_assignment(self, goal, start):
         v_max = self.v_max
@@ -223,35 +183,6 @@ class OptimizationBasedPlanner(Planner):
             pos_tmp = pos + vel*time[i,:]
             obs_traj[i,:] = pos_tmp.transpose()
         return obs_traj
-
-
-    def interpolate_joint(self, x_ref):
-        '''
-        to interpolate the planned trajectory in joint space
-        '''
-        dt = self.dt
-        v_max = self.robot.vmax # 7 joint 
-        time_max_list = [0]
-        # check the longest joint travel time between two points 
-        for i in range(self.horizon-1):
-            pos1 = x_ref[i,:]
-            pos2 = x_ref[i+1,:]
-            dist = np.abs(pos2 - pos1) 
-            time = dist / v_max
-            time_max = np.amax(time)
-            time_max_list.append(time_max + time_max_list[-1]) 
-
-        # compute t_list length 
-        tn = int((time_max_list[-1]) / dt) # num of stamps
-        t_list = np.linspace(0, tn*dt, tn+1)
-
-        # generate interpolated trajectory
-        path_interp = np.empty((len(t_list), x_ref.shape[1]))
-        for i in range(x_ref.shape[1]):
-            f_interp = interpolate.interp1d(time_max_list, x_ref[:, i], kind = 'slinear') # "nearest","zero","slinear","quadratic","cubic"
-            path_interp[:,i] = f_interp(t_list)
-        path_interp = np.vstack((path_interp, x_ref[-1,:])) # append the last point
-        return path_interp
 
 
     def interpolate(self, x_ref, v0):
@@ -535,17 +466,16 @@ class OptimizationBasedPlanner(Planner):
     def CFS_arm(
         self, 
         x_ref,
-        cq = [1,10,0], 
-        cs = [0,0,20], 
+        cq = [10,0,0], 
+        cs = [0,1,1], 
         minimal_dis = 0, 
         ts = 1, 
-        maxIter = 6,
-        stop_eps = 1e-1
+        maxIter = 30,
+        stop_eps = 1e-3
     ):
         
         # define the robot here 
         robot = RobotProperty()
-        self.robot = RobotProperty()
 
         # without obstacle, then collision free
         n_ob = self.spec['n_ob']
@@ -570,26 +500,13 @@ class OptimizationBasedPlanner(Planner):
         # objective terms 
         # identity
         Q1 = np.identity(h * dimension)
-        # distance metric 
-        qd = np.array([[1, 0, 0, 0, 0, 0, 0],
-                        [0, 0.01, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 0, 4, 0, 0, 0],
-                        [0, 0, 0, 0, 1, 0, 0],
-                        [0, 0, 0, 0, 0, 1, 0],
-                        [0, 0, 0, 0, 0, 0, 4]])
-        for i in range(h):
-            Q1[i*dimension:(i+1)*dimension,i*dimension:(i+1)*dimension] = qd*0.1
-            if i == h-1:
-                Q1[i*dimension:(i+1)*dimension,i*dimension:(i+1)*dimension] = qd
         S1 = Q1
         # velocity term 
         Vdiff = np.identity(h*dimension) - np.diag(np.ones((1,(h-1)*dimension))[0],dimension)
-        # Q2 = np.matmul(Vdiff.transpose(),Vdiff) 
-        Q2 = np.matmul(Vdiff[0:(h-1)*dimension,:].transpose(),Vdiff[0:(h-1)*dimension,:])
+        Q2 = np.matmul(Vdiff.transpose(),Vdiff) 
         # Acceleration term 
         Adiff = Vdiff - np.diag(np.ones((1,(h-1)*dimension))[0],dimension) + np.diag(np.ones((1,(h-2)*dimension))[0],dimension*2)
-        Q3 = np.matmul(Adiff[0:(h-2)*dimension,:].transpose(),Adiff[0:(h-2)*dimension,:])
+        Q3 = np.matmul(Adiff.transpose(),Adiff)
         # Vdiff = eye(nstep*dim)-diag(ones(1,(nstep-1)*dim),dim);
 
         # objective 
@@ -600,6 +517,7 @@ class OptimizationBasedPlanner(Planner):
         H =  Q + S 
         # linear term
         f = -1 * np.dot(Q, x_origin)
+
         b = np.ones((h * n_ob, 1)) * (-minimal_dis)
         H = matrix(H,(len(H),len(H[0])),'d')
         f = matrix(f,(len(f), 1),'d')
@@ -625,6 +543,11 @@ class OptimizationBasedPlanner(Planner):
         Aeq = matrix(Aeq,(len(Aeq),len(Aeq[0])),'d')
         beq = matrix(beq,(len(beq),1),'d')
 
+        # set the safety margin 
+        D = 0.5
+
+        # set the figure 
+        # fig, ax = plt.subplots()
 
         # main CFS loop
         while dlt > stop_eps:
@@ -640,17 +563,17 @@ class OptimizationBasedPlanner(Planner):
                     x_r = x_rs[i * dimension : (i + 1) * dimension] 
 
                     # get inequality value (distance)
-                    # get obstacle at this time step  
-                    obs = obs_traj[i]  
-                    dist = self.ineq_arm(x_r,robot.DH,robot.base,obs,robot.cap)
+                    # get obstacle at this time step 
+                    obs_p = obs_traj[i,:]  
+                    dist = self.ineq_arm(x_r,robot.DH,robot.base,obs_p,robot.cap)
+                    # print(dist)
 
                     # get gradient 
-                    # set_trace()
-                    ref_grad = jac_num_arm(self.ineq_arm, x_r,robot.DH,robot.base,obs,robot.cap)
+                    ref_grad = jac_num_arm(self.ineq_arm, x_r,robot.DH,robot.base,obs_p,robot.cap)
                     # print(ref_grad)
 
                     # compute
-                    s = dist - robot.margin - np.dot(ref_grad, x_r)
+                    s = dist - D - np.dot(ref_grad, x_r)
                     l = -1 * ref_grad
                 if i == h-1 or i == 0: # don't need inequality constraints for lst dimension 
                     s = np.zeros((1,1))
@@ -662,14 +585,6 @@ class OptimizationBasedPlanner(Planner):
                 l_tmp[:,i*dimension:(i+1)*dimension] = l
                 Lstack = vstack_wrapper(Lstack, l_tmp)
 
-            # add joint limit 
-            # l_lim_u = np.identity(h*dimension)
-            # l_lim_l = -1*np.identity(h*dimension)
-            # Lstack = vstack_wrapper(Lstack, l_lim_u)
-            # Lstack = vstack_wrapper(Lstack, l_lim_l)
-            # Sstack = vstack_wrapper(Sstack, 2*pi*np.ones((h*dimension,1)))
-            # # Sstack = vstack_wrapper(Sstack, -pi*np.ones((60,1)))
-            # Sstack = vstack_wrapper(Sstack, np.zeros((h*dimension,1)))
             Lstack = matrix(Lstack,(len(Lstack),len(Lstack[0])),'d')
             Sstack = matrix(Sstack,(len(Sstack),1),'d')
 
@@ -685,11 +600,20 @@ class OptimizationBasedPlanner(Planner):
             x_rs = x_ts
             if cnt >= maxIter:
                 break
+
+            # visualization purpose
+            # traj = x_rs[: h * dimension].reshape(h, dimension)
+            # for t in range(h):
+            #     c_tmp = plt.Circle((obs_traj[t,:]), 1, color='blue')
+            #     ax.add_artist(c_tmp)
+            # ax.clf()
+            # ax.plot(traj[:,0],traj[:,1])
+            # ax.set_xlim((-4, 4))
+            # ax.set_ylim((0, 10))
+            # plt.pause(0.5)
             
         
-        # return the reference trajectory  
-        # import ipdb
-        # ipdb.set_trace()      
+        # return the reference trajectory    
         x_rs = x_rs[: h * dimension]
         return x_rs.reshape(h, dimension)
 
@@ -707,8 +631,7 @@ class OptimizationBasedPlanner(Planner):
             traj_tmp = np.hstack((pos1, vel))
             ref_traj = vstack_wrapper(ref_traj, traj_tmp)
         # concatenate the final pos
-        dim = traj.shape[1]
-        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[horizon-1,:],np.zeros(dim))))
+        ref_traj = vstack_wrapper(ref_traj, np.hstack((traj[horizon-1,:],np.zeros(self.spec['dim']))))
         return ref_traj
 
 
@@ -733,8 +656,7 @@ class SamplingBasedPlanner(Planner):
 
 
 if __name__ == '__main__':
-    # from .src.configs import add_planner_args
-    from src.configs import add_planner_args
+    from .src.configs import add_planner_args
     from pprint import pprint
     import argparse
     
@@ -753,34 +675,47 @@ if __name__ == '__main__':
     pprint(args)
 
     '''
+    test case for 2d ball reaching 
+    '''
+    # obs_state = 1
+    # obs_traj = np.zeros((args['horizon'],2))
+    # tmp = np.array([0.04,0.4])
+    # set_trace()
+    # for i in range(args['horizon']):
+    #     obs_traj[i,:] = np.array([0.5,4])
+
+    # set_trace()
+    # models 
+    # model = 1 # the place holder 
+   
+    # CFS  = OptimizationBasedPlanner(args, model)
+
+    # dt = 0.02
+    # goal = np.array([[0],[8],[0],[0]])
+    # start = np.array([[0],[1],[0],[0]])   
+    # ref_traj = CFS.test_planning(dt, goal, start, obs_traj, obs_state)
+    # # traj = CFS.pos2vel(traj)
+    # print(ref_traj)
+
+
+    '''
     test case for 3d arm motion planning 
     '''
     obs_state = 1
-    obs_traj = []
+    obs_traj = np.zeros((args['horizon'],3))
     for i in range(args['horizon']):
-        tmp = cap()
-        tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-        tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-        tmp.r = 0.2
-        obs_traj.append(tmp)
-        # obs_traj[i,:] = np.array([0.45 -0.95 1.21]) # the obstacle position
+        obs_traj[i,:] = np.array([0.5,0,1.2]) # the obstacle position
 
     # models 
     model = 1 # the place holder 
     CFS  = OptimizationBasedPlanner(args, model)
+
     dt = 0.02
-
-    # read the start and goal position 
-    start = np.zeros((7,1))
-    goal = np.zeros((7,1))
-    for i in range(7):
-        start[i] = float(args['start'][i])
-        goal[i] = float(args['goal'][i])
-
-    # set_trace()
+    start = np.reshape(np.array([0,0,0,0,0,0]),(6,1))
+    goal = np.reshape(np.array([0,0,pi/4,0,pi/4,0]),(6,1))
     ref_traj = CFS.test_planning(dt, goal, start, obs_traj, obs_state)
+    # traj = CFS.pos2vel(traj)
     print(ref_traj)
-    # np.savetxt('/Users/Caesar/Desktop/GP50-RobotKinematics/panda_traj.txt', ref_traj, delimiter=',') 
 
     
 

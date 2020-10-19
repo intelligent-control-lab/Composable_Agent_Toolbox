@@ -13,7 +13,7 @@ class RobotProperty():
                    [0,   0,   0.088,   pi/2],
                    [0,   0,   0,   0]])
 
-
+        self.vmax = np.array([1,1,1,1,1,1,1])
 
         self.lb = np.array([-pi,-pi,-pi,-pi,-pi,-pi,-pi]);
         self.ub = np.array([pi,pi,pi,pi,pi,pi,pi]);
