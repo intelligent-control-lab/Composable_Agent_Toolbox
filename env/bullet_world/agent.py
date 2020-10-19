@@ -27,6 +27,8 @@ class FrankaPanda(object):
 
         self.reset()
 
+        self.control_space = spec["control_space"]
+
     @property
     def state(self):
         # return self.pos
@@ -38,6 +40,29 @@ class FrankaPanda(object):
         return np.vstack(np.array(p.getLinkState(self.model_uid, 11)[0]))
 
     def forward(self, action, dt):
+        if self.control_space == "joint":
+            self.joint_forward(action, dt)
+        else:
+            self.cartesian_forward(action, dt)
+
+    def joint_forward(self, action, dt):
+        control = action["control"]
+        
+        # control = np.maximum(control, -1)
+        # control = np.minimum(control,  1)
+
+        fingers = 0
+        jointPoses = control
+
+        p.setJointMotorControlArray(self.model_uid, list(range(7))+[9,10], p.POSITION_CONTROL, list(jointPoses[:7])+2*[fingers])
+
+        self.joint_state  = p.getLinkState(self.model_uid, 11)[0]
+        self.finger_state = (p.getJointState(self.model_uid,9)[0], p.getJointState(self.model_uid, 10)[0])
+
+        self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+        
+        
+    def cartesian_forward(self, action, dt):
         control = action["control"]
         
         orientation = p.getQuaternionFromEuler([0.,-math.pi,math.pi/2.])
