@@ -4,6 +4,7 @@ import yaml
 import re
 from numpy import cos, sin
 from math import inf
+from ipdb import set_trace
 
 
 class cap():
@@ -47,11 +48,12 @@ def jac_num(ineq, x, obs_p, eps=1e-6):
     return grad
 
 
-def jac_num_arm(ineq, x,DH,base,obs,cap, eps=1e-6):
+def jac_num_arm(ineq, x,DH,base,obs,cap, eps=1e-5):
     '''
     compoute the jaccobian for a given function 
     used for computing first-order gradient of distance function 
     '''
+    
     y = ineq(x,DH,base,obs,cap)
 
     # change to unified n-d array format
@@ -59,7 +61,8 @@ def jac_num_arm(ineq, x,DH,base,obs,cap, eps=1e-6):
         y = np.array([y])
 
     grad = np.zeros((y.shape[0], x.shape[0]))
-    xp = x
+    xp = np.array(x)
+    # xp = x
     for i in range(x.shape[0]):
         xp[i] = x[i] + eps/2
         yhi = ineq(xp,DH,base,obs,cap)
@@ -68,17 +71,6 @@ def jac_num_arm(ineq, x,DH,base,obs,cap, eps=1e-6):
         grad[:,i] = (yhi - ylo) / eps
         xp[i] = x[i]
     return grad
-
-    # use the analytical solution 
-    # obs_p = obs_p.flatten()
-    
-    # # flatten the input x 
-    # x = x.flatten()
-    # dist = np.linalg.norm(x - obs_p)
-    # grad = np.zeros((1, 2))
-    # grad[:,0] = 0.5/dist*2*(x[0]-obs_p[0])
-    # grad[:,1] = 0.5/dist*2*(x[1]-obs_p[1])
-    # return grad
 
 
 def load_experiment_settings(experiment_settings, filepath=None):
@@ -277,6 +269,68 @@ def cap_pos_ori(base, DH, rob_cap):
     return pos
 
 
+def cap_pos_tool(base, DH, rob_cap):
+    '''
+    the complete cappos computation tools 
+    '''
+    nlink = DH.shape[0]
+    M = []
+    pos = []
+    M.append(np.identity(4))
+
+    for i in range(nlink):
+        if i < nlink - 1:
+            R = np.array([[cos(DH[i][0]), -sin(DH[i][0]) * cos(DH[i][3]), sin(DH[i][0]) * sin(DH[i][3])],
+                          [sin(DH[i][0]), cos(DH[i][0]) * cos(DH[i][3]), -cos(DH[i][0])*sin(DH[i][3])],
+                          [0, sin(DH[i][3]), cos(DH[i][3])]])
+
+            T = np.array([[DH[i][2] * cos(DH[i][0])],
+                          [DH[i][2] * sin(DH[i][0])],
+                          [DH[i][1]]])
+
+            RT = np.block([[R,                T],
+                           [np.zeros((1, 3)), 1]])
+
+            M_tmp = np.matmul(M[i], RT)
+            M.append(M_tmp)
+            # get a new cappos
+            tmp_cap = cap()
+            for j in range(2):
+                tmp_cap.p[:,j] = np.matmul(M_tmp[0:3,0:3], rob_cap[i].p[:,j]) + M_tmp[0:3,3] + np.squeeze(base)
+                tmp_cap.r = rob_cap[i].r
+            pos.append(tmp_cap)
+        if i == nlink - 1:
+            R = np.array([[cos(DH[i][0]), -sin(DH[i][0]) * cos(DH[i][3]), sin(DH[i][0]) * sin(DH[i][3])],
+                          [sin(DH[i][0]), cos(DH[i][0]) * cos(DH[i][3]), -cos(DH[i][0])*sin(DH[i][3])],
+                          [0, sin(DH[i][3]), cos(DH[i][3])]])
+
+            T = np.array([[DH[i][2] * cos(DH[i][0])],
+                          [DH[i][2] * sin(DH[i][0])],
+                          [DH[i][1]]])
+
+            RT = np.block([[R,                T],
+                           [np.zeros((1, 3)), 1]])
+
+            M_tmp = np.matmul(M[i], RT)
+            M.append(M_tmp)
+            # get a new cappos
+            # special design for fixture tool capsules
+            # first capsule 
+            tmp_cap = cap()
+            for j in range(2):
+                tmp_cap.p[:,j] = np.matmul(M_tmp[0:3,0:3], rob_cap[i].p1[:,j]) + M_tmp[0:3,3] + np.squeeze(base)
+                tmp_cap.r = rob_cap[i].r1
+            pos.append(tmp_cap)
+
+            # second capsule 
+            tmp_cap = cap()
+            for j in range(2):
+                tmp_cap.p[:,j] = np.matmul(M_tmp[0:3,0:3], rob_cap[i].p2[:,j]) + M_tmp[0:3,3] + np.squeeze(base)
+                tmp_cap.r = rob_cap[i].r2
+            pos.append(tmp_cap)
+    return pos
+
+
 def distLinSeg(point1s, point1e, point2s, point2e):
     '''
     Function for fast computation of the shortest distance between two line segments
@@ -355,15 +409,16 @@ def distance_arm(theta,DH,base,obs,cap):
         DH[i,0] = theta[i]
     d = inf
     pos = cap_pos_ori(base, DH, cap)
-
-    for i in range(nstate):
-        if obs.shape[1] == 2:
+    # pos = cap_pos_tool(base, DH, cap)
+    for i in range(len(pos)):
+        # if obs.shape[1] == 2:
             
-            dis, points = distLinSeg(pos[i].p[:,0],pos[i].p[:,1], obs[:,0],obs[:,1])
-        elif obs.shape[1] == 1:
-            dis, points = distLinSeg(pos[i].p[:,0],pos[i].p[:,1], obs[:,0],obs[:,0])
-        if np.linalg.norm(dis)<0.0001:
-            dis = -np.linalg.norm(points[:,1]-pos[i].p[:,2])
+        dis, points = distLinSeg(pos[i].p[:,0],pos[i].p[:,1], obs.p[:,0],obs.p[:,1])
+        # elif obs.shape[1] == 1:
+        #     dis, points = distLinSeg(pos[i].p[:,0],pos[i].p[:,1], obs.p[:,0],obs.p[:,0])
+        # if np.linalg.norm(dis)<0.0001:
+        # dis = -np.linalg.norm(points[:,1]-pos[i].p[:,2])
+        dis = dis - obs.r - pos[i].r
          
         if dis < d:
             d = dis
