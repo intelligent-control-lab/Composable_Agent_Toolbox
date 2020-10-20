@@ -12,11 +12,10 @@ if __name__ == "__main__":
     agent1_module_spec = {
         "name":       "robot",
         "task":      {"type":"FrankaReachingTask",      "spec":{}},
-        "model":     {"type":"LinearModel",             "spec":{"use_spec":0, "use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1, "model_spec":None,"control_input_dim":3}},
-        "estimator": {"type":"UKFEstimator",            "spec":{"name":"robot", "init_x":np.array([4.,4, 4]),"init_variance":.01*np.eye(3),"Rww":.001*np.eye(3),"Rvv":.001*np.eye(3),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.1,"kp":1,"kv":3}},
+        "model":     {"type":"LinearModel",             "spec":{"use_spec":0, "use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1, "model_spec":None,"control_input_dim":7}},
+        "estimator": {"type":"NaiveEstimator",          "spec":{"name":"robot", "init_x":np.array([4.,4, 4]),"init_variance":.01*np.eye(3),"Rww":.001*np.eye(3),"Rvv":.001*np.eye(3),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.1,"kp":1,"kv":3}},
         "planner":   {"type":"NaivePlanner",            "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController",         "spec":{"kp":0,"kv":0}},
-        # "sensors":  []
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.0}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.0}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.0}}, #an agent can have multiple sensors
@@ -27,7 +26,7 @@ if __name__ == "__main__":
     agent2_module_spec = {
         "name":       "human",
         "task":      {"type":"FrankaReachingTask",      "spec":{}},
-        "model":     {"type":"LinearModel",             "spec":{"use_spec":0, "use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1, "model_spec":None,"control_input_dim":7}},
+        "model":     {"type":"LinearModel",             "spec":{"use_spec":0, "use_library":0, "model_name":'Ballbot', "time_sample":0.01, "disc_flag":1, "model_spec":None,"control_input_dim":3}},
         "estimator": {"type":"UKFEstimator",            "spec":{"name":"human","init_x":np.array([1.1,0.0,0.0]),"init_variance":.01*np.eye(3),"Rww":.001*np.eye(3),"Rvv":.001*np.eye(3),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.1,"kp":1,"kv":3}},
         "planner":   {"type":"NaivePlanner",            "spec":{"horizon":20, "replanning_cycle":10}},
         "controller":{"type":"NaiveController",         "spec":{"kp":0.5,"kv":0.1}},
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     }
 
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
-
+ 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
     agent_env_spec = {"robot":{"type":"FrankaPanda","spec":{"control_space":"joint",   "base_position":[0,0,0],   "init_joints":[0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08]}},
