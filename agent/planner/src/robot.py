@@ -51,7 +51,7 @@ class RobotProperty():
         self.cap[5].p = np.array([[0, 0], [0, 0], [-0.0813, 0.1070]])
         self.cap[5].r = 0.05
 
-        self.cap[6].p = np.array([[0, 0], [0, 0], [0, 0]])
+        self.cap[6].p = np.array([[0, 0], [0, 0], [-0.227, 0]])
         self.cap[6].r = 0.05
 
 

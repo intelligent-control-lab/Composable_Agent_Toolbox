@@ -9,6 +9,7 @@ class NaivePlanner(object):
     def planning(self, dt, goal, est_data):
         pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         traj = []
+        goal = goal['goal']
         frac = (goal - pos_vel)*1./self.horizon
         for i in range(self.horizon):
             traj.append(pos_vel + frac*i)
@@ -17,6 +18,7 @@ class NaivePlanner(object):
     def planning_arm(self, dt, goal, est_data):
         pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         traj = []
+        goal = goal['goal']
         frac = (goal - pos_vel)*1./self.horizon
         for i in range(self.horizon):
             traj.append(pos_vel + frac*i)

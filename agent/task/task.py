@@ -15,7 +15,19 @@ class FlatReachingTask(Task):
         """
         goal_rel_pos_vel = np.vstack([est_data["goal_sensor_est"]["rel_pos"], est_data["goal_sensor_est"]["rel_vel"]])
         self_abs_pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
+        return {"task":"2d_reach", "goal":goal_rel_pos_vel + self_abs_pos_vel}
+
+class FrankaReachingTask(Task):
+
+    def goal(self, est_data):
+        """Return the goal positon as a reference for the planner.
+        """
+        
+        # return est_data["goal_sensor_est"]["rel_pos"] + est_data["cartesian_sensor_est"]["pos"]
+        goal_rel_pos_vel = np.vstack([est_data["goal_sensor_est"]["rel_pos"], est_data["goal_sensor_est"]["rel_vel"]])
+        self_abs_pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         return {"task":"arm_cartesian_reach", "goal":goal_rel_pos_vel + self_abs_pos_vel}
+
 
 class FrankaReachingDoubleGoalTask(Task):
     def __init__(self, spec, model):

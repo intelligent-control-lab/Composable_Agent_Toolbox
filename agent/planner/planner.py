@@ -10,6 +10,7 @@ import math
 from math import pi 
 from .src.robot import RobotProperty
 # from src.robot import RobotProperty
+from ipdb import set_trace
 
 
 solvers.options['show_progress'] = False
@@ -42,81 +43,75 @@ class OptimizationBasedPlanner(Planner):
         self.cache = {}
 
 
-    # def test_planning(self, dt, goal, agent_start_state, obs_traj, obs_state):
-    def planning_arm(self, dt, goal, sensor_est_data):
-
-        '''
-        the testing planning function to examine the correctness of 3d / 2d planning
-        '''
-        # hardcode:
-        obs_state = 1
-
-        obs_traj = []
-        end_pos = sensor_est_data['cartesian_sensor_est']['pos']
-        obs_pos_relative = sensor_est_data['obstacle_sensor_est']['human']
-        obs_pos = np.squeeze(end_pos + obs_pos_relative)
-        for i in range(self.spec['horizon']):
-            tmp = cap()
-            tmp.p = np.array([[obs_pos[0], obs_pos[0]], [obs_pos[1], obs_pos[1]], [obs_pos[2], obs_pos[2]]])
-            tmp.r = 0.2
-            obs_traj.append(tmp)
-
-        # get the current state
-        dim = self.dim
-        state = sensor_est_data['state_sensor_est']['state'][0:dim,0].reshape([dim,1])
-
-        # only take the planned horizon trajectory
-        self.obs_state = obs_state
-        self.dt = dt
-        self.v_max = 5 # vmax is 5m/s
-        
-        # hard code goal 
-        # goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
-        # target = goal 
-        target = goal.reshape([dim,1])         
-        # obstacle 
-        self.obs_traj = obs_traj
-        ref_traj = self.test_plan(self.ineq, self.eq, state, target)
-        interp_traj = self.interpolate_joint(ref_traj)
-
-        # calculate the end effector Cartesian position 
-        # endeffector_traj = self.endpose_traj(interp_traj)
-
-        # interpolate the compute the velocity 
-        # interp_traj_vel = self.pos2vel(endeffector_traj)
-        interp_traj_vel = self.pos2vel(interp_traj)
-        return interp_traj_vel
-
-
-
     def planning(self, dt, goal, sensor_est_data):
-        # only take the planned horizon trajectory
-        # obs_state is the other agent pose and velocity 
-        
-        if sensor_est_data["communication_sensor_est"] != {}:
-            name = list(sensor_est_data["communication_sensor_est"].keys())[0]
-            self.obs_state = sensor_est_data["communication_sensor_est"][name]['state']
-        self.dt = dt
-        self.v_max = 5 # vmax is 5m/s
-        target = goal[0:2,0]
-        state = sensor_est_data['state_sensor_est']['state'][0:2,0]
-        start_vel = np.linalg.norm(sensor_est_data['state_sensor_est']['state'][2:4,0].flatten()) 
-        # state = sensor_est_data[0:2,0]
-        # start_vel = np.linalg.norm(sensor_est_data[2:4,0].flatten()) 
+        '''
+        planning function to examine the correctness of 3d arm / 2d car planning
+        '''
+        # 3d arm case 
+        if goal['task'] == 'arm_state_reach':
+            obs_state = 1
+            obs_traj = []
+            end_pos = sensor_est_data['cartesian_sensor_est']['pos']
+            obs_pos_relative = sensor_est_data['obstacle_sensor_est']['human']
+            obs_pos = np.squeeze(end_pos + obs_pos_relative)
+            for i in range(self.spec['horizon']):
+                tmp = cap()
+                tmp.p = np.array([[obs_pos[0], obs_pos[0]], [obs_pos[1], obs_pos[1]], [obs_pos[2], obs_pos[2]]])
+                tmp.r = 0.2
+                obs_traj.append(tmp)
 
-        # assignment of time 
-        time = self.time_assignment(target, state)
-        if sensor_est_data["communication_sensor_est"] != {}:
-            obs_traj_est = self.obs_traj_estimate(self.obs_state, time)
-        else:
-            obs_traj_est = []
-        self.obs_traj = obs_traj_est
-        # self.obs_traj = obs_traj
-        ref_traj = self.plan(self.ineq, self.eq, state, target)
-        # interp_traj = self.interpolate(ref_traj,start_vel)
-        interp_traj = self.interpolate_traj(np.hstack((time,ref_traj)))
-        interp_traj_vel = self.pos2vel(interp_traj)
-        return interp_traj_vel
+            # get the current state
+            dim = self.dim
+            state = sensor_est_data['state_sensor_est']['state'][0:dim,0].reshape([dim,1])
+
+            # only take the planned horizon trajectory
+            self.obs_state = obs_state
+            self.dt = dt
+            self.v_max = 5 # vmax is 5m/s
+            
+            # hard code goal 
+            # goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
+            # target = goal 
+            goal = goal['goal']
+            target = goal.reshape([dim,1])         
+            # obstacle 
+            self.obs_traj = obs_traj
+            ref_traj = self.test_plan(self.ineq, self.eq, state, target)
+            interp_traj = self.interpolate_joint(ref_traj)
+
+            # calculate the end effector Cartesian position 
+            # endeffector_traj = self.endpose_traj(interp_traj)
+            # interpolate the compute the velocity 
+            # interp_traj_vel = self.pos2vel(endeffector_traj)
+            interp_traj_vel = self.pos2vel(interp_traj)
+            return interp_traj_vel
+
+
+
+        # 2d ball reaching case 
+        if goal['task'] == '2d_reach':
+            if sensor_est_data["communication_sensor_est"] != {}:
+                name = list(sensor_est_data["communication_sensor_est"].keys())[0]
+                self.obs_state = sensor_est_data["communication_sensor_est"][name]['state']
+            self.dt = dt
+            self.v_max = 5 # vmax is 5m/s
+            goal = goal['goal']
+            target = goal[0:2,0]
+            state = sensor_est_data['state_sensor_est']['state'][0:2,0]
+            start_vel = np.linalg.norm(sensor_est_data['state_sensor_est']['state'][2:4,0].flatten()) 
+
+            # assignment of time 
+            time = self.time_assignment(target, state)
+            if sensor_est_data["communication_sensor_est"] != {}:
+                obs_traj_est = self.obs_traj_estimate(self.obs_state, time)
+            else:
+                obs_traj_est = []
+            self.obs_traj = obs_traj_est
+            ref_traj = self.plan(self.ineq, self.eq, state, target)
+            # interp_traj = self.interpolate(ref_traj,start_vel)
+            interp_traj = self.interpolate_traj(np.hstack((time,ref_traj)))
+            interp_traj_vel = self.pos2vel(interp_traj)
+            return interp_traj_vel
 
     def re_planning(self, dt, goal, agent_state):
         agent_next_state = agent_state
