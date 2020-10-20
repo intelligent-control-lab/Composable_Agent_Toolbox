@@ -1,5 +1,5 @@
-# Benchmark
-Benchmark for intelligent agents. The design can support 
+# Composable Agent Toolbox (CAT)
+Composable benchmark for intelligent agents. The design can support 
 1. modularized agents and end-to-end agents, and 
 2. model-based agents and model-free agents.
 
