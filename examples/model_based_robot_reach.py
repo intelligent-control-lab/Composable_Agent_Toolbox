@@ -48,9 +48,9 @@ if __name__ == "__main__":
  
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    agent_env_spec = {"robot":{"type":"FrankaPanda","spec":{"control_space":"joint",   "base_position":[0,0,0],   "init_joints":[0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08]}}, #0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08
-                    #   "human":{"type":"Ball",       "spec":{"init_position":[1.1,0,0]}},
-                      "human":{"type":"ManualBall",       "spec":{"init_position":[0.2,0.2,0.75]}}
+    agent_env_spec = {"robot":{"type":"FrankaPanda","spec":{"control_space":"joint",     "base_position":[0,0,0],   "init_joints":[0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08]}}, #0,-0.215,0,-2.57,0,2.356,2.356,0.08,0.08
+                      "human":{"type":"Ball",       "spec":{"init_position":[1.1,0,0.2]}},
+                    #   "human":{"type":"ManualBall",       "spec":{"init_position":[0.2,0.2,0.75]}}
                     }
     
 
