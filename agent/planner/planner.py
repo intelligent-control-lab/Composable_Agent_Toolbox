@@ -29,15 +29,6 @@ class Planner(object):
 
     def plan(self, ineq, eq, agent_state):
         pass
-
-
-    # @property
-    # def inequality_cons(self):
-    #     return self._func
-
-    # @property
-    # def equality_cons(self):
-    #     return self._func  
     
 
 class OptimizationBasedPlanner(Planner):
@@ -59,15 +50,7 @@ class OptimizationBasedPlanner(Planner):
         '''
         # hardcode:
         obs_state = 1
-        # obs_traj = []
-        # for i in range(self.spec['horizon']):
-        #     tmp = cap()
-        #     tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-        #     # tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-        #     tmp.r = 0.2
-        #     obs_traj.append(tmp)
 
-        # set_trace()
         obs_traj = []
         end_pos = sensor_est_data['cartesian_sensor_est']['pos']
         obs_pos_relative = sensor_est_data['obstacle_sensor_est']['human']
@@ -79,7 +62,6 @@ class OptimizationBasedPlanner(Planner):
             obs_traj.append(tmp)
 
         # get the current state
-        # set_trace() 
         dim = self.dim
         state = sensor_est_data['state_sensor_est']['state'][0:dim,0].reshape([dim,1])
 
@@ -91,14 +73,10 @@ class OptimizationBasedPlanner(Planner):
         # hard code goal 
         # goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
         # target = goal 
-        target = goal.reshape([dim,1]) 
-        print(goal)
-        # set_trace()
-
+        target = goal.reshape([dim,1])         
         # obstacle 
         self.obs_traj = obs_traj
         ref_traj = self.test_plan(self.ineq, self.eq, state, target)
-        # print(ref_traj)
         interp_traj = self.interpolate_joint(ref_traj)
 
         # calculate the end effector Cartesian position 
@@ -515,35 +493,14 @@ class OptimizationBasedPlanner(Planner):
             x_ts = sol['x']
             x_ts = np.reshape(x_ts, (len(x_rs),1))
 
-            # ipdb.set_trace()
             J = np.dot(np.transpose(x_ts - x_origin), np.dot(Q, (x_ts - x_origin))) + np.dot(np.transpose(x_ts), np.dot(S, x_ts))
             dlt = min(abs(J - J0), np.linalg.norm(x_ts - x_rs))
             J0 = J
             x_rs = x_ts
             if cnt >= maxIter:
                 break
-
-            # visualization purpose
-            # traj = x_rs[: h * dimension].reshape(h, dimension)
-            # for t in range(h):
-            #     c_tmp = plt.Circle((obs_traj[t,:]), 1, color='blue')
-            #     ax.add_artist(c_tmp)
-            # # circle2 = plt.Circle((0.5, 4), 1, color='blue')
-            # # ax.clf()
-            # ax.plot(traj[:,0],traj[:,1])
-            # # ax.add_artist(circle1)
-            # # ax.add_artist(circle2)
-            # ax.set_xlim((-4, 4))
-            # ax.set_ylim((0, 10))
-            # # ax.add_artist(circle3)
-
-            # # plt.Circle((0.5, 4), 1)
-            # plt.pause(0.5)
-            
         
-        # return the reference trajectory  
-        # import ipdb
-        # ipdb.set_trace()      
+        # return the reference trajectory      
         x_rs = x_rs[: h * dimension]
         return x_rs.reshape(h, dimension)
 
@@ -566,7 +523,6 @@ class OptimizationBasedPlanner(Planner):
         n_ob = self.spec['n_ob']
         obs_traj = self.obs_traj
         if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
-            # set_trace()
             print(f"{len(obs_traj)} length obstacle, direct exit!!!!")
             return x_ref
 
@@ -644,7 +600,6 @@ class OptimizationBasedPlanner(Planner):
         # main CFS loop
         while dlt > stop_eps:
             cnt += 1
-            print(f"the iteration: {cnt}")
             Lstack, Sstack = [], []
             # inequality constraints 
             # l * x <= s
@@ -660,9 +615,7 @@ class OptimizationBasedPlanner(Planner):
                     dist = self.ineq_arm(x_r,robot.DH,robot.base,obs,robot.cap)
 
                     # get gradient 
-                    # set_trace()
                     ref_grad = jac_num_arm(self.ineq_arm, x_r,robot.DH,robot.base,obs,robot.cap)
-                    # print(ref_grad)
 
                     # compute
                     s = dist - robot.margin - np.dot(ref_grad, x_r)
@@ -693,7 +646,6 @@ class OptimizationBasedPlanner(Planner):
             x_ts = sol['x']
             x_ts = np.reshape(x_ts, (len(x_rs),1))
 
-            # ipdb.set_trace()
             J = np.dot(np.transpose(x_ts - x_origin), np.dot(Q, (x_ts - x_origin))) + np.dot(np.transpose(x_ts), np.dot(S, x_ts))
             dlt = min(abs(J - J0), np.linalg.norm(x_ts - x_rs))
             J0 = J
@@ -702,9 +654,7 @@ class OptimizationBasedPlanner(Planner):
                 break
             
         
-        # return the reference trajectory  
-        # import ipdb
-        # ipdb.set_trace()      
+        # return the reference trajectory     
         x_rs = x_rs[: h * dimension]
         return x_rs.reshape(h, dimension)
 
@@ -792,10 +742,8 @@ if __name__ == '__main__':
         start[i] = float(args['start'][i])
         goal[i] = float(args['goal'][i])
 
-    # set_trace()
     ref_traj = CFS.test_planning(dt, goal, start, obs_traj, obs_state)
-    print(ref_traj)
-    # np.savetxt('/Users/Caesar/Desktop/GP50-RobotKinematics/panda_traj.txt', ref_traj, delimiter=',') 
+    print(ref_traj) 
 
     
 

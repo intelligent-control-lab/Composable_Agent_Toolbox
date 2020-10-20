@@ -33,8 +33,7 @@ class FrankaReachingDoubleGoalTask(Task):
     def __init__(self, spec, model):
         self.state_goal_list = spec["state_goal_list"]
         self.cartesian_goal_list = spec["cartesian_goal_list"]
-        print(self.cartesian_goal_list)
-        print(self.state_goal_list)
+        
     def goal(self, est_data):
         """Return the goal positon as a reference for the planner.
         """

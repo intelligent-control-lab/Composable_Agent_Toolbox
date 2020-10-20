@@ -7,7 +7,6 @@ import time
 import progressbar
 from agent.planner.src.utils import forkine
 from agent.planner.src.robot import RobotProperty
-from ipdb import set_trace
 from math import pi
 
 if __name__ == "__main__":
@@ -54,12 +53,7 @@ if __name__ == "__main__":
                     #   "human":{"type":"Ball",       "spec":{"init_position":[1.1,0,0]}},
                       "human":{"type":"ManualBall",       "spec":{"init_position":[0.2,0.2,0.75]}}
                     }
-
-    # agent_specs = []
-    # agent_env_spec = {}
     
-    
-
 
     bullet_world_spec = {
         "gravity": 10,
