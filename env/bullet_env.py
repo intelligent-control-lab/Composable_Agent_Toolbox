@@ -32,7 +32,6 @@ class BulletEnv():
         self.world.reset()
         for i in range(len(self.comp_agents)):
             self.world.add_agent(self.comp_agents[i], self.env_spec['agent_env_spec'][self.comp_agents[i].name])
-        print(self.world.agents.keys())
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING,1) # rendering's back on again
         env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
