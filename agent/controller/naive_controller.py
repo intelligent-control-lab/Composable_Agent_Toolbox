@@ -26,3 +26,15 @@ class NaiveController(object):
         u          = self.kp*e[:n//2] + self.kv * e[n//2:n]
         return u
         
+class NaiveJointController(object):
+    def __init__(self, spec, model):
+        self.name = 'NaiveJoint'
+        self.spec = spec
+        self.model = model
+        self._kp = spec["kp"]
+    def control(self, dt, est_data, goal, est_params):
+        # simply transfer the reference joint position to the output
+        cartesian_goal = np.vstack(goal)
+        n = len(cartesian_goal)
+        u = self._kp * cartesian_goal[:n//2]
+        return u
