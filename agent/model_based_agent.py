@@ -36,8 +36,8 @@ class ModelBasedAgent(AgentBase):
         goal = self.task.goal(est_data)
         if self.replanning_timer == self.planner.replanning_cycle:
             # add the future planning information for another agent 
-            self.planned_traj = self.planner.planning_arm(dt, goal, est_data)
             # self.planned_traj = self.planner.planning(dt, goal, est_data)
+            self.planned_traj = self.planner.planning_arm(dt, goal, est_data)
             
             self.replanning_timer = 0
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
