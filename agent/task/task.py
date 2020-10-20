@@ -5,7 +5,7 @@ class Task(object):
         pass
 
     def goal(self, x):
-        return np.zeros((4,1))
+        return {"task":"2d_reach", "goal":np.zeros((4,1))}
 
 
 class FlatReachingTask(Task):
@@ -15,19 +15,7 @@ class FlatReachingTask(Task):
         """
         goal_rel_pos_vel = np.vstack([est_data["goal_sensor_est"]["rel_pos"], est_data["goal_sensor_est"]["rel_vel"]])
         self_abs_pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
-        return goal_rel_pos_vel + self_abs_pos_vel
-
-
-class FrankaReachingTask(Task):
-
-    def goal(self, est_data):
-        """Return the goal positon as a reference for the planner.
-        """
-        
-        # return est_data["goal_sensor_est"]["rel_pos"] + est_data["cartesian_sensor_est"]["pos"]
-        goal_rel_pos_vel = np.vstack([est_data["goal_sensor_est"]["rel_pos"], est_data["goal_sensor_est"]["rel_vel"]])
-        self_abs_pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
-        return goal_rel_pos_vel + self_abs_pos_vel
+        return {"task":"arm_cartesian_reach", "goal":goal_rel_pos_vel + self_abs_pos_vel}
 
 class FrankaReachingDoubleGoalTask(Task):
     def __init__(self, spec, model):
@@ -50,4 +38,4 @@ class FrankaReachingDoubleGoalTask(Task):
             # print(goal_pos - self.cartesian_goal_list[i])
             if np.linalg.norm(goal_pos - self.cartesian_goal_list[i]) < np.linalg.norm(goal_pos - self.cartesian_goal_list[idx]):
                 idx = i
-        return self.state_goal_list[idx]
+        return {"task":"arm_state_reach", "goal":self.state_goal_list[idx]}
