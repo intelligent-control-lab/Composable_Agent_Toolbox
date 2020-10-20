@@ -59,11 +59,22 @@ class OptimizationBasedPlanner(Planner):
         '''
         # hardcode:
         obs_state = 1
+        # obs_traj = []
+        # for i in range(self.spec['horizon']):
+        #     tmp = cap()
+        #     tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
+        #     # tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
+        #     tmp.r = 0.2
+        #     obs_traj.append(tmp)
+
+        # set_trace()
         obs_traj = []
+        end_pos = sensor_est_data['cartesian_sensor_est']['pos']
+        obs_pos_relative = sensor_est_data['obstacle_sensor_est']['human']
+        obs_pos = np.squeeze(end_pos + obs_pos_relative)
         for i in range(self.spec['horizon']):
             tmp = cap()
-            tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
-            tmp.p = np.array([[0.2, 0.2], [0.2, 0.2], [0.7, 0.7]])
+            tmp.p = np.array([[obs_pos[0], obs_pos[0]], [obs_pos[1], obs_pos[1]], [obs_pos[2], obs_pos[2]]])
             tmp.r = 0.2
             obs_traj.append(tmp)
 
@@ -78,20 +89,24 @@ class OptimizationBasedPlanner(Planner):
         self.v_max = 5 # vmax is 5m/s
         
         # hard code goal 
-        goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
-        target = goal 
+        # goal = np.array([0, 1.5708, 0, 0, 0, 0, 0]).reshape([dim,1])
         # target = goal 
+        target = goal.reshape([dim,1]) 
+        print(goal)
+        # set_trace()
 
         # obstacle 
         self.obs_traj = obs_traj
         ref_traj = self.test_plan(self.ineq, self.eq, state, target)
+        # print(ref_traj)
         interp_traj = self.interpolate_joint(ref_traj)
 
         # calculate the end effector Cartesian position 
-        endeffector_traj = self.endpose_traj(interp_traj)
+        # endeffector_traj = self.endpose_traj(interp_traj)
 
         # interpolate the compute the velocity 
-        interp_traj_vel = self.pos2vel(endeffector_traj)
+        # interp_traj_vel = self.pos2vel(endeffector_traj)
+        interp_traj_vel = self.pos2vel(interp_traj)
         return interp_traj_vel
 
 
