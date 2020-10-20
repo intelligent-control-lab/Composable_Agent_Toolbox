@@ -23,7 +23,6 @@ if __name__ == "__main__":
         "estimator": {"type":"NaiveEstimator",            "spec":{"name":"robot", "init_x":np.array([4.,4, 4]),"init_variance":.01*np.eye(3),"Rww":.001*np.eye(3),"Rvv":.001*np.eye(3),"alpha_ukf":1,"kappa_ukf":0.1,"beta_ukf":2,"time_sample":0.1,"kp":1,"kv":3}},
         "planner":   {"type":"OptimizationBasedPlanner",            "spec":{"horizon":20, "replanning_cycle":10, "dim":7, "n_ob":1}},
         "controller":{"type":"NaiveJointController",         "spec":{"kp":1}},
-        # "sensors":  []
         "sensors":  [{"type":"PVSensor",                "spec":{"alias":"cartesian_sensor","noise_var":0.0}},
                      {"type":"StateSensor",             "spec":{"alias":"state_sensor",    "noise_var":0.0}},
                      {"type":"RadarSensor",             "spec":{"alias":"obstacle_sensor", "noise_var":0.0}}, #an agent can have multiple sensors

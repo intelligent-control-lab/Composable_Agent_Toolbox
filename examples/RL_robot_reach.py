@@ -10,6 +10,7 @@ import progressbar
 if __name__ == "__main__":
 
     # The module specs for agents, specifies which task, model, planner, controller, sensor to use.
+    # This is only for demonstration, the RL module is not well trained.
     agent1_module_spec = {
         "name":         "robot",
         "policy":       {"type":"ActorCriticPolicy", "spec":{"model_path": join(abspath(dirname(__file__)), '../agent/saved_models/FetchReach-v1/model.pt'),
