@@ -10,7 +10,6 @@ import math
 from math import pi 
 from .src.robot import RobotProperty
 # from src.robot import RobotProperty
-from ipdb import set_trace
 
 
 solvers.options['show_progress'] = False
