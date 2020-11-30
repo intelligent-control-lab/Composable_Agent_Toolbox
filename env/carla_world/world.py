@@ -138,6 +138,9 @@ class CarlaWorld(World):
 
         return False
 
+    def measure(self):
+        return None, self.ego.get_transform()
+
     def reset(self):
         """Reset the environment."""
         # TODO(piraka9011) Return sensor observations
