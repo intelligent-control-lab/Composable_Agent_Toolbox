@@ -80,13 +80,13 @@ if __name__ == "__main__":
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
-    for it in progressbar.progressbar(range(1000)):
+    for it in progressbar.progressbar(range(100)):
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
             actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
         dt, env_info, measurement_groups = env.step(actions)
-        record.append(env_info)
+        record.append((env_info,measurement_groups))
 
     evaluator.evaluate(record)
