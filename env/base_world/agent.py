@@ -25,6 +25,10 @@ class Agent(ABC):
     def vel(self):
         pass
     
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos, "vel":self.vel}
+        return info
     
 class BB8Agent(Agent):
     
@@ -55,7 +59,6 @@ class BB8Agent(Agent):
         return self._x[[2,3]]
 
 
-
 class GoalAgent(BB8Agent):
     """The goal agent.
     This agent is a virtual agent represents the goal of a real agent.
@@ -81,4 +84,8 @@ class GoalAgent(BB8Agent):
         if np.max(abs(self.pos - self.hunter.pos)) < self.reaching_eps:
             self.goal_idx = min(len(self.goal_list)-1, self.goal_idx+1)
             self._set_pos()
-        
+
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos, "vel":self.vel, "count":self.goal_idx}
+        return info

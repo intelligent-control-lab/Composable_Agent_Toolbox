@@ -1,30 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
+from env.base_world.agent import Agent
 
-class Agent(ABC):
- 
-    def __init__(self, name, init_x, collision=True):
-        self.name = name
-        self._x = init_x
-        self.collision = collision
-        self.broadcast = {}
-
-    @abstractmethod
-    def forward(self):
-        pass
-    
-    @property
-    def state(self):
-        return self._x
-    
-    @abstractmethod
-    def pos(self):
-        pass
-
-    @abstractmethod
-    def vel(self):
-        pass
-    
     
 class BB8Agent(Agent):
     
@@ -82,3 +59,8 @@ class GoalAgent(BB8Agent):
             self.goal_idx = min(len(self.goal_list)-1, self.goal_idx+1)
             self._set_pos()
         
+
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos, "vel":self.vel, "count":self.goal_idx}
+        return info

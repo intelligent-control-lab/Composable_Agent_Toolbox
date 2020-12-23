@@ -95,13 +95,13 @@ class World(object):
         return measurement_groups
 
     def _collect_agent_info(self):
-        """Collect agent position.
+        """Collect agent info.
         """
-        agents_pos = {}
+        agents_info = {}
         for agent in self.agents.values():
-            agents_pos[agent.name] = agent.pos
-        return agents_pos
-
+            agents_info[agent.name] = agent.info
+        return agents_info
+    
     def measure(self):
 
         env_info = self._collect_agent_info()

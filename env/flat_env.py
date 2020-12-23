@@ -28,22 +28,23 @@ class FlatEnv(object):
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
         if render:
-            self.render(env_info)
+            self.render()
         return self.dt, env_info, sensor_data
 
-    def render(self, env_info):
+    def render(self):
         plt.cla()
         plt.axis([0, 100, 0, 100])
         x = []
         y = []
-        for name, pos in env_info.items():
+        for name, agent in self.world.agents.items():
             if 'goal' not in name:
-                x.append(pos[0])
-                y.append(pos[1])
-        for name, pos in env_info.items():
+                x.append(agent.pos[0])
+                y.append(agent.pos[1])
+
+        for name, agent in self.world.agents.items():
             if 'goal' in name:
-                x.append(pos[0])
-                y.append(pos[1])
+                x.append(agent.pos[0])
+                y.append(agent.pos[1])
         
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
         plt.scatter(x,y,s=100, color=cs[:len(x)])

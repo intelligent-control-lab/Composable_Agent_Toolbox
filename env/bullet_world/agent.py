@@ -39,6 +39,12 @@ class FrankaPanda(object):
     def pos(self):
         return np.vstack(np.array(p.getLinkState(self.model_uid, 11)[0]))
 
+    
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos}
+        return info
+
     def forward(self, action, dt):
         if self.control_space == "joint":
             self.joint_forward(action, dt)
@@ -124,6 +130,11 @@ class Ball(object):
     def pos(self):
         pos, ori = p.getBasePositionAndOrientation(self.model_uid)
         return np.vstack(pos)
+
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos}
+        return info
 
     def forward(self, action, dt):
         control = action["control"]
@@ -218,6 +229,11 @@ class BallGoal(object):
     def vel(self):
         return np.vstack(np.zeros(3))
     
+    @property
+    def info(self):
+        info = {"state": self.state, "pos":self.pos, "vel":self.vel, "count":self.goal_idx}
+        return info
+
     def _set_pos(self):
         pos = self.goal_list[self.goal_idx]
         ori = [0,0,0,1]

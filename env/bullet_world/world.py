@@ -61,20 +61,6 @@ class BulletWorld(FlatReachingWorld):
 
         return agent  # just in case subclasses call this function and need the agent handle.
         
-    def _collect_agent_info(self):
-        """Collect agent position.
-        """
-        agents_pos = {}
-        for agent in self.agents.values():
-            agents_pos[agent.name] = agent.pos
-        return agents_pos
-    
-    def measure(self):
-        env_info = self._collect_agent_info()
-        measurement_groups = self._collect_sensor_data()
-
-        return env_info, measurement_groups    
-
     def simulate(self, actions, dt):
         """One step simulation in the physics engine
 
