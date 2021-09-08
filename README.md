@@ -30,18 +30,13 @@ An agent that use an end-to-end black-box policy.
 
 ## Requirements
 
-The python version is 3.8. But the code should be compatible with all 3.x version.
-
-We specified the dependencies in `env.yml`. You can reproduce the conda environment by
+We specified the dependencies in `requirements.txt`. You can reproduce the environment by
 
 ```bash
-conda env create --name $your_env_name -f env.yml
-```
-
-If you already have an environment and just want to make sure existing packages align with the specification. Run
-
-```bash
-conda env update --name $your_env_name -f env.yml
+conda create -n CAT python=3.8
+conda activate CAT
+cd $REPO_PATH
+pip install -r requirements.txt
 ```
 
 If you want to use the Mujoco env. Install mujoco_py with

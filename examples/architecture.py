@@ -1,6 +1,6 @@
 import sys, os
 from os.path import abspath, join, dirname
-sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
+sys.path.insert(0, join(abspath(dirname(__file__)), '../agent'))
 from utils.dependency_util import show_architecture
 
 if __name__ == "__main__":

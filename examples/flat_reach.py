@@ -67,6 +67,7 @@ if __name__ == "__main__":
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
+    # for it in progressbar.progressbar(range(100)):
     for it in progressbar.progressbar(range(100)):
         actions = {}
         for agent in agents:
