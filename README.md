@@ -39,6 +39,15 @@ cd $REPO_PATH
 pip install -r requirements.txt
 ```
 
+If python raises error of graphviz, try reinstalling graphviz with either of the following commands
+```
+pip install graphviz
+conda install python-graphviz
+brew install graphviz
+sudo apt install graphviz
+```
+
+
 If you want to use the Mujoco env. Install mujoco_py with
 ```
 pip install mujoco_py==2.0.2.8
