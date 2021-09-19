@@ -5,7 +5,7 @@ class Agent(ABC):
  
     def __init__(self, name, spec, collision=True):
         self.name = name
-        self._x = spec['init_x']
+        self._x = np.array(spec['init_x']).reshape(-1, 1)
         self.collision = collision
         self.broadcast = {}
 

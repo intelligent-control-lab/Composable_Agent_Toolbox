@@ -8,10 +8,10 @@ import pybullet_data
 class UKFEstimator(object):
     def __init__(self, spec, model):
         self.spec = spec
-        self.posterior_state     = spec["init_x"]           #posterior state for UKF
-        self.posterior_state_cov = spec["init_variance"]    #initial posterior state covariance
-        self._Rww                = spec["Rww"]              #process noise covariance
-        self._Rvv                = spec["Rvv"]              #measurement noise covariance
+        self.posterior_state     = np.array(spec["init_x"]) #posterior state for UKF
+        self.posterior_state_cov = np.diag(spec["init_variance"])    #initial posterior state covariance
+        self._Rww                = np.diag(spec["Rww"])              #process noise covariance
+        self._Rvv                = np.diag(spec["Rvv"])              #measurement noise covariance
         self._alpha_ukf          = spec["alpha_ukf"]        #alpha param of UKF
         self._kappa_ukf          = spec["kappa_ukf"]        #kappa param of UKF
         self._beta_ukf           = spec["beta_ukf"]         #beta param of UKF

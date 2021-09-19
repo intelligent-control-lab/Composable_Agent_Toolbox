@@ -5,11 +5,11 @@ from scipy.linalg import sqrtm
 class RLSPredictor(object):
     def __init__(self, spec, model):
         self.spec                = spec
-        self.posterior_state     = spec["init_x"]
-        self.posterior_state_cov = spec["init_variance"]
+        self.posterior_state     = np.array(spec["init_x"])
+        self.posterior_state_cov = np.diag(spec["init_variance"])
         self.other_agent_goal    = spec["other_goal"]
-        self._Rww                = spec["Rww"]
-        self._Rvv                = spec["Rvv"]
+        self._Rww                = np.diag(spec["Rww"])
+        self._Rvv                = np.diag(spec["Rvv"])
         self.kp                  = spec["kp"]
         self.kv                  = spec["kv"]
         self.model               = model

@@ -1,0 +1,18 @@
+world:
+    type: FlatReachingWorld
+    spec:
+        friction: 0
+        reaching_eps: 0.1
+        agent_goal_lists:
+            robot: [[70.0, 20.0], [10, 40]]
+            human: [[10.0, 20.0], [40, 70]]
+dt: 0.02
+agent_env_spec:
+    robot:
+        type: BB8Agent
+        spec:
+            init_x: [30.0, 20.0, 0.0, 0.0]
+    human:
+        type: BB8Agent
+        spec:
+            init_x: [50.0, 20.0, 0.0, 0.0]

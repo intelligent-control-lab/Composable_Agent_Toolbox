@@ -1,0 +1,61 @@
+name: robot
+task:
+    type: FrankaReachingDoubleGoalTask
+    spec:
+        cartesian_goal_list: null
+        state_goal_list: null
+model:
+    type: LinearModel
+    spec:
+        use_spec: 0
+        use_library: 0
+        model_name: Ballbot
+        time_sample: 0.01
+        disc_flag: 1
+        model_spec: null
+        control_input_dim: 3
+estimator:
+    type: NaiveEstimator
+    spec:
+        name: robot
+        init_x: [4.0, 4, 4]
+        init_variance: [0.01, 0.01, 0.01]
+        Rww: [0.001, 0.001, 0.001]
+        Rvv: [0.001, 0.001, 0.001]
+        alpha_ukf: 1
+        kappa_ukf: 0.1
+        beta_ukf: 2
+        time_sample: 0.1
+        kp: 1
+        kv: 3
+planner:
+    type: OptimizationBasedPlanner
+    spec:
+        horizon: 20
+        replanning_cycle: 10
+        dim: 7
+        n_ob: 1
+controller:
+    type: NaiveJointController
+    spec:
+        kp: 1
+sensors:
+-   type: PVSensor
+    spec:
+        alias: cartesian_sensor
+        noise_var: 0.0
+-   type: StateSensor
+    spec:
+        alias: state_sensor
+        noise_var: 0.0
+-   type: RadarSensor
+    spec:
+        alias: obstacle_sensor
+        noise_var: 0.0
+-   type: GoalSensor
+    spec:
+        alias: goal_sensor
+        noise_var: 0.0
+-   type: RadioSensor
+    spec:
+        alias: communication_sensor

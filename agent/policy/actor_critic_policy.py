@@ -12,7 +12,7 @@ the input x in both networks should be [o, g], where o is the observation and g 
 class Actor(nn.Module):
     def __init__(self, env_params):
         super(Actor, self).__init__()
-        self.max_action = env_params['action_max']
+        self.max_action = torch.tensor(env_params['action_max'], dtype=torch.float32)
         self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'], 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 256)
@@ -29,7 +29,7 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self, env_params):
         super(Critic, self).__init__()
-        self.max_action = env_params['action_max']
+        self.max_action = torch.tensor(env_params['action_max'], dtype=torch.float32)
         self.fc1 = nn.Linear(env_params['obs'] + env_params['goal'] + env_params['action'], 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 256)

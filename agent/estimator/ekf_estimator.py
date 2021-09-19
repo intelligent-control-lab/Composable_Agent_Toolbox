@@ -5,10 +5,10 @@ from scipy.linalg import sqrtm
 class EKFEstimator(object):
     def __init__(self, spec, model):
         self.spec = spec
-        self.posterior_state     = spec["init_x"]
-        self.posterior_state_cov = spec["init_variance"]
-        self._Rww                = spec["Rww"]
-        self._Rvv                = spec["Rvv"]
+        self.posterior_state     = np.array(spec["init_x"])
+        self.posterior_state_cov = np.diag(spec["init_variance"])
+        self._Rww                = np.diag(spec["Rww"])
+        self._Rvv                = np.diag(spec["Rvv"])
         self.kp                  = spec["kp"]
         self.kv                  = spec["kv"]
         self.model               = model
