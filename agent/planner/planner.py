@@ -517,7 +517,7 @@ class OptimizationBasedPlanner(Planner):
         n_ob = self.spec['n_ob']
         obs_traj = self.obs_traj
         if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
-            print(f"{len(obs_traj)} length obstacle, direct exit!!!!")
+            print("{} length obstacle, direct exit!!!!".format(len(obs_traj)))
             return x_ref
 
         # has obstacle, the normal CFS procedure 

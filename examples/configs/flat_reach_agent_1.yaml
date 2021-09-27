@@ -5,11 +5,11 @@ task:
 model:
     type: LinearModel
     spec:
-        use_spec: 0
-        use_library: 0
+        use_spec: False
+        use_library: False
         model_name: Ballbot
         time_sample: 0.02
-        disc_flag: 1
+        disc_flag: True
         model_spec: null
         control_input_dim: 2
 estimator:

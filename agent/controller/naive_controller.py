@@ -16,6 +16,7 @@ class NaiveController(object):
     def control(self, dt, est_data, goal, est_params):
         # it seems that cartesian goal is simply the goal itself i.e. position and velocity.
         # if we are calling it cartesian, we should omit velocity.
+
         cartesian_goal = np.vstack(goal)
         cartesian_state = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         state_goal = self.model_inverse(est_data, est_params, cartesian_goal)
