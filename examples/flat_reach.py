@@ -9,10 +9,10 @@ import progressbar
 if __name__ == "__main__":
 
     # The module specs for agents, specifies which task, model, planner, controller, sensor to use.
-    with open('examples/configs/flat_reach_agent_1.yaml', 'r') as infile:
+    with open('configs/flat_reach_agent_1.yaml', 'r') as infile:
         agent1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     
-    with open('examples/configs/flat_reach_agent_2.yaml', 'r') as infile:
+    with open('configs/flat_reach_agent_2.yaml', 'r') as infile:
         agent2_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
 
     agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('examples/configs/flat_reach_env.yaml', 'r') as infile:
+    with open('configs/flat_reach_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_specs, env_spec)
 

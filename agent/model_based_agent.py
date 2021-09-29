@@ -29,7 +29,13 @@ class ModelBasedAgent(AgentBase):
         self.task       = self._class_by_name("task",       module_spec["task"      ]["type"])(module_spec["task"       ]["spec"], self.model)
         self.estimator  = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.model)
         self.planner    = self._class_by_name("planner",    module_spec["planner"   ]["type"])(module_spec["planner"    ]["spec"], self.model)
-        self.controller = self._class_by_name("controller", module_spec["controller"]["type"])(module_spec["controller" ]["spec"], self.model)
+
+        feedback_controller_spec = module_spec["controller"]["spec"]["feedback_controller"]
+        feedback_controller      = self._class_by_name("controller", feedback_controller_spec["type"])(feedback_controller_spec["spec"], self.model)
+        safe_controller_spec     = module_spec["controller"]["spec"]["safe_controller"]
+        safe_controller          = self._class_by_name("controller", safe_controller_spec["type"])()
+
+        self.controller = self._class_by_name("controller", module_spec["controller"]["type"])(feedback_controller, safe_controller)
         self.sensors    = {}
         
         for i in range(len(module_spec["sensors"])):
@@ -46,9 +52,11 @@ class ModelBasedAgent(AgentBase):
             self.replanning_timer = 0
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
         next_traj_point = np.expand_dims(next_traj_point, axis=0).T
+
         self.replanning_timer += 1
 
-        control = self.controller.control(dt, est_data, next_traj_point, est_param)
+        control = self.controller(
+            dt, est_data, next_traj_point, self.task.goal_type(est_data))
         
         self.last_control = control
         ret = {"control"  : control}

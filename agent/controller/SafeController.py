@@ -9,4 +9,12 @@ class SafeController(ABC):
     def __init__(self):
         pass
 
+class SafeSetController(ABC):
+    '''
+        Safe Set Controller
+    '''
+
+    def __init__(self):
+        pass
+
     

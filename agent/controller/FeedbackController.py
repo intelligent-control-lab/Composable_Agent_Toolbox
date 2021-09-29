@@ -61,12 +61,12 @@ class FeedbackController(ABC):
 
 class NaiveFeedbackController(FeedbackController):
 
-    def __init__(self, model, kp, kv):
+    def __init__(self, spec, model):
         super().__init__(model)
 
         # weights
-        self.kp = kp
-        self.kv = kv
+        self.kp = spec["kp"]
+        self.kv = spec["kv"]
     
     def ComputeError(self, processed_data, goal):
         '''

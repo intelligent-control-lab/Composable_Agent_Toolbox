@@ -34,10 +34,18 @@ planner:
         n_ob: 1
         obs_r: 5
 controller:
-    type: NaiveController
+    type: Controller
     spec:
-        kp: 6
-        kv: 8
+        feedback_controller: 
+          type: NaiveFeedbackController
+          spec:
+            kp: 6
+            kv: 8
+        safe_controller: 
+          type: SafeSetController
+          spec:
+            k: 1
+            eta: 1
 sensors:
 -   type: PVSensor
     spec:

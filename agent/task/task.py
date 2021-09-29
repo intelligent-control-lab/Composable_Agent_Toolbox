@@ -1,12 +1,17 @@
 import numpy as np
-
+import sys, os
+from os.path import abspath, join, dirname
+sys.path.insert(0, join(abspath(dirname(__file__)), '../../'))
+from utils.types import GoalType
 class Task(object):
     def __init__(self, spec, model):
         pass
 
     def goal(self, x):
         return {"task":"2d_reach", "goal":np.zeros((4,1))}
-
+    
+    def goal_type(self, x):
+        return GoalType.CARTESIAN
 
 class FlatReachingTask(Task):
 
@@ -16,7 +21,7 @@ class FlatReachingTask(Task):
         goal_rel_pos_vel = np.vstack([est_data["goal_sensor_est"]["rel_pos"], est_data["goal_sensor_est"]["rel_vel"]])
         self_abs_pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         return {"task":"2d_reach", "goal":goal_rel_pos_vel + self_abs_pos_vel}
-
+    
 class FrankaReachingTask(Task):
 
     def goal(self, est_data):

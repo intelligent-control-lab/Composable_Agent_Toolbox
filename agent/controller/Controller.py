@@ -4,8 +4,8 @@ sys.path.insert(0, join(abspath(dirname(__file__)), '../../'))
 
 import numpy as np
 from abc import ABC, abstractmethod
-from FeedbackController import FeedbackController
-from SafeController import SafeController
+from .FeedbackController import FeedbackController, NaiveFeedbackController
+from .SafeController import SafeController, SafeSetController
 from utils import GoalType
 
 class Controller(ABC):
@@ -25,6 +25,7 @@ class Controller(ABC):
         self.safe_controller     = safe_controller
 
     def __call__(self,
+        dt: float,
         processed_data: dict,
         goal: np.ndarray,
         goal_type: GoalType) -> np.ndarray:
