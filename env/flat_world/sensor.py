@@ -57,11 +57,14 @@ class RadarSensor(Sensor):
         self.noise_var = spec['noise_var']
 
     def measure(self):
-        distances = {}
+        ret = {}
         for name, agent in self.all_agents.items():
             if agent != self.agent and agent.collision:
-                distances[name] = self._gaussian_noise(agent.pos - self.agent.pos, self.noise_var)
-        return distances
+                ret[name] = {
+                    "rel_pos": self._gaussian_noise(agent.pos - self.agent.pos, self.noise_var),
+                    "rel_vel": self._gaussian_noise(agent.vel - self.agent.vel, self.noise_var)
+                }
+        return ret
 
 
 class GoalSensor(Sensor):

@@ -17,7 +17,7 @@ class FeedbackController(ABC):
         self.model = model
 
     @abstractmethod
-    def ComputeError(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
+    def compute_error(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
         '''
             Given estimated data and goal, get error in goal space
         '''
@@ -28,14 +28,14 @@ class FeedbackController(ABC):
         pass
 
     @abstractmethod
-    def InverseKinematics(self, cart: np.ndarray, param: dict) -> np.ndarray:
+    def inverse_kinematics(self, cart: np.ndarray, param: dict) -> np.ndarray:
         '''
             Convert to state space
         '''
         pass
 
     @abstractmethod
-    def Control(self, error: np.ndarray) -> np.ndarray:
+    def control(self, error: np.ndarray) -> np.ndarray:
         '''
             Can be model inverse or other control algo
         '''
@@ -49,12 +49,12 @@ class FeedbackController(ABC):
             Driver procedure. Do not change
         '''
 
-        e = self.ComputeError(processed_data=processed_data, goal=goal)
+        e = self.compute_error(processed_data=processed_data, goal=goal)
 
         if goal_type == GoalType.CARTESIAN:
-            e = self.InverseKinematics(cart=e, param=None)
+            e = self.inverse_kinematics(cart=e, param=None)
         
-        u = self.Control(error=e)
+        u = self.control(error=e)
 
         return u
 
@@ -68,11 +68,11 @@ class NaiveFeedbackController(FeedbackController):
         self.kp = spec["kp"]
         self.kv = spec["kv"]
     
-    def ComputeError(self, processed_data, goal):
+    def compute_error(self, processed_data, goal):
         '''
             Cartesian error
         '''
-        super().ComputeError(processed_data, goal)
+        super().compute_error(processed_data, goal)
                 
         e = goal - np.vstack([
                 processed_data["cartesian_sensor_est"]["pos"],
@@ -80,16 +80,16 @@ class NaiveFeedbackController(FeedbackController):
         
         return e
 
-    def InverseKinematics(self, cart, param):
-        super().InverseKinematics(cart, param)
+    def inverse_kinematics(self, cart, param):
+        super().inverse_kinematics(cart, param)
 
         return cart
 
-    def Control(self, error):
+    def control(self, error):
         '''
             P control on both pos and vel
         '''
-        super().Control(error)
+        super().control(error)
 
         n = error.shape[0]
         assert(n % 2 == 0)

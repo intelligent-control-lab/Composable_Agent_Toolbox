@@ -8,6 +8,8 @@ from .FeedbackController import FeedbackController, NaiveFeedbackController
 from .SafeController import SafeController, SafeSetController
 from utils import GoalType
 
+import importlib
+
 class Controller(ABC):
     '''
         High-Level Controller
@@ -16,13 +18,21 @@ class Controller(ABC):
             1. FeedbackController
             2. SafeController
     '''
-
-    def __init__(self,
-        feedback_controller:    FeedbackController,
-        safe_controller:        SafeController):
+    def __init__(self, spec, model):
         
-        self.feedback_controller = feedback_controller
-        self.safe_controller     = safe_controller
+        feedback_controller_spec = spec["feedback_controller"]
+        safe_controller_spec     = spec["safe_controller"]
+        self.feedback_controller = self._class_by_name("controller", feedback_controller_spec["type"])(feedback_controller_spec["spec"], model)
+        self.safe_controller     = self._class_by_name("controller", safe_controller_spec["type"])(safe_controller_spec["spec"], model)
+
+        self.model = model
+
+    def _class_by_name(self, module_name, class_name):
+        """Return the class handle by name of the class
+        """
+        module_name = "agent." + module_name
+        ModuleClass = getattr(importlib.import_module(module_name), class_name)
+        return ModuleClass
 
     def __call__(self,
         dt: float,
@@ -30,10 +40,10 @@ class Controller(ABC):
         goal: np.ndarray,
         goal_type: GoalType) -> np.ndarray:
 
-        u = self.feedback_controller(processed_data, goal, goal_type)
-
+        u_fb = self.feedback_controller(processed_data, goal, goal_type)
         # call safe controller
+        u_safe = self.safe_controller(dt, processed_data, u_fb, goal, goal_type)
 
-        return u
+        return u_safe
 
         

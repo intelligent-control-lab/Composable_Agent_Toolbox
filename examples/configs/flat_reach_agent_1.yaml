@@ -42,9 +42,10 @@ controller:
             kp: 6
             kv: 8
         safe_controller: 
-          type: SafeSetController
+          type: UnsafeController
           spec:
-            k: 1
+            d_min: 1.0
+            k_v: 1.0
             eta: 1
 sensors:
 -   type: PVSensor

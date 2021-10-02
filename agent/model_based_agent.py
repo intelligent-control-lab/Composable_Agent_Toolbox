@@ -29,13 +29,7 @@ class ModelBasedAgent(AgentBase):
         self.task       = self._class_by_name("task",       module_spec["task"      ]["type"])(module_spec["task"       ]["spec"], self.model)
         self.estimator  = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.model)
         self.planner    = self._class_by_name("planner",    module_spec["planner"   ]["type"])(module_spec["planner"    ]["spec"], self.model)
-
-        feedback_controller_spec = module_spec["controller"]["spec"]["feedback_controller"]
-        feedback_controller      = self._class_by_name("controller", feedback_controller_spec["type"])(feedback_controller_spec["spec"], self.model)
-        safe_controller_spec     = module_spec["controller"]["spec"]["safe_controller"]
-        safe_controller          = self._class_by_name("controller", safe_controller_spec["type"])()
-
-        self.controller = self._class_by_name("controller", module_spec["controller"]["type"])(feedback_controller, safe_controller)
+        self.controller = self._class_by_name("controller", module_spec["controller"]["type"])(module_spec["controller" ]["spec"], self.model)
         self.sensors    = {}
         
         for i in range(len(module_spec["sensors"])):
