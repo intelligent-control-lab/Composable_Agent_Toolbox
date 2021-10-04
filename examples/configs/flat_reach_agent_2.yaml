@@ -3,15 +3,19 @@ task:
     type: FlatReachingTask
     spec: {}
 model:
-    type: LinearModel
+    type: BallModel
     spec:
-        use_spec: 0
-        use_library: 0
-        model_name: Ballbot
-        time_sample: 0.02
-        disc_flag: 1
-        model_spec: null
+        dT: 0.02
         control_input_dim: 2
+    # type: LinearModel
+    # spec:
+    #     use_spec: False
+    #     use_library: False
+    #     model_name: Ballbot
+    #     time_sample: 0.02
+    #     disc_flag: True
+    #     model_spec: null
+    #     control_input_dim: 2
 estimator:
     type: NaiveEstimator
     spec:
@@ -26,7 +30,7 @@ estimator:
         kp: 6
         kv: 8
 planner:
-    type: OptimizationBasedPlanner
+    type: NaivePlanner
     spec:
         horizon: 20
         replanning_cycle: 10
@@ -44,8 +48,8 @@ controller:
         safe_controller: 
           type: UnsafeController
           spec:
-            d_min: 1.0
-            k_v: 1.0
+            d_min: 10.0
+            k_v: 2.0
             eta: 1
 sensors:
 -   type: PVSensor

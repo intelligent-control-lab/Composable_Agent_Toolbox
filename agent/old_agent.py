@@ -34,6 +34,8 @@ class ModelBasedAgent(object):
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u,sensors_data)
         goal = self.task.goal(est_data)
+
+        print("start planning")
         
         # if self.replanning_timer == self.planner.replanning_cycle:
         #     self.planned_traj = self.planner.planning(dt, goal, est_data)
@@ -42,6 +44,8 @@ class ModelBasedAgent(object):
         # self.replanning_timer += 1
         
         # control = self.controller.control(dt, est_data, next_traj_point, est_param)
+
+        print("end planning")
         
         control = self.controller.control(dt, est_data, goal, est_param)
         self.last_control = control

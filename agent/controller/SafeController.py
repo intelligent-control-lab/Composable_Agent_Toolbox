@@ -59,11 +59,11 @@ class EnergyFunctionController(SafeController):
         """
         n = np.shape(ce)[0]//2
 
-        dp = ce[:n] - co[:n]
-        dv = ce[n:] - co[n:]
+        dp = np.vstack(ce[:n] - co[:n])
+        dv = np.vstack(ce[n:] - co[n:])
 
         d     = max(np.linalg.norm(dp), 1e-3)
-        dot_d = max(np.linalg.norm(dv), 1e-3)
+        dot_d = dp.T @ dv / d
 
         phi = self.d_min**2 - d**2 - self.k_v * dot_d + self.eta * dt
 
@@ -73,8 +73,18 @@ class EnergyFunctionController(SafeController):
         p_d_p_ce = np.vstack([dp / d, np.zeros((n,1))])
         p_d_p_co = -p_d_p_ce
 
-        p_dot_d_p_ce = np.vstack([np.zeros((n,1)), dv / d])
-        p_dot_d_p_co = -p_dot_d_p_ce
+        p_dot_d_p_dp = dv / d - np.asscalar(dp.T @ dv) * dp / (d**3)
+        p_dot_d_p_dv = dp / d
+
+        p_dp_p_ce = np.hstack([np.eye(n), np.zeros((n,n))])
+        p_dp_p_co = -p_dp_p_ce
+
+        p_dv_p_ce = np.hstack([np.zeros((n,n)), np.eye(n)])
+        p_dv_p_co = -p_dv_p_ce
+
+
+        p_dot_d_p_ce = p_dp_p_ce.T @ p_dot_d_p_dp + p_dv_p_ce.T @ p_dot_d_p_dv
+        p_dot_d_p_co = p_dp_p_co.T @ p_dot_d_p_dp + p_dv_p_co.T @ p_dot_d_p_dv
 
         p_phi_p_ce = p_phi_p_d * p_d_p_ce + p_phi_p_dot_d * p_dot_d_p_ce
         p_phi_p_co = p_phi_p_d * p_d_p_co + p_phi_p_dot_d * p_dot_d_p_co
@@ -127,13 +137,12 @@ class SafeSetController(EnergyFunctionController):
         => p_phi_p_xe.T * fu * u < eta - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
 
         """
-        print("processed_data")
-        print(processed_data)
-        print("obs")
-        print(obs)
+        
         ce = np.vstack([processed_data["cartesian_sensor_est"]["pos"], processed_data["cartesian_sensor_est"]["vel"]])  # ce: cartesian state of ego
         co = np.vstack([processed_data["obstacle_sensor_est"][obs]["rel_pos"], processed_data["obstacle_sensor_est"][obs]["rel_vel"]]) + ce  # co: cartesian state of the obstacle
         
+        x =  np.vstack(processed_data["state_sensor_est"]["state"])
+
         n = np.shape(ce)[0]//2
 
         # It will be better if we have an estimation of the acceleration of the obstacle
@@ -141,14 +150,17 @@ class SafeSetController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        p_ce_p_xe = self._model._take_jacobian()
-        fx = self._model.fx()
+        # p_ce_p_xe = self._model._take_jacobian()
+        p_ce_p_xe = self._model.jacobian()
+        # dot_x = fx + fu * u
+        fx = self._model.fx(x)
         fu = self._model.fu()
 
         p_phi_p_xe = p_ce_p_xe.T * p_phi_p_ce
 
+
         L = p_phi_p_xe.T * fu
-        S = self.eta - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
+        S = -self.eta - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
         
         u = u_ref
 
@@ -156,9 +168,8 @@ class SafeSetController(EnergyFunctionController):
             u = u_ref
         else:
             u = u_ref - (np.asscalar(L * u_ref - S) * L.T / np.asscalar(L * L.T))
-        
-        print("u_ref, u")
-        print(u_ref, u)
+    
+
         return phi, u
 
 

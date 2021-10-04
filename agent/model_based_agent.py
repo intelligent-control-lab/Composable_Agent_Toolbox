@@ -45,7 +45,7 @@ class ModelBasedAgent(AgentBase):
             
             self.replanning_timer = 0
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-        next_traj_point = np.expand_dims(next_traj_point, axis=0).T
+        next_traj_point = np.vstack(next_traj_point.ravel())
 
         self.replanning_timer += 1
 

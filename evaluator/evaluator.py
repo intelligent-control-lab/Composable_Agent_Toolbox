@@ -14,7 +14,8 @@ class Evaluator(object):
         for i in range(len(record)):
             min_dis = 1e9
             min_name = ""
-            for name, dis in record[i][1]["robot"]["obstacle_sensor"].items():
+            for name, pos_vel in record[i][1]["robot"]["obstacle_sensor"].items():
+                dis = pos_vel["rel_pos"]
                 if np.linalg.norm(dis) < min_dis:
                     min_dis = np.linalg.norm(dis)
                     min_name = name
