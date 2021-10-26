@@ -67,6 +67,7 @@ class NaiveFeedbackController(FeedbackController):
         # weights
         self.kp = spec["kp"]
         self.kv = spec["kv"]
+        self.u_max = spec["u_max"]
     
     def compute_error(self, processed_data, goal):
         '''
@@ -94,5 +95,6 @@ class NaiveFeedbackController(FeedbackController):
         n = error.shape[0]
         assert(n % 2 == 0)
         u = self.kp*error[:n//2] + self.kv * error[n//2:]
+        u = np.clip(u, -self.u_max, self.u_max)
 
         return u

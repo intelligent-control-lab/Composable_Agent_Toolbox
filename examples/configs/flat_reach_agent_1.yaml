@@ -27,8 +27,8 @@ estimator:
         kappa_ukf: 0.1
         beta_ukf: 2
         time_sample: 0.01
-        kp: 6
-        kv: 8
+        kp: 40
+        kv: 40
 planner:
     type: NaivePlanner
     spec:
@@ -43,8 +43,9 @@ controller:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            kp: 6
-            kv: 8
+            kp: 200
+            kv: 50
+            u_max: 200
         safe_controller: 
           type: SafeSetController
           spec:
