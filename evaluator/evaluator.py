@@ -7,7 +7,7 @@ class Evaluator(object):
 
     def evaluate(self, record):
         
-        achieved_goal = record[-1][0]["robot_goal"]["count"]        
+        achieved_goal = record[-1][0]["robot_goal"]["count"]
         safety = 0
         d0 = 1
         

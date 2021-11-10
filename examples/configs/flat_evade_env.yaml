@@ -1,0 +1,18 @@
+world:
+    type: FlatEvadeWorld
+    spec:
+        friction: 0
+        reaching_eps: 0.1
+        agent_goal:
+            robot: null
+            human: "robot"
+dt: 0.02
+agent_env_spec:
+    robot:
+        type: BB8Agent
+        spec:
+            init_x: [30.0, 30.0, 0.0, 0.0]
+    human:
+        type: BB8Agent
+        spec:
+            init_x: [80.0, 80.0, 0.0, 0.0]
