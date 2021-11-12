@@ -159,3 +159,5 @@ class BallModel(KinematicDynamicModel):
     def jacobian(self): # p closest point p X
         ret = np.eye(4)
         return ret
+
+# todo define a unicycle model for control

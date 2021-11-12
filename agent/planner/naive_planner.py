@@ -23,3 +23,7 @@ class NaivePlanner(object):
         for i in range(self.horizon):
             traj.append(pos_vel + frac*i)
         return np.array(traj)
+
+# todo adapt naive planner to use planning model
+
+# todo adapt CFS planner as a safe planner, also use planning model
