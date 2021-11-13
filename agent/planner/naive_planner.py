@@ -6,6 +6,7 @@ class NaivePlanner(object):
         self.cache = {}
         self.replanning_cycle = spec["replanning_cycle"]
         self.horizon = spec["horizon"]
+
     def planning(self, dt, goal, est_data):
         pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         traj = []
@@ -15,6 +16,7 @@ class NaivePlanner(object):
             traj.append(pos_vel + frac*i)
         return np.array(traj)
 
+    # todo remove arm
     def planning_arm(self, dt, goal, est_data):
         pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
         traj = []
@@ -24,6 +26,13 @@ class NaivePlanner(object):
             traj.append(pos_vel + frac*i)
         return np.array(traj)
 
+# todo double integrator
+
 # todo adapt naive planner to use planning model
 
+# ! return AB matrices from input state x
+
 # todo adapt CFS planner as a safe planner, also use planning model
+
+# todo cartesian planner by default uses integrator
+# todo state planner by default assume no structure about model (only linearize)

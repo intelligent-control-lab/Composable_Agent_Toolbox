@@ -36,25 +36,31 @@ class ModelBasedAgent(AgentBase):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def action(self, dt, sensors_data):
+
+        # --------------------------- get previous control --------------------------- #
         u = self.last_control
+
+        # ----------------------------- update estimation ---------------------------- #
         est_data, est_param = self.estimator.estimate(u,sensors_data)
+
+        # ------------------------- update planned trajectory ------------------------ #
         goal = self.task.goal(est_data)
         if self.replanning_timer == self.planner.replanning_cycle:
             # add the future planning information for another agent 
             self.planned_traj = self.planner.planning(dt, goal, est_data)
-            
             self.replanning_timer = 0
+
         next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
         next_traj_point = np.vstack(next_traj_point.ravel())
-
         self.replanning_timer += 1
 
+        # --------------------------- compute agent control -------------------------- #
         control = self.controller(
             dt, est_data, next_traj_point, self.task.goal_type(est_data))
         
         self.last_control = control
+
         ret = {"control"  : control}
-        
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],

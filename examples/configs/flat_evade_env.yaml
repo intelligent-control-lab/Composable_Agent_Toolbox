@@ -16,3 +16,6 @@ agent_env_spec:
         type: BB8Agent
         spec:
             init_x: [80.0, 80.0, 0.0, 0.0]
+
+# ? it seems that the control (dynamics) model in model-based agent might not be
+# ? consistent with the actual simulation agent?

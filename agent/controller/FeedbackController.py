@@ -83,6 +83,10 @@ class NaiveFeedbackController(FeedbackController):
 
     def inverse_kinematics(self, cart, param):
         super().inverse_kinematics(cart, param)
+        # comment above line. implement; should not need param here
+        # (if so, init as member, not input)
+        # todo invoke IK from control model
+        # todo (should convert to the state space defined by control model)
 
         return cart
 
@@ -98,3 +102,5 @@ class NaiveFeedbackController(FeedbackController):
         u = np.clip(u, -self.u_max, self.u_max)
 
         return u
+
+    # todo in model based planner, given desired xdot and current x, get u
