@@ -3,10 +3,18 @@ task:
     type: FlatReachingTask
     spec: {}
 model:
-    type: BallModel
-    spec:
-        dT: 0.02
-        control_input_dim: 2
+    planning:
+      # for single dimension
+      type: DoubleIntegrator
+      spec:
+          dT: 0.02
+          state_component: ['pos', 'vel']
+    control:
+      type: BallModel
+      spec:
+          dT: 0.02
+          control_input_dim: 2
+          state_component: ['pos', 'vel']
     # type: LinearModel
     # spec:
     #     use_spec: False
@@ -29,25 +37,38 @@ estimator:
         time_sample: 0.01
         kp: 40
         kv: 40
+# state dimension of planner should be consistent with task
 planner:
-    type: NaivePlanner
+    type: IntegraterPlanner
     spec:
-        horizon: 20
+        horizon: 50
         replanning_cycle: 10
-        dim: 2
-        n_ob: 1
-        obs_r: 5
+        state_dimension: 2
+        # n_ob: 1
+        # obs_r: 5
+    # type: NaivePlanner
+    # spec:
+    #     horizon: 20
+    #     replanning_cycle: 10
+    #     state_dimension: 2
+    #     n_ob: 1
+    #     obs_r: 5
 controller:
     type: Controller
     spec:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            kp: 200
-            kv: 50
+            # for naive planner
+            # kp: 200
+            # kv: 50
+            # for integrator planner
+            kp: 10
+            kv: 100
             u_max: 200
         safe_controller: 
-          type: SafeSetController
+          # type: SafeSetController
+          type: UnsafeController
           spec:
             d_min: 10.0
             k_v: 1.0

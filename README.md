@@ -57,3 +57,23 @@ pip install mujoco_py==2.0.2.8
 
 See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/examples) for more information.
 
+## DSTA
+
+### DONE
+- Planning Models
+    - Double integrator model
+- Planner
+    - Naive planner (interpolation, does not use model)
+    - Integrator planner (needs double/triple/etc. integrator model)
+- Control Models
+    - Ballmodel
+    - Unicycle
+- Feedback Controller
+    - Naive (use arbitrary control models)
+
+### Assumption
+- Planner directly takes goal defined by task
+- Controller will always use full dimension of planner traj, but can ignore time deritatives
+- Control model should be consistent with/same as that of world agent.
+
+### TODO

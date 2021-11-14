@@ -17,25 +17,7 @@ class FeedbackController(ABC):
         self.model = model
 
     @abstractmethod
-    def compute_error(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
-        '''
-            Given estimated data and goal, get error in goal space
-        '''
-
-        # column vector
-        assert(len(goal.shape) == 2 and goal.shape[1] == 1)
-
-        pass
-
-    @abstractmethod
-    def inverse_kinematics(self, cart: np.ndarray, param: dict) -> np.ndarray:
-        '''
-            Convert to state space
-        '''
-        pass
-
-    @abstractmethod
-    def control(self, error: np.ndarray) -> np.ndarray:
+    def _control(self, processed_data: dict, error: np.ndarray) -> np.ndarray:
         '''
             Can be model inverse or other control algo
         '''
@@ -44,17 +26,20 @@ class FeedbackController(ABC):
     def __call__(self,
         processed_data: dict,
         goal: np.ndarray,
-        goal_type: GoalType) -> np.ndarray:
+        goal_type: GoalType,
+        state_dimension: int
+    ) -> np.ndarray:
         '''
             Driver procedure. Do not change
         '''
 
-        e = self.compute_error(processed_data=processed_data, goal=goal)
-
-        if goal_type == GoalType.CARTESIAN:
-            e = self.inverse_kinematics(cart=e, param=None)
+        # goal -> state error
+        e = self.model.compute_error(
+            processed_data=processed_data, goal=goal,
+            goal_type=goal_type, state_dimension=state_dimension)
         
-        u = self.control(error=e)
+        # state error -> action
+        u = self._control(processed_data=processed_data, error=e)
 
         return u
 
@@ -68,38 +53,23 @@ class NaiveFeedbackController(FeedbackController):
         self.kp = spec["kp"]
         self.kv = spec["kv"]
         self.u_max = spec["u_max"]
-    
-    def compute_error(self, processed_data, goal):
-        '''
-            Cartesian error
-        '''
-        super().compute_error(processed_data, goal)
-                
-        e = goal - np.vstack([
-                processed_data["cartesian_sensor_est"]["pos"],
-                processed_data["cartesian_sensor_est"]["vel"]])
-        
-        return e
 
-    def inverse_kinematics(self, cart, param):
-        super().inverse_kinematics(cart, param)
-        # comment above line. implement; should not need param here
-        # (if so, init as member, not input)
-        # todo invoke IK from control model
-        # todo (should convert to the state space defined by control model)
-
-        return cart
-
-    def control(self, error):
+    def _control(self, processed_data: dict, error: np.ndarray) -> np.ndarray:
         '''
             P control on both pos and vel
+            Then use control model to convert to action
         '''
-        super().control(error)
+        super()._control(processed_data, error)
 
         n = error.shape[0]
         assert(n % 2 == 0)
-        u = self.kp*error[:n//2] + self.kv * error[n//2:]
-        u = np.clip(u, -self.u_max, self.u_max)
+
+        # compute u as desired state time derivative for control model
+        u_state = self.kp*error[:n//2] + self.kv * error[n//2:]
+        u_state = np.clip(u_state, -self.u_max, self.u_max)
+
+        # invert control model to get actual action
+        u = self.model.inverse(processed_data, u_state)
 
         return u
 

@@ -38,9 +38,10 @@ class Controller(ABC):
         dt: float,
         processed_data: dict,
         goal: np.ndarray,
-        goal_type: GoalType) -> np.ndarray:
+        goal_type: GoalType,
+        state_dimension: int) -> np.ndarray:
 
-        u_fb = self.feedback_controller(processed_data, goal, goal_type)
+        u_fb = self.feedback_controller(processed_data, goal, goal_type, state_dimension)
         # call safe controller
         u_safe = self.safe_controller(dt, processed_data, u_fb, goal, goal_type)
 

@@ -31,8 +31,6 @@ class BB8Agent(Agent):
     def vel(self):
         return self._x[[2,3]]
 
-
-# todo change to adversarial agent
 class GoalAgent(BB8Agent):
     """The goal agent.
     This agent is a virtual agent represents the goal of a real agent.
