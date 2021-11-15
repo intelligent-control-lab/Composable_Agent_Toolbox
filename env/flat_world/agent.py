@@ -55,7 +55,8 @@ class GoalAgent(BB8Agent):
         self._x[[0,1]] = np.vstack(self.goal_list[self.goal_idx])
 
     def forward(self):
-        if np.max(abs(self.pos - self.hunter.pos)) < self.reaching_eps:
+        goal_dim = len(self.pos)
+        if np.max(abs(self.pos - self.hunter.pos[:goal_dim])) < self.reaching_eps:
             self.goal_idx = min(len(self.goal_list)-1, self.goal_idx+1)
             self._set_pos()
         

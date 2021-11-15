@@ -76,8 +76,9 @@ class GoalSensor(Sensor):
         self.noise_var = spec['noise_var']
 
     def measure(self):
+        goal_dim = len(self.all_agents[self.agent.name+"_goal"].pos)
         ret = {
-            "rel_pos": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].pos - self.agent.pos, self.noise_var),
-            "rel_vel": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].vel - self.agent.vel, self.noise_var)
+            "rel_pos": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].pos - self.agent.pos[:goal_dim], self.noise_var),
+            "rel_vel": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].vel - self.agent.vel[:goal_dim], self.noise_var)
         }
         return ret

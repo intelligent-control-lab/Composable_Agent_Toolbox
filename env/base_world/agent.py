@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from abc import ABC, abstractmethod
 
 class Agent(ABC):
@@ -6,8 +7,10 @@ class Agent(ABC):
     def __init__(self, name, spec, collision=True):
         self.name = name
         self._x = np.array(spec['init_x']).reshape(-1, 1)
+        self.xdim = self._x.shape[0]
         self.collision = collision
         self.broadcast = {}
+        self.has_heading = False
 
     @abstractmethod
     def forward(self):
@@ -49,7 +52,6 @@ class BB8Agent(Agent):
         
         self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
 
-
     @property
     def pos(self):
         return self._x[[0,1]]
@@ -58,6 +60,37 @@ class BB8Agent(Agent):
     def vel(self):
         return self._x[[2,3]]
 
+class UnicycleAgent(Agent):
+    '''
+        state _x is [x, y, t]
+        action is [v, w], v -> velocity, w -> heading velocity
+        [xdot, ydot, tdot] = [vcost, vsint, w]
+    '''
+
+    def __init__(self, name, spec, collision=True):
+        super().__init__(name, spec, collision=collision)
+
+        self.has_heading = True
+
+    def forward(self, action, dt):
+        
+        u = action['control'] # v, w
+        v, w = u.reshape(-1)
+
+        t = self._x[2, 0]
+        xdot = np.array([v*math.cos(t), v*math.sin(t), w]).reshape(-1, 1)
+        self._x += xdot*dt
+        self._x[2] = math.atan2(math.sin(self._x[2]), math.cos(self._x[2]))
+
+        self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+    
+    @property
+    def pos(self):
+        return self._x
+
+    @property
+    def vel(self):
+        return np.zeros((self.xdim, 1))
 
 class GoalAgent(BB8Agent):
     """The goal agent.

@@ -2,7 +2,7 @@ import numpy as np
 import env.flat_world
 import matplotlib.pyplot as plt
 import importlib
-import time
+import time, math
 class FlatEnv(object):
     def __init__(self, env_spec, comp_agents):
         '''
@@ -47,7 +47,18 @@ class FlatEnv(object):
                 y.append(agent.pos[1])
         
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
+
+        # agents location
         plt.scatter(x,y,s=100, color=cs[:len(x)])
+        
+        # agent heading    return args[0]._bind(args[1:], kwargs)    return args[0]._bind(args[1:], kwargs)
+        r = 3.0
+        for name, agent in self.world.agents.items():
+            if 'goal' not in name and agent.has_heading:
+                xc, yc, t = agent.pos.reshape(-1)
+                plt.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
+                    color='b', linestyle='-')
+
         # plt.plot(human_traj[:,0],human_traj[:,1])
         # plt.plot(robot_traj[:,0],robot_traj[:,1])
         plt.draw()

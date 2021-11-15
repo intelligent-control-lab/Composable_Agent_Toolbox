@@ -33,7 +33,7 @@ class FeedbackController(ABC):
             Driver procedure. Do not change
         '''
 
-        # goal -> state error
+        # goal -> state error (pos + vel)
         e = self.model.compute_error(
             processed_data=processed_data, goal=goal,
             goal_type=goal_type, state_dimension=state_dimension)
@@ -68,9 +68,10 @@ class NaiveFeedbackController(FeedbackController):
         u_state = self.kp*error[:n//2] + self.kv * error[n//2:]
         u_state = np.clip(u_state, -self.u_max, self.u_max)
 
+        if self.model.has_heading:
+            u_state[-1] = np.clip(u_state[-1], -self.u_max/100.0, self.u_max/100.0)
+
         # invert control model to get actual action
         u = self.model.inverse(processed_data, u_state)
 
         return u
-
-    # todo in model based planner, given desired xdot and current x, get u

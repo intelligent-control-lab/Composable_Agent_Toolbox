@@ -8,11 +8,19 @@ world:
             human: [[10, 15], [40, 70]]
 dt: 0.02
 agent_env_spec:
+    # robot:
+    #     type: BB8Agent
+    #     spec:
+    #         init_x: [30.0, 20.0, 0.0, 0.0]
+    # human:
+    #     type: BB8Agent
+    #     spec:
+    #         init_x: [50.0, 20.0, 0.0, 0.0]
     robot:
-        type: BB8Agent
+        type: UnicycleAgent
         spec:
-            init_x: [30.0, 20.0, 0.0, 0.0]
+            init_x: [30.0, 20.0, 1.571]
     human:
-        type: BB8Agent
+        type: UnicycleAgent
         spec:
-            init_x: [50.0, 20.0, 0.0, 0.0]
+            init_x: [50.0, 20.0, 1.571]

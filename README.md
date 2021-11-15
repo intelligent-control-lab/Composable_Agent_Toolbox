@@ -72,8 +72,9 @@ See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/
     - Naive (use arbitrary control models)
 
 ### Assumption
-- Planner directly takes goal defined by task
+- Planner takes goal + goal type defined by task
 - Controller will always use full dimension of planner traj, but can ignore time deritatives
 - Control model should be consistent with/same as that of world agent.
+    - The world agent needs to provid all info needed by control model
 
 ### TODO
