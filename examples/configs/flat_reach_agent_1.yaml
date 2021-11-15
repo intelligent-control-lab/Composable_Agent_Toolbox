@@ -10,14 +10,14 @@ model:
           dT: 0.02
           state_component: ['pos', 'vel']
     control:
-      # type: BallModel
-      # spec:
-      #     control_input_dim: 2
-      #     state_component: ['pos', 'vel']
-      type: UnicycleModel
+      type: BallModel
       spec:
           control_input_dim: 2
-          state_component: ['pos']
+          state_component: ['pos', 'vel']
+      # type: UnicycleModel
+      # spec:
+      #     control_input_dim: 2
+      #     state_component: ['pos']
     # type: LinearModel
     # spec:
     #     use_spec: False
@@ -28,19 +28,19 @@ model:
     #     model_spec: null
     #     control_input_dim: 2
 planner:
-    type: IntegraterPlanner
-    spec:
-        horizon: 50
-        # replanning_cycle: 10
-        replanning_cycle: 50
-        state_dimension: 2
-    # type: NaivePlanner
+    # type: IntegraterPlanner
     # spec:
-    #     horizon: 20
-    #     replanning_cycle: 10
+    #     horizon: 50
+    #     # replanning_cycle: 10
+    #     replanning_cycle: 50
     #     state_dimension: 2
-    #     n_ob: 1
-    #     obs_r: 5
+    type: NaivePlanner
+    spec:
+        horizon: 20
+        replanning_cycle: 10
+        state_dimension: 2
+        n_ob: 1
+        obs_r: 5
 estimator:
     type: NaiveEstimator
     spec:
@@ -61,15 +61,15 @@ controller:
           type: NaiveFeedbackController
           spec:
             # for naive planner
-            # kp: 200
-            # kv: 50
+            kp: 200
+            kv: 50
             # for integrator planner
-            kp: 10
-            kv: 100
+            # kp: 10
+            # kv: 100
             u_max: 200
         safe_controller: 
-          # type: SafeSetController
-          type: UnsafeController
+          type: SafeSetController
+          # type: UnsafeController
           spec:
             d_min: 10.0
             k_v: 1.0
