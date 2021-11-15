@@ -52,7 +52,8 @@ class StateSensor(Sensor):
         }
         return ret
 
-
+# todo upgrade to anchor+geometry for both agent/obstacle
+# todo return a list of polytopes
 class RadarSensor(Sensor):
     def __init__(self, agent, all_agents, spec):
         super().__init__(agent, all_agents, spec)
@@ -61,6 +62,7 @@ class RadarSensor(Sensor):
     def measure(self):
         ret = {}
         for name, agent in self.all_agents.items():
+            # todo change collision name
             if agent != self.agent and agent.collision:
                 d = min(len(agent.pos), len(self.agent.pos))
                 ret[name] = {

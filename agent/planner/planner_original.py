@@ -149,7 +149,7 @@ class OptimizationBasedPlanner(Planner):
         # norm distance restriction
         obs_p = obs.flatten()
         # obs_r = self.spec['obs_r']
-        obs_r = 1
+        obs_r = 1 # todo tune
         obs_r = np.array(obs_r)
         
         # flatten the input x 
@@ -198,7 +198,7 @@ class OptimizationBasedPlanner(Planner):
             tmp += time_interval
         return time
 
-
+    # todo return [T, obs_dim] obs trajectory
     def obs_traj_estimate(self, obs_state, time):
         '''
         estimate the future obstacle position
@@ -211,6 +211,9 @@ class OptimizationBasedPlanner(Planner):
             obs_traj[i,:] = pos_tmp.transpose()
         return obs_traj
 
+    # self.obj_traj = obs_traj_estimate(...)
+    # nominal_traj = reference_traj_generate(...)
+    # traj = CFS()
 
     def interpolate_joint(self, x_ref):
         '''
@@ -377,7 +380,7 @@ class OptimizationBasedPlanner(Planner):
         # without obstacle, then collision free
         
         n_ob = self.spec['n_ob']
-        obs_traj = self.obs_traj
+        obs_traj = self.obs_traj # todo check this
         if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
             return np.array(x_ref)
 
