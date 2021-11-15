@@ -10,14 +10,14 @@ model:
           dT: 0.02
           state_component: ['pos', 'vel']
     control:
-      # type: BallModel
-      # spec:
-      #     control_input_dim: 2
-      #     state_component: ['pos', 'vel']
-      type: UnicycleModel
+      type: BallModel
       spec:
           control_input_dim: 2
-          state_component: ['pos']
+          state_component: ['pos', 'vel']
+      # type: UnicycleModel
+      # spec:
+      #     control_input_dim: 2
+      #     state_component: ['pos']
     # type: LinearModel
     # spec:
     #     use_spec: False

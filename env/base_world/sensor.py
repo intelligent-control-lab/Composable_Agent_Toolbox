@@ -62,9 +62,10 @@ class RadarSensor(Sensor):
         ret = {}
         for name, agent in self.all_agents.items():
             if agent != self.agent and agent.collision:
+                d = min(len(agent.pos), len(self.agent.pos))
                 ret[name] = {
-                    "rel_pos": self._gaussian_noise(agent.pos - self.agent.pos, self.noise_var),
-                    "rel_vel": self._gaussian_noise(agent.vel - self.agent.vel, self.noise_var)
+                    "rel_pos": self._gaussian_noise(agent.pos[:d] - self.agent.pos[:d], self.noise_var),
+                    "rel_vel": self._gaussian_noise(agent.vel[:d] - self.agent.vel[:d], self.noise_var)
                 }
         return ret
 

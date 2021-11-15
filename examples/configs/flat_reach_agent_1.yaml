@@ -31,7 +31,8 @@ planner:
     type: IntegraterPlanner
     spec:
         horizon: 50
-        replanning_cycle: 10
+        # replanning_cycle: 10
+        replanning_cycle: 50
         state_dimension: 2
     # type: NaivePlanner
     # spec:
