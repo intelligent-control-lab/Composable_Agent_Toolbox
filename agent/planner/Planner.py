@@ -107,7 +107,7 @@ class IntegraterPlanner(Planner):
 
             for j in range(n_state_comp):
                 traj[:, j * xd + i] = xbar[:, j]
-        
+
         return traj
 
 # todo adapt CFS planner as a safe planner, also use planning model

@@ -32,7 +32,7 @@ planner:
     spec:
         horizon: 50
         # replanning_cycle: 10
-        replanning_cycle: 50
+        replanning_cycle: 30
         state_dimension: 2
     # type: NaivePlanner
     # spec:
@@ -41,6 +41,26 @@ planner:
     #     state_dimension: 2
     #     n_ob: 1
     #     obs_r: 5
+controller:
+    type: Controller
+    spec:
+        feedback_controller: 
+          type: NaiveFeedbackController
+          spec:
+            # for naive planner
+            # kp: 200
+            # kv: 50
+            # for integrator planner
+            kp: 15
+            kv: 100
+            u_max: 200
+        safe_controller: 
+          # type: SafeSetController
+          type: UnsafeController
+          spec:
+            d_min: 10.0
+            k_v: 1.0
+            eta: 1
 estimator:
     type: NaiveEstimator
     spec:
@@ -54,26 +74,6 @@ estimator:
         time_sample: 0.01
         kp: 40
         kv: 40
-controller:
-    type: Controller
-    spec:
-        feedback_controller: 
-          type: NaiveFeedbackController
-          spec:
-            # for naive planner
-            # kp: 200
-            # kv: 50
-            # for integrator planner
-            kp: 10
-            kv: 100
-            u_max: 200
-        safe_controller: 
-          # type: SafeSetController
-          type: UnsafeController
-          spec:
-            d_min: 10.0
-            k_v: 1.0
-            eta: 1
 sensors:
 -   type: PVSensor
     spec:

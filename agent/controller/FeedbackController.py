@@ -37,7 +37,7 @@ class FeedbackController(ABC):
         e = self.model.compute_error(
             processed_data=processed_data, goal=goal,
             goal_type=goal_type, state_dimension=state_dimension)
-        
+
         # state error -> action
         u = self._control(processed_data=processed_data, error=e)
 
@@ -69,7 +69,7 @@ class NaiveFeedbackController(FeedbackController):
         u_state = np.clip(u_state, -self.u_max, self.u_max)
 
         if self.model.has_heading:
-            u_state[-1] = np.clip(u_state[-1], -self.u_max/100.0, self.u_max/100.0)
+            u_state[-1] = np.clip(u_state[-1], -self.u_max/75.0, self.u_max/75.0)
 
         # invert control model to get actual action
         u = self.model.inverse(processed_data, u_state)

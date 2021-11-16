@@ -40,19 +40,6 @@ planner:
     #     state_dimension: 2
     #     n_ob: 1
     #     obs_r: 5
-estimator:
-    type: NaiveEstimator
-    spec:
-        init_x: [50.0, 20.0, 0.0, 0.0]
-        init_variance: [0.01, 0.01, 0.01, 0.01]
-        Rww: [0.001, 0.001, 0.001, 0.001]
-        Rvv: [0.001, 0.001, 0.001, 0.001]
-        alpha_ukf: 1
-        kappa_ukf: 0.1
-        beta_ukf: 2
-        time_sample: 0.01
-        kp: 6
-        kv: 8
 controller:
     type: Controller
     spec:
@@ -72,6 +59,19 @@ controller:
             d_min: 10.0
             k_v: 2.0
             eta: 1
+estimator:
+    type: NaiveEstimator
+    spec:
+        init_x: [50.0, 20.0, 0.0, 0.0]
+        init_variance: [0.01, 0.01, 0.01, 0.01]
+        Rww: [0.001, 0.001, 0.001, 0.001]
+        Rvv: [0.001, 0.001, 0.001, 0.001]
+        alpha_ukf: 1
+        kappa_ukf: 0.1
+        beta_ukf: 2
+        time_sample: 0.01
+        kp: 6
+        kv: 8
 sensors:
 -   type: PVSensor
     spec:

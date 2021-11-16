@@ -6,6 +6,18 @@ world:
         agent_goal:
             robot: null
             human: "robot"
+    # # todo change spec to:
+    # agent_tasks:
+    #     robot:
+    #         task: FlatEvadeTask
+    #         spec:
+    #             reaching_eps: 0.1
+    #             goal: null
+    #     human:
+    #         task: FlatEvadeTask
+    #         spec:
+    #             reaching_eps: 0.1
+    #             goal: "robot"
 dt: 0.02
 agent_env_spec:
     robot:

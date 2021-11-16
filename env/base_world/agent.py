@@ -79,18 +79,20 @@ class UnicycleAgent(Agent):
 
         t = self._x[2, 0]
         xdot = np.array([v*math.cos(t), v*math.sin(t), w]).reshape(-1, 1)
-        self._x += xdot*dt
+
+        self._x[:self.xdim//2] += xdot*dt
         self._x[2] = math.atan2(math.sin(self._x[2]), math.cos(self._x[2]))
+        self._x[-self.xdim//2:] = xdot
 
         self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
     
     @property
     def pos(self):
-        return self._x
+        return self._x[:self.xdim//2]
 
     @property
     def vel(self):
-        return np.zeros((self.xdim, 1))
+        return self._x[-self.xdim//2:]
 
 class GoalAgent(BB8Agent):
     """The goal agent.

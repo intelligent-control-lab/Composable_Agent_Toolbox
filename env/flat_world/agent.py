@@ -37,7 +37,18 @@ class GoalAgent(BB8Agent):
     """The goal agent.
     This agent is a virtual agent represents the goal of a real agent.
     This agent only flash to a new place when the real agent reaches it.
-    The reason we inheritate it from BB8Agent is to make it possible to be a 
+    The reason we inher
+    # agent_tasks:
+    #     robot:
+    #         task: FlatEvadeTask
+    #         spec:
+    #             reaching_eps: 0.1
+    #             goal: null
+    #     human:
+    #         task: FlatEvadeTask
+    #         spec:
+    #             reaching_eps: 0.1
+    #             goal: "robot"itate it from BB8Agent is to make it possible to be a 
     dynamic goal in the future.
     """
     def __init__(self, name, hunter, goal_list, reaching_eps, collision=False):

@@ -2,7 +2,7 @@ world:
     type: FlatReachingWorld
     spec:
         friction: 0
-        reaching_eps: 0.1
+        reaching_eps: 0.2
         agent_goal_lists:
             robot: [[70, 25], [10, 40]]
             human: [[10, 15], [40, 70]]
@@ -19,7 +19,7 @@ agent_env_spec:
     robot:
         type: UnicycleAgent
         spec:
-            init_x: [30.0, 20.0, -1.0472]
+            init_x: [30.0, 20.0, -1.0472, 0.0, 0.0, 0.0]
     # human:
     #     type: UnicycleAgent
     #     spec:

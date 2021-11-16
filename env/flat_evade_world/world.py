@@ -39,21 +39,21 @@ class FlatEvadeWorld(World):
         
         agent = super().add_agent(comp_agent, agent_env_spec)
         
-        adv_target = self.agent_goal[agent.name]
-        if adv_target is None:
-            adv_agent = None
+        adv_target_name = self.agent_goal[agent.name]
+        if adv_target_name is None:
+            adv_target_agent = None
         else:
-            if adv_target in self.agents:
-                adv_agent = self.agents[adv_target]
+            if adv_target_name in self.agents:
+                adv_target_agent = self.agents[adv_target_name]
             else:
                 print('Adv target {} must be initialized before its chaser {}.'.format(
-                    adv_target, agent.name))
+                    adv_target_name, agent.name))
                 assert(False)
 
         goal_agent = env.flat_evade_world.agent.GoalAgent(
             agent.name+"_goal",
             agent,
-            adv_agent,
+            adv_target_agent,
             self.reaching_eps)
 
         agent.goal = goal_agent
