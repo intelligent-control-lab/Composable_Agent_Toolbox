@@ -8,14 +8,21 @@ import progressbar
 
 if __name__ == "__main__":
 
+    agent_specs = []
+
     # The module specs for agents, specifies which task, model, planner, controller, sensor to use.
     with open('configs/flat_reach_agent_1.yaml', 'r') as infile:
         agent1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+    agent_specs.append(agent1_module_spec)
     
     with open('configs/flat_reach_agent_2.yaml', 'r') as infile:
         agent2_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+    agent_specs.append(agent2_module_spec)
 
-    agent_specs = [agent1_module_spec, agent2_module_spec] # specs for two agents
+    with open('configs/flat_reach_obs_1.yaml', 'r') as infile:
+        obs1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+    agent_specs.append(obs1_module_spec)
+    
     agents = []
     for i in range(len(agent_specs)):
         agents.append(agent.ModelBasedAgent(agent_specs[i]))

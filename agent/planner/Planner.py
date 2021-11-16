@@ -110,5 +110,41 @@ class IntegraterPlanner(Planner):
 
         return traj
 
-# todo adapt CFS planner as a safe planner, also use planning model
-# state planner by default assume no structure about model (only linearize)
+
+class CFSPlanner(IntegraterPlanner):
+
+    def __init__(self, spec, model) -> None:
+        super().__init__(spec, model)
+    
+    def _plan(self, dt: float, goal: dict, est_data: dict) -> np.array:
+        
+        xd = self.state_dimension
+
+        # get integrator interpolation
+        traj = super()._plan(dt, goal, est_data)
+
+        # invoke CFS to avoid collision
+        # ! tmp logic for sanity check
+
+        # get obs relative pos
+        obs_pos_list = []
+        for name, info in est_data['obstacle_sensor_est'].items():
+            if 'obs' in name:
+                obs_pos_list.append(info['rel_pos'])
+        
+        # check collision along traj, to be replaced by CFS call
+        mind = 0.0
+        state = est_data["cartesian_sensor_est"]['pos'][:xd]
+        for obs_pos in obs_pos_list:
+            obs_pos_abs = obs_pos + state
+            d = np.min(np.linalg.norm(
+                traj[:, :self.state_dimension, 0] - obs_pos_abs.reshape(1, -1), axis=1)) - 5
+            if d < mind:
+                mind = d
+        
+        if mind < 0.0:
+            print("Collision: {}".format(mind))
+
+        return traj
+
+

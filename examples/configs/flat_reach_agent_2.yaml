@@ -28,7 +28,8 @@ model:
     #     model_spec: null
     #     control_input_dim: 2
 planner:
-    type: IntegraterPlanner
+    # type: IntegraterPlanner
+    type: CFSPlanner
     spec:
         horizon: 50
         replanning_cycle: 10

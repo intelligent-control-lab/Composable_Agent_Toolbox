@@ -66,9 +66,12 @@ class RadarSensor(Sensor):
             if agent != self.agent and agent.collision:
                 d = min(len(agent.pos), len(self.agent.pos))
                 ret[name] = {
-                    "rel_pos": self._gaussian_noise(agent.pos[:d] - self.agent.pos[:d], self.noise_var),
-                    "rel_vel": self._gaussian_noise(agent.vel[:d] - self.agent.vel[:d], self.noise_var)
+                    "rel_pos": self._gaussian_noise(
+                        agent.pos[:d] - self.agent.pos[:d], self.noise_var),
+                    "rel_vel": self._gaussian_noise(
+                        agent.vel[:d] - self.agent.vel[:d], self.noise_var)
                 }
+        
         return ret
 
 
@@ -81,7 +84,11 @@ class GoalSensor(Sensor):
     def measure(self):
         goal_dim = len(self.all_agents[self.agent.name+"_goal"].pos)
         ret = {
-            "rel_pos": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].pos - self.agent.pos[:goal_dim], self.noise_var),
-            "rel_vel": self._gaussian_noise(self.all_agents[self.agent.name+"_goal"].vel - self.agent.vel[:goal_dim], self.noise_var)
+            "rel_pos": self._gaussian_noise(
+                self.all_agents[self.agent.name+"_goal"].pos - self.agent.pos[:goal_dim],
+                self.noise_var),
+            "rel_vel": self._gaussian_noise(
+                self.all_agents[self.agent.name+"_goal"].vel - self.agent.vel[:goal_dim],
+                self.noise_var)
         }
         return ret

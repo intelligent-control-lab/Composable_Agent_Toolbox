@@ -43,7 +43,9 @@ class FlatReachingWorld(World):
         agent = super().add_agent(comp_agent, agent_env_spec)
         
         # todo index agent task using agent.name and invoke corresponding GoalAgent
-        goal_agent = env.flat_world.agent.GoalAgent(agent.name+"_goal", agent, self.agent_goal_lists[agent.name], self.reaching_eps)
+        goal_agent = env.flat_world.agent.GoalAgent(
+            agent.name+"_goal", agent, self.agent_goal_lists[agent.name], self.reaching_eps)
+            
         agent.goal = goal_agent
         self.agents[goal_agent.name] = goal_agent
 

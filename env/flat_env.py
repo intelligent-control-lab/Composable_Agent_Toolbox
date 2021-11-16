@@ -19,8 +19,12 @@ class FlatEnv(object):
 
     def reset(self):
         self.world.reset()
+        # add world agent for all computational agents
         for i in range(len(self.comp_agents)):
-            self.world.add_agent(self.comp_agents[i], self.env_spec['agent_env_spec'][self.comp_agents[i].name])
+            self.world.add_agent(self.comp_agents[i],
+                self.env_spec['agent_env_spec'][self.comp_agents[i].name])
+        # add world agent for all non-computational agents
+
         env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
@@ -33,22 +37,29 @@ class FlatEnv(object):
 
     def render(self):
         plt.cla()
-        plt.axis([0, 100, 0, 100])
+
+        # obs location
+        c_obs = '#A2AEAF'
+        for name, agent in self.world.agents.items():
+            if 'obs' in name:
+                circ = plt.Circle(agent.pos, 5.0, color=c_obs, clip_on=False)
+                ax = plt.gca()
+                ax.add_patch(circ)
+
+        # agents location
+        cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
         x = []
         y = []
         for name, agent in self.world.agents.items():
-            if 'goal' not in name:
+            if 'goal' not in name and 'obs' not in name:
                 x.append(agent.pos[0])
                 y.append(agent.pos[1])
 
         for name, agent in self.world.agents.items():
-            if 'goal' in name:
+            if 'goal' in name and 'obs' not in name:
                 x.append(agent.pos[0])
                 y.append(agent.pos[1])
         
-        cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
-
-        # agents location
         plt.scatter(x,y,s=100, color=cs[:len(x)])
         
         # agent heading    return args[0]._bind(args[1:], kwargs)    return args[0]._bind(args[1:], kwargs)
@@ -61,5 +72,9 @@ class FlatEnv(object):
 
         # plt.plot(human_traj[:,0],human_traj[:,1])
         # plt.plot(robot_traj[:,0],robot_traj[:,1])
+
+        # plt.axis('equal')
+        plt.gca().set_xlim((0, 100))
+        plt.gca().set_ylim((0, 100))
         plt.draw()
         plt.pause(0.001)
