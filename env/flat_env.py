@@ -42,9 +42,10 @@ class FlatEnv(object):
         c_obs = '#A2AEAF'
         for name, agent in self.world.agents.items():
             if 'obs' in name:
-                circ = plt.Circle(agent.pos, 5.0, color=c_obs, clip_on=False)
-                ax = plt.gca()
-                ax.add_patch(circ)
+                # circ = plt.Circle(agent.pos, 2.0, color=c_obs, clip_on=False)
+                # ax = plt.gca()
+                # ax.add_patch(circ)
+                plt.scatter(agent.pos[0],agent.pos[1],s=100)
 
         # agents location
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']

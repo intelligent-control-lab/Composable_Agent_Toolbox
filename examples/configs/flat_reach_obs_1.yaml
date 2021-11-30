@@ -27,7 +27,7 @@ controller:
             spec:
                 kp: 15
                 kv: 100
-                u_max: 200
+                u_max: [0, 0]
         safe_controller: 
             type: UnsafeController
             spec:
