@@ -11,21 +11,6 @@ if __name__ == "__main__":
     agent_specs = []
 
     # The module specs for agents, specifies which task, model, planner, controller, sensor to use.
-    with open('configs/flat_reach_agent_1.yaml', 'r') as infile:
-        agent1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    agent_specs.append(agent1_module_spec)
-    
-    with open('configs/flat_reach_agent_2.yaml', 'r') as infile:
-        agent2_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    agent_specs.append(agent2_module_spec)
-
-    with open('configs/flat_reach_obs_1.yaml', 'r') as infile:
-        obs1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    agent_specs.append(obs1_module_spec)
-    
-    agents = []
-    for i in range(len(agent_specs)):
-        agents.append(agent.ModelBasedAgent(agent_specs[i]))
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
@@ -33,6 +18,14 @@ if __name__ == "__main__":
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_specs, env_spec)
 
+    # create computational agents
+    agents = []
+    for agent_name, agent_spec_file in env_spec['agent_comp_spec'].items():
+        with open(agent_spec_file, 'r') as infile:
+            agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+            agents.append(agent.ModelBasedAgent(agent_module_spec))
+
+    # init env
     env = env.FlatEnv(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()
     record = []

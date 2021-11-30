@@ -8,6 +8,10 @@ world:
             human: [[10, 15], [40, 70]]
             obs1: [[20.0, 20.0]]
 dt: 0.02
+agent_comp_spec:
+    robot: configs/flat_reach_agent_1.yaml
+    human: configs/flat_reach_agent_2.yaml
+    # obs1:  configs/flat_reach_obs_1.yaml
 agent_env_spec:
     # robot:
     #     type: BB8Agent
@@ -25,7 +29,7 @@ agent_env_spec:
     #     type: UnicycleAgent
     #     spec:
     #         init_x: [50.0, 20.0, 1.571]
-    obs1:
-        type: BB8Agent
-        spec:
-            init_x: [20.0, 20.0, 0.0, 0.0]
+    # obs1:
+    #     type: BB8Agent
+    #     spec:
+    #         init_x: [20.0, 20.0, 0.0, 0.0]
