@@ -60,6 +60,8 @@ See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/
 ## DSTA
 
 ### DONE
+- General
+    - Now computation agent spec is read from env yaml (as file path) instead of coding in py
 - Planning Models
     - Double integrator model
 - Planner
@@ -68,6 +70,7 @@ See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/
 - Control Models
     - Ballmodel
     - Unicycle
+        - Non linear PID
 - Feedback Controller
     - Naive (use arbitrary control models)
 

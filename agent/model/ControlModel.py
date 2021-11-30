@@ -17,15 +17,25 @@ class ControlModel(ABC):
         self._state_component = spec['state_component']
         self.has_heading = False
 
+        self.feat = self._feat
+        self.w = None
+
     @property
     def state_component(self):
         return self._state_component
 
     @abstractmethod
+    def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
+        '''
+            control error = w @ _feat
+        '''
+
+        pass
+
     def _compute_error(self, processed_data: dict, goal: np.ndarray,
         goal_type: GoalType) -> np.ndarray:
 
-        pass
+        return self.w @ self.feat(processed_data, goal)
 
     def compute_error(self, processed_data: dict, goal: np.ndarray,
         goal_type: GoalType, state_dimension: int) -> np.ndarray:
@@ -38,6 +48,8 @@ class ControlModel(ABC):
             pos/vel/etc. contains all state dimensions considered in planning model
 
             Derived model will determine what info to use from processed data.
+
+            Output is error in control space
         '''
 
         # useful part of goal
@@ -48,35 +60,31 @@ class ControlModel(ABC):
             goal=g,
             goal_type=goal_type)
     
-    @abstractmethod
-    def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
-        '''
-            compute action u from xdot
-        '''
-        pass
+    # @abstractmethod
+    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
+    #     '''
+    #         compute action u from xdot
+    #     '''
+    #     pass
 
 class BallModel(ControlModel):
     
     def __init__(self, spec: dict) -> None:
         super().__init__(spec)
-    
-    def _compute_error(self, processed_data: dict,
-        goal: np.ndarray, goal_type: GoalType) -> np.ndarray:
-        '''
-            Cartesian error.
-        '''
 
-        e = goal - np.vstack([
+        self.w = np.eye(4)
+    
+    def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
+        
+        return goal - np.vstack([
                 processed_data["cartesian_sensor_est"]["pos"],
                 processed_data["cartesian_sensor_est"]["vel"]])
-        
-        return e
     
-    def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
+    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
 
-        super().inverse(processed_data, xdot_desired)
+    #     super().inverse(processed_data, xdot_desired)
 
-        return xdot_desired
+    #     return xdot_desired
 
 class UnicycleModel(ControlModel):
     '''
@@ -88,35 +96,46 @@ class UnicycleModel(ControlModel):
         super().__init__(spec)
 
         self.has_heading = True
+        self.w = np.array([
+            [0, 0, 0],
+            [0, 0, 0],
+            [1, 1, 0],
+            [0, 0, 1.5]
+        ])
 
-    def _compute_error(self, processed_data: dict, goal: np.ndarray,
-        goal_type: GoalType) -> np.ndarray:
+    def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
         
         xref, yref = goal.reshape(-1)
         x, y, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
 
         xerr = xref - x
         yerr = yref - y
-        terr = math.atan2( yerr, xerr ) - t
-        terr = math.atan2(math.sin(terr), math.cos(terr)) # map to +/- pi
+        tg = math.atan2( yerr, xerr )
 
-        return np.array([xerr, yerr, terr, 0.0, 0.0, 0.0]).reshape(-1, 1)
+        # terr = math.atan2(math.sin(terr), math.cos(terr)) # map to +/- pi
 
-    def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
+        feat = np.zeros((3, 1))
+        feat[0, 0] = math.sqrt(xerr**2 + yerr**2)
+        feat[1, 0] = math.cos(tg - t) * math.sqrt(xerr**2 + yerr**2)
+        feat[2, 0] = math.atan2(math.sin(tg - t), math.cos(tg - t))
+
+        return feat
+
+    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
         
-        _, _, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
+    #     _, _, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
         
-        A = np.array(
-            [
-                [math.cos(t), 0.0],
-                [math.sin(t), 0.0],
-                [0.0        , 1.0]
-            ]
-        )
+    #     A = np.array(
+    #         [
+    #             [math.cos(t), 0.0],
+    #             [math.sin(t), 0.0],
+    #             [0.0        , 1.0]
+    #         ]
+    #     )
         
-        b = xdot_desired
+    #     b = xdot_desired
 
-        u = np.linalg.lstsq(a=A, b=b)[0] # [v, w]
+    #     u = np.linalg.lstsq(a=A, b=b)[0] # [v, w]
 
-        return u
+    #     return u
 
