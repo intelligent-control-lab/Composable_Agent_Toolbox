@@ -134,6 +134,7 @@ class CFSPlanner(IntegraterPlanner):
         # flatten the input x 
         x = x.flatten()
         dist = np.linalg.norm(x - obs_p) - obs_r
+
         return dist
 
     def _CFS(self, 
@@ -211,7 +212,7 @@ class CFSPlanner(IntegraterPlanner):
         beq = matrix(beq,(len(beq),1),'d')
 
         # set the safety margin 
-        D = 5
+        D = 2
 
         # fig, ax = plt.subplots()
         # main CFS loop

@@ -51,7 +51,7 @@ controller:
             # kp: 200
             # kv: 50
             # for integrator planner
-            kp: 0
+            kp: 10
             kv: 20
             u_max: [40, 5]
         safe_controller: 

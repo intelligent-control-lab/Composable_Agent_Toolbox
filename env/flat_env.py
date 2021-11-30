@@ -45,7 +45,7 @@ class FlatEnv(object):
                 # circ = plt.Circle(agent.pos, 2.0, color=c_obs, clip_on=False)
                 # ax = plt.gca()
                 # ax.add_patch(circ)
-                plt.scatter(agent.pos[0],agent.pos[1],s=100)
+                plt.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
 
         # agents location
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
