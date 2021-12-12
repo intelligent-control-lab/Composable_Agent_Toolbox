@@ -80,4 +80,11 @@ See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/
 - Control model should be consistent with/same as that of world agent.
     - The world agent needs to provid all info needed by control model
 
-### TODO
+## HW1 Safe Control
+
+## HW2 Safe Planning
+`python flat_reach.py`
+
+### Note
+- `examples/configs/flat_reach_agent_2.yaml` uses `CFSPlanner` defined in `agent/planner/Planner.py` which calls `_CFS()` to solve planning.
+- Planner is invoked at `agent/model_based_agent.py:51`.
