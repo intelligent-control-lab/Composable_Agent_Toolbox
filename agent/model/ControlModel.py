@@ -78,7 +78,7 @@ class BallModel(ControlModel):
     
     # dx = [vx, vy, ax, ay]
     # fx = [vx, vy, 0, 0]
-    # fu = [[1,0],[0,1]] @ [ax, ay]
+    # fu = [[0,0],[0,0],[1,0],[0,1]] @ [ax, ay]
     def fx(self, x: np.ndarray) -> np.ndarray:
         fx = np.vstack([x[2], x[3], 0, 0])
         return  fx

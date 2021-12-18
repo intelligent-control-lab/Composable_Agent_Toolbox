@@ -3,19 +3,49 @@ task:
     type: FlatEvadeTask
     spec: {}
 model:
-    type: BallModel
+    planning:
+      # for single dimension
+      type: DoubleIntegrator
+      spec:
+          dT: 0.02
+          state_component: ['pos', 'vel']
+    control:
+      type: BallModel
+      spec:
+          control_input_dim: 2
+      # type: UnicycleModel
+      # spec:
+      #     control_input_dim: 2
+planner:
+    type: NaivePlanner
     spec:
-        dT: 0.02
-        control_input_dim: 2
-    # type: LinearModel
-    # spec:
-    #     use_spec: False
-    #     use_library: False
-    #     model_name: Ballbot
-    #     time_sample: 0.02
-    #     disc_flag: True
-    #     model_spec: null
-    #     control_input_dim: 2
+        horizon: 20
+        replanning_cycle: 10
+        state_dimension: 2
+controller:
+    type: Controller
+    spec:
+        feedback_controller: 
+          type: NaiveFeedbackController
+          spec:
+            kp: 200
+            kv: 50
+            u_max: [200, 200]
+        safe_controller: 
+          # type: UnsafeController
+          type: SafeSetController
+          # type: ZeroingBarrierFunctionController
+          # type: SublevelSafeSetController
+          # type: UnsafeController
+          # type: PotentialFieldController
+          # type: SlidingModeController
+          spec:
+              d_min: 15.0
+              k_v: 5.0
+              eta: 1
+              c: 1000
+              lambd: 1
+              u_max: [200, 200]
 estimator:
     type: NaiveEstimator
     spec:
@@ -29,29 +59,6 @@ estimator:
         time_sample: 0.01
         kp: 40
         kv: 40
-planner:
-    type: NaivePlanner
-    spec:
-        horizon: 20
-        replanning_cycle: 10
-        dim: 2
-        n_ob: 1
-        obs_r: 5
-controller:
-    type: Controller
-    spec:
-        feedback_controller: 
-          type: NaiveFeedbackController
-          spec:
-            kp: 200
-            kv: 50
-            u_max: 200
-        safe_controller: 
-          type: SafeSetController
-          spec:
-            d_min: 10.0
-            k_v: 1.0
-            eta: 1
 sensors:
 -   type: PVSensor
     spec:

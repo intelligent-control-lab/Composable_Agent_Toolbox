@@ -13,22 +13,10 @@ model:
       type: BallModel
       spec:
           control_input_dim: 2
-          state_component: ['pos', 'vel']
       # type: UnicycleModel
       # spec:
       #     control_input_dim: 2
-      #     state_component: ['pos']
-    # type: LinearModel
-    # spec:
-    #     use_spec: False
-    #     use_library: False
-    #     model_name: Ballbot
-    #     time_sample: 0.02
-    #     disc_flag: True
-    #     model_spec: null
-    #     control_input_dim: 2
 planner:
-    # type: IntegraterPlanner
     type: CFSPlanner
     spec:
         horizon: 50
@@ -56,12 +44,8 @@ controller:
             u_max: [1000, 1000]
         safe_controller: 
             type: UnsafeController
-            # type: SafeSetController
             spec:
                 u_max: [40, 5]
-                d_min: 10.0
-                k_v: 2.0
-                eta: 1
 
 estimator:
     type: NaiveEstimator
