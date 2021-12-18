@@ -14,7 +14,6 @@ class ControlModel(ABC):
     '''
     def __init__(self, spec: dict) -> None:
         self.spec = spec
-        # self._state_component = spec['state_component']
         self.has_heading = False
 
         self.feat = self._feat
@@ -30,9 +29,6 @@ class ControlModel(ABC):
 
     def get_goal(self, goal: np.ndarray) -> np.ndarray:
         raise NotImplemented
-    
-        # # useful part of goal
-        # return goal[:4]
 
     def compute_error(self, processed_data: dict, goal: np.ndarray,
         goal_type: GoalType, state_dimension: int) -> np.ndarray:
@@ -54,13 +50,6 @@ class ControlModel(ABC):
     
     def jacobian(self, x: np.ndarray) -> np.ndarray:
         raise NotImplemented
-        
-    # @abstractmethod
-    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
-    #     '''
-    #         compute action u from xdot
-    #     '''
-    #     pass
 
 class BallModel(ControlModel):
     
@@ -92,12 +81,6 @@ class BallModel(ControlModel):
     def jacobian(self, x: np.ndarray) -> np.ndarray:
         # p_cartesian_p_state
         return np.eye(4)
-    
-    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
-
-    #     super().inverse(processed_data, xdot_desired)
-
-    #     return xdot_desired
 
 class UnicycleModel(ControlModel):
     '''
@@ -122,16 +105,11 @@ class UnicycleModel(ControlModel):
     def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
         
         xref, yref = goal.reshape(-1)
-        # x, y, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
-        # print(processed_data["state_sensor_est"])
-        # print(processed_data["state_sensor_est"]['state'][:3].reshape(-1))
         x, y, t = processed_data["state_sensor_est"]['state'][:3].reshape(-1)
 
         xerr = xref - x
         yerr = yref - y
         tg = math.atan2( yerr, xerr )
-
-        # terr = math.atan2(math.sin(terr), math.cos(terr)) # map to +/- pi
 
         feat = np.zeros((3, 1))
         feat[0, 0] = math.sqrt(xerr**2 + yerr**2)
@@ -169,24 +147,4 @@ class UnicycleModel(ControlModel):
         # cartesian = [x, y, vx, vy]
         # state = [x, y, t, vx, vy, vt]
         # dot_c = p_c_p_x * dot_x
-        
-        
-        
-    # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
-        
-    #     _, _, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
-        
-    #     A = np.array(
-    #         [
-    #             [math.cos(t), 0.0],
-    #             [math.sin(t), 0.0],
-    #             [0.0        , 1.0]
-    #         ]
-    #     )
-        
-    #     b = xdot_desired
-
-    #     u = np.linalg.lstsq(a=A, b=b)[0] # [v, w]
-
-    #     return u
 

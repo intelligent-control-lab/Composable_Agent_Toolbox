@@ -34,8 +34,6 @@ class NaivePlanner(Planner):
     def __init__(self, spec, model):
         super().__init__(spec, model)
 
-        # self.cache = {}
-
     def _plan(self, dt: float, goal: dict, est_data: dict) -> np.array:
 
         super()._plan(dt, goal, est_data)
@@ -48,16 +46,6 @@ class NaivePlanner(Planner):
             traj.append(pos_vel + frac*i)
 
         return np.array(traj)
-
-    # if necessary, create new class
-    # def planning_arm(self, dt, goal, est_data):
-    #     pos_vel = np.vstack([est_data["cartesian_sensor_est"]["pos"], est_data["cartesian_sensor_est"]["vel"]])
-    #     traj = []
-    #     goal = goal['goal']
-    #     frac = (goal - pos_vel)*1./self.horizon
-    #     for i in range(self.horizon):
-    #         traj.append(pos_vel + frac*i)
-    #     return np.array(traj)
 
 class IntegraterPlanner(Planner):
 
@@ -75,7 +63,6 @@ class IntegraterPlanner(Planner):
         xd = self._state_dimension
 
         # assume integrater uses first _state_dimension elements from est data
-        # todo decide what to take based on type of goal
         state = np.vstack([
             est_data["cartesian_sensor_est"][comp][:xd]
                 for comp in self.model.state_component
@@ -127,7 +114,6 @@ class CFSPlanner(IntegraterPlanner):
         '''
         # norm distance restriction
         obs_p = obs.flatten()
-        # obs_r = self.spec['obs_r']
         obs_r = 5 # todo tune
         obs_r = np.array(obs_r)
         
@@ -295,20 +281,9 @@ class CFSPlanner(IntegraterPlanner):
             obs_traj = obs_traj[0]
         
         # CFS
-        # mind = 0.0
         traj_pos_only = traj[:, :xd]
         traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_ob=len(obs_pos_list), obs_traj=obs_traj)
         traj[:, :xd] = traj_pos_safe
-
-        # for obs_pos in obs_pos_list:
-        #     obs_pos_abs = obs_pos + state
-        #     d = np.min(np.linalg.norm(
-        #         traj[:, :self.state_dimension, 0] - obs_pos_abs.reshape(1, -1), axis=1)) - 5
-        #     if d < mind:
-        #         mind = d
-        
-        # if mind < 0.0:
-        #     print("Collision: {}".format(mind))
 
         return traj[:, np.newaxis]
 

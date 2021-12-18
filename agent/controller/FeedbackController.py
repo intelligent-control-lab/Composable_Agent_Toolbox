@@ -71,10 +71,4 @@ class NaiveFeedbackController(FeedbackController):
         for i in range(u.shape[0]):
             u[i] = np.clip(u[i], -self.u_max[i], self.u_max[i])
 
-        # if self.model.has_heading:
-        #     u_state[-1] = np.clip(u_state[-1], -self.u_max/75.0, self.u_max/75.0)
-
-        # invert control model to get actual action
-        # u = self.model.inverse(processed_data, u_state)
-
         return u

@@ -97,7 +97,6 @@ class EnergyFunctionController(SafeController):
         """
         pass
     
-    # def control(self, u0, dt, x, goal_x, processed_data, est_params):
     def __call__(self,
         dt: float,
         processed_data: dict,
@@ -124,7 +123,6 @@ class SafeSetController(EnergyFunctionController):
         super().__init__(spec, model)
         self._name = 'safe_set'
 
-    # def safe_control(self, u0, dt, obs, processed_data, est_params):
     def safe_control(self, u_ref, obs, dt, processed_data):
         """ Compute the safe control between ego and an obstacle.
 
@@ -138,8 +136,6 @@ class SafeSetController(EnergyFunctionController):
 
         """
         ce = np.vstack([processed_data["cartesian_sensor_est"]["pos"], processed_data["cartesian_sensor_est"]["vel"]])  # ce: cartesian state of ego
-        # print("ce", ce)
-        # print("co", processed_data["obstacle_sensor_est"][obs])
         co = np.vstack([processed_data["obstacle_sensor_est"][obs]["rel_pos"], processed_data["obstacle_sensor_est"][obs]["rel_vel"]]) + ce  # co: cartesian state of the obstacle
         
         x =  np.vstack(processed_data["state_sensor_est"]["state"])
@@ -162,12 +158,6 @@ class SafeSetController(EnergyFunctionController):
         S = -self.eta - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co
         
         u = u_ref
-        
-        # print(np.shape(p_phi_p_xe))
-        # print(np.shape(fu))
-        # print(np.shape(L))
-        # print(np.shape(S))
-        # print(np.shape(u))
 
         if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref
