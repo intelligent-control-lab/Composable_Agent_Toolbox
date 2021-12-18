@@ -60,34 +60,12 @@ class EnergyFunctionController(SafeController):
         """
         n = np.shape(ce)[0]//2
 
-        dp = np.vstack(ce[:n] - co[:n])
-        dv = np.vstack(ce[n:] - co[n:])
+        raise NotImplementedError # TODO delete this line
 
-        d     = max(np.linalg.norm(dp), 1e-3)
-        dot_d = dp.T @ dv / d
-
-        phi = self.d_min**2 - d**2 - self.k_v * dot_d + self.eta * dt
-
-        p_phi_p_d = -2 * d
-        p_phi_p_dot_d = - self.k_v
-
-        p_d_p_ce = np.vstack([dp / d, np.zeros((n,1))])
-        p_d_p_co = -p_d_p_ce
-
-        p_dot_d_p_dp = dv / d - np.asscalar(dp.T @ dv) * dp / (d**3)
-        p_dot_d_p_dv = dp / d
-
-        p_dp_p_ce = np.hstack([np.eye(n), np.zeros((n,n))])
-        p_dp_p_co = -p_dp_p_ce
-
-        p_dv_p_ce = np.hstack([np.zeros((n,n)), np.eye(n)])
-        p_dv_p_co = -p_dv_p_ce
-
-        p_dot_d_p_ce = p_dp_p_ce.T @ p_dot_d_p_dp + p_dv_p_ce.T @ p_dot_d_p_dv
-        p_dot_d_p_co = p_dp_p_co.T @ p_dot_d_p_dp + p_dv_p_co.T @ p_dot_d_p_dv
-
-        p_phi_p_ce = p_phi_p_d * p_d_p_ce + p_phi_p_dot_d * p_dot_d_p_ce
-        p_phi_p_co = p_phi_p_d * p_d_p_co + p_phi_p_dot_d * p_dot_d_p_co
+        # TODO compute the following terms
+        phi         = None
+        p_phi_p_ce  = None
+        p_phi_p_co  = None
         
         return phi, p_phi_p_ce, p_phi_p_co
     
@@ -141,27 +119,11 @@ class SafeSetController(EnergyFunctionController):
 
         n = np.shape(ce)[0]//2
 
-        # It will be better if we have an estimation of the acceleration of the obstacle
-        dot_co = np.vstack([co[n:], np.zeros((n,1))])
+        raise NotImplementedError # TODO delete this line
 
-        phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
-
-        p_ce_p_xe = self._model.jacobian(x)
-        # dot_x = fx + fu * u
-        fx = self._model.fx(x)
-        fu = self._model.fu(x)
-
-        p_phi_p_xe = p_ce_p_xe.T @ p_phi_p_ce
-
-        L = p_phi_p_xe.T @ fu
-        S = -self.eta - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co
-        
-        u = u_ref
-
-        if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
-            u = u_ref
-        else:
-            u = u_ref - (np.asscalar(L @ u_ref - S) * L.T / np.asscalar(L @ L.T))
+        # TODO compute the following terms
+        phi = None
+        u = None
 
         return phi, u
 
