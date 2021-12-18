@@ -52,39 +52,3 @@ If you want to use the Mujoco env. Install mujoco_py with
 ```
 pip install mujoco_py==2.0.2.8
 ```
-
-## Usage
-
-See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/examples) for more information.
-
-## DSTA
-
-### DONE
-- General
-    - Now computation agent spec is read from env yaml (as file path) instead of coding in py
-- Planning Models
-    - Double integrator model
-- Planner
-    - Naive planner (interpolation, does not use model)
-    - Integrator planner (needs double/triple/etc. integrator model)
-- Control Models
-    - Ballmodel
-    - Unicycle
-        - Non linear PID
-- Feedback Controller
-    - Naive (use arbitrary control models)
-
-### Assumption
-- Planner takes goal + goal type defined by task
-- Controller will always use full dimension of planner traj, but can ignore time deritatives
-- Control model should be consistent with/same as that of world agent.
-    - The world agent needs to provid all info needed by control model
-
-## HW1 Safe Control
-
-## HW2 Safe Planning
-`python flat_reach.py`
-
-### Note
-- `examples/configs/flat_reach_agent_2.yaml` uses `CFSPlanner` defined in `agent/planner/Planner.py` which calls `_CFS()` to solve planning.
-- Planner is invoked at `agent/model_based_agent.py:51`.

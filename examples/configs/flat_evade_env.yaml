@@ -6,18 +6,6 @@ world:
         agent_goal:
             robot: null
             human: "robot"
-    # # todo change spec to:
-    # agent_tasks:
-    #     robot:
-    #         task: FlatEvadeTask
-    #         spec:
-    #             reaching_eps: 0.1
-    #             goal: null
-    #     human:
-    #         task: FlatEvadeTask
-    #         spec:
-    #             reaching_eps: 0.1
-    #             goal: "robot"
 dt: 0.02
 agent_env_spec:
     robot:
@@ -28,6 +16,3 @@ agent_env_spec:
         type: BB8Agent
         spec:
             init_x: [80.0, 80.0, 0.0, 0.0]
-
-# ? it seems that the control (dynamics) model in model-based agent might not be
-# ? consistent with the actual simulation agent?
