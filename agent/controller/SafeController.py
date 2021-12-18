@@ -11,6 +11,7 @@ class SafeController(ABC):
     def __init__(self, spec, model):
 
         self.model = model
+        self.u_max = np.vstack(spec["u_max"])
 
     @abstractmethod
     def __call__(self,
@@ -82,7 +83,6 @@ class EnergyFunctionController(SafeController):
         p_dv_p_ce = np.hstack([np.zeros((n,n)), np.eye(n)])
         p_dv_p_co = -p_dv_p_ce
 
-
         p_dot_d_p_ce = p_dp_p_ce.T @ p_dot_d_p_dp + p_dv_p_ce.T @ p_dot_d_p_dv
         p_dot_d_p_co = p_dp_p_co.T @ p_dot_d_p_dp + p_dv_p_co.T @ p_dot_d_p_dv
 
@@ -123,7 +123,7 @@ class SafeSetController(EnergyFunctionController):
     def __init__(self, spec, model):
         super().__init__(spec, model)
         self._name = 'safe_set'
-        
+
     # def safe_control(self, u0, dt, obs, processed_data, est_params):
     def safe_control(self, u_ref, obs, dt, processed_data):
         """ Compute the safe control between ego and an obstacle.
@@ -137,8 +137,9 @@ class SafeSetController(EnergyFunctionController):
         => p_phi_p_xe.T * fu * u < eta - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
 
         """
-        
         ce = np.vstack([processed_data["cartesian_sensor_est"]["pos"], processed_data["cartesian_sensor_est"]["vel"]])  # ce: cartesian state of ego
+        # print("ce", ce)
+        # print("co", processed_data["obstacle_sensor_est"][obs])
         co = np.vstack([processed_data["obstacle_sensor_est"][obs]["rel_pos"], processed_data["obstacle_sensor_est"][obs]["rel_vel"]]) + ce  # co: cartesian state of the obstacle
         
         x =  np.vstack(processed_data["state_sensor_est"]["state"])
@@ -150,25 +151,28 @@ class SafeSetController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        # p_ce_p_xe = self._model._take_jacobian()
-        p_ce_p_xe = self._model.jacobian()
+        p_ce_p_xe = self._model.jacobian(x)
         # dot_x = fx + fu * u
         fx = self._model.fx(x)
-        fu = self._model.fu()
+        fu = self._model.fu(x)
 
-        p_phi_p_xe = p_ce_p_xe.T * p_phi_p_ce
+        p_phi_p_xe = p_ce_p_xe.T @ p_phi_p_ce
 
-
-        L = p_phi_p_xe.T * fu
-        S = -self.eta - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
+        L = p_phi_p_xe.T @ fu
+        S = -self.eta - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co
         
         u = u_ref
+        
+        # print(np.shape(p_phi_p_xe))
+        # print(np.shape(fu))
+        # print(np.shape(L))
+        # print(np.shape(S))
+        # print(np.shape(u))
 
-        if phi <= 0 or np.asscalar(L * u_ref) < np.asscalar(S):
+        if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref
         else:
-            u = u_ref - (np.asscalar(L * u_ref - S) * L.T / np.asscalar(L * L.T))
-    
+            u = u_ref - (np.asscalar(L @ u_ref - S) * L.T / np.asscalar(L @ L.T))
 
         return phi, u
 
@@ -201,14 +205,17 @@ class PotentialFieldController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        p_ce_p_xe = self._model.p_ce_p_xe()
-        fx = self._model.fx()
-        fu = self._model.fu()
+        x =  np.vstack(processed_data["state_sensor_est"]["state"])
 
-        u_ce = -self.c * p_phi_p_ce
+        p_ce_p_xe = self._model.jacobian(x)
+        
+        fx = self._model.fx(x)
+        fu = self._model.fu(x)
 
-        u = fu.T * p_ce_p_xe.T * u_ce
+        d_ce = -self.c * p_phi_p_ce
 
+        u = fu.T @ p_ce_p_xe.T @ d_ce
+        
         return phi, u
 
 
@@ -241,14 +248,17 @@ class ZeroingBarrierFunctionController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        p_ce_p_xe = self._model.p_ce_p_xe()
-        fx = self._model.fx()
-        fu = self._model.fu()
+        x =  np.vstack(processed_data["state_sensor_est"]["state"])
 
-        p_phi_p_xe = p_ce_p_xe.T * p_phi_p_ce
+        p_ce_p_xe = self._model.jacobian(x)
+        
+        fx = self._model.fx(x)
+        fu = self._model.fu(x)
 
-        A = cvxopt.matrix(p_phi_p_xe.T * fu)
-        b = cvxopt.matrix(self.lambd * phi - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co)
+        p_phi_p_xe = p_ce_p_xe.T @ p_phi_p_ce
+
+        A = cvxopt.matrix(p_phi_p_xe.T @ fu)
+        b = cvxopt.matrix(self.lambd * phi - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co)
         A = A / abs(b)
         b = b / abs(b)
 
@@ -296,16 +306,22 @@ class SlidingModeController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        p_ce_p_xe = self._model.p_ce_p_xe()
-        fx = self._model.fx()
-        fu = self._model.fu()
+        x =  np.vstack(processed_data["state_sensor_est"]["state"])
 
-        p_phi_p_xe = p_ce_p_xe.T * p_phi_p_ce
+        p_ce_p_xe = self._model.jacobian(x)
+        
+        fx = self._model.fx(x)
+        fu = self._model.fu(x)
+
+        p_phi_p_xe = p_ce_p_xe.T @ p_phi_p_ce
+    
+        
         
         if phi > 0:
-            u = u_ref - self.c * p_phi_p_xe.T * fu
+            u = u_ref - self.c * fu.T @ p_phi_p_xe
         else:
-            u = u_ref        
+            u = u_ref
+        
 
         return phi, u
 
@@ -338,20 +354,23 @@ class SublevelSafeSetController(EnergyFunctionController):
 
         phi, p_phi_p_ce, p_phi_p_co = self.phi_and_derivatives(dt, ce, co)
 
-        p_ce_p_xe = self._model.p_ce_p_xe()
-        fx = self._model.fx()
-        fu = self._model.fu()
+        x =  np.vstack(processed_data["state_sensor_est"]["state"])
 
-        p_phi_p_xe = p_ce_p_xe.T * p_phi_p_ce
+        p_ce_p_xe = self._model.jacobian(x)
+        
+        fx = self._model.fx(x)
+        fu = self._model.fu(x)
 
-        L = p_phi_p_xe.T * fu
-        S = self.lambd * phi - p_phi_p_xe.T * fx - p_phi_p_co.T * dot_co
+        p_phi_p_xe = p_ce_p_xe.T @ p_phi_p_ce
+
+        L = p_phi_p_xe.T @ fu
+        S = self.lambd * phi - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co
         
         u = u_ref
 
-        if phi <= 0 or np.asscalar(L * u_ref) < np.asscalar(S):
+        if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref
         else:
-            u = u_ref - (np.asscalar(L * u_ref - S) * L.T / np.asscalar(L * L.T))
+            u = u_ref - (np.asscalar(L @ u_ref - S) * L.T / np.asscalar(L @ L.T))
         
         return phi, u

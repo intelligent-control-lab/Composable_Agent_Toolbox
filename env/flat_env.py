@@ -67,7 +67,8 @@ class FlatEnv(object):
         r = 3.0
         for name, agent in self.world.agents.items():
             if 'goal' not in name and agent.has_heading:
-                xc, yc, t = agent.pos.reshape(-1)
+                xc, yc = agent.pos.reshape(-1)
+                t = agent.heading
                 plt.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
                     color='b', linestyle='-')
 

@@ -31,6 +31,7 @@ controller:
         safe_controller: 
             type: UnsafeController
             spec:
+                u_max: [0, 0]
                 d_min: 10.0
                 k_v: 1.0
                 eta: 1

@@ -79,7 +79,6 @@ class UserControlAgent(AgentBase):
         nu = (module_spec["model"]["spec"]["control_input_dim"])
         self.last_control     = np.zeros((nu,1))  
         
-        
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
         """

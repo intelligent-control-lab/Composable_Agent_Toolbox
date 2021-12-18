@@ -71,10 +71,15 @@ class UnicycleAgent(Agent):
         super().__init__(name, spec, collision=collision)
 
         self.has_heading = True
+        self.u_max = np.vstack(spec["u_max"])
 
+    def control_saturation(self, u):
+        return np.clip(u, -self.u_max, self.u_max)
+    
     def forward(self, action, dt):
         
         u = action['control'] # v, w
+        u = self.control_saturation(u)
         v, w = u.reshape(-1)
 
         t = self._x[2, 0]
@@ -85,14 +90,17 @@ class UnicycleAgent(Agent):
         self._x[-self.xdim//2:] = xdot
 
         self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+    @property
+    def heading(self):
+        return self._x[2]
     
     @property
     def pos(self):
-        return self._x[:self.xdim//2]
+        return self._x[[0,1]]
 
     @property
     def vel(self):
-        return self._x[-self.xdim//2:]
+        return self._x[[3,4]]
 
 class GoalAgent(BB8Agent):
     """The goal agent.

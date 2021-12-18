@@ -14,15 +14,11 @@ class ControlModel(ABC):
     '''
     def __init__(self, spec: dict) -> None:
         self.spec = spec
-        self._state_component = spec['state_component']
+        # self._state_component = spec['state_component']
         self.has_heading = False
 
         self.feat = self._feat
         self.w = None
-
-    @property
-    def state_component(self):
-        return self._state_component
 
     @abstractmethod
     def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
@@ -32,10 +28,11 @@ class ControlModel(ABC):
 
         pass
 
-    def _compute_error(self, processed_data: dict, goal: np.ndarray,
-        goal_type: GoalType) -> np.ndarray:
-
-        return self.w @ self.feat(processed_data, goal)
+    def get_goal(self, goal: np.ndarray) -> np.ndarray:
+        raise NotImplemented
+    
+        # # useful part of goal
+        # return goal[:4]
 
     def compute_error(self, processed_data: dict, goal: np.ndarray,
         goal_type: GoalType, state_dimension: int) -> np.ndarray:
@@ -51,15 +48,13 @@ class ControlModel(ABC):
 
             Output is error in control space
         '''
-
-        # useful part of goal
-        g = goal[:len(self._state_component)*state_dimension]
-
-        return self._compute_error(
-            processed_data=processed_data,
-            goal=g,
-            goal_type=goal_type)
+        
+        g = self.get_goal(goal)
+        return self.w @ self.feat(processed_data, g)
     
+    def jacobian(self, x: np.ndarray) -> np.ndarray:
+        raise NotImplemented
+        
     # @abstractmethod
     # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
     #     '''
@@ -71,14 +66,32 @@ class BallModel(ControlModel):
     
     def __init__(self, spec: dict) -> None:
         super().__init__(spec)
-
         self.w = np.eye(4)
-    
+
+    def get_goal(self, goal: np.ndarray) -> np.ndarray:
+        return goal[:4]
+
     def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
-        
         return goal - np.vstack([
                 processed_data["cartesian_sensor_est"]["pos"],
                 processed_data["cartesian_sensor_est"]["vel"]])
+    
+    # dx = [vx, vy, ax, ay]
+    # fx = [vx, vy, 0, 0]
+    # fu = [[1,0],[0,1]] @ [ax, ay]
+    def fx(self, x: np.ndarray) -> np.ndarray:
+        fx = np.vstack([x[2], x[3], 0, 0])
+        return  fx
+    
+    def fu(self, x:np.ndarray) -> np.ndarray:
+        fu = np.zeros((4,2))
+        fu[2,0] = 1
+        fu[3,1] = 1
+        return fu
+    
+    def jacobian(self, x: np.ndarray) -> np.ndarray:
+        # p_cartesian_p_state
+        return np.eye(4)
     
     # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
 
@@ -103,10 +116,16 @@ class UnicycleModel(ControlModel):
             [0, 0, 1.5]
         ])
 
+    def get_goal(self, goal: np.ndarray) -> np.ndarray:
+        return goal[:2]
+    
     def _feat(self, processed_data: dict, goal: np.ndarray) -> np.ndarray:
         
         xref, yref = goal.reshape(-1)
-        x, y, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
+        # x, y, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)
+        # print(processed_data["state_sensor_est"])
+        # print(processed_data["state_sensor_est"]['state'][:3].reshape(-1))
+        x, y, t = processed_data["state_sensor_est"]['state'][:3].reshape(-1)
 
         xerr = xref - x
         yerr = yref - y
@@ -121,6 +140,38 @@ class UnicycleModel(ControlModel):
 
         return feat
 
+    # dx = fx + fu * u
+    # vx, vy, vt, v cos(t), v sin(t), w
+    # fx = [vx, vy, vt, 0, 0, 0].T
+    # fu * u = [[0,0], [0,0], [0,0], [cos(t),0], [sin(t),0], [0 ,1]] * [v; w]
+    def fx(self, x: np.ndarray) -> np.ndarray:
+        # [x,y,t, vx, vy, vt]
+        # 
+        fx = np.vstack([x[3], x[4], x[5], 0, 0, 0])
+        return  fx
+    def fu(self, x:np.ndarray) -> np.ndarray:
+        fu = np.zeros((6, 2))
+        fu[3, 1] = np.cos(x[2])
+        fu[4, 1] = np.sin(x[2])
+        fu[5, 1] = 1
+        return fu
+        
+    def jacobian(self, x: np.ndarray) -> np.ndarray:
+        # p_cartesian_p_state
+        p_ce_p_xe = np.array([
+            [1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0]])
+        
+        return p_ce_p_xe
+        
+        # cartesian = [x, y, vx, vy]
+        # state = [x, y, t, vx, vy, vt]
+        # dot_c = p_c_p_x * dot_x
+        
+        
+        
     # def inverse(self, processed_data: dict, xdot_desired: np.ndarray) -> np.ndarray:
         
     #     _, _, t = processed_data["cartesian_sensor_est"][self.state_component[0]].reshape(-1)

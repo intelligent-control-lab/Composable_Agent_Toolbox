@@ -55,11 +55,14 @@ controller:
             kv: 100
             u_max: [1000, 1000]
         safe_controller: 
-          type: UnsafeController
-          spec:
-            d_min: 10.0
-            k_v: 2.0
-            eta: 1
+            type: UnsafeController
+            # type: SafeSetController
+            spec:
+                u_max: [40, 5]
+                d_min: 10.0
+                k_v: 2.0
+                eta: 1
+
 estimator:
     type: NaiveEstimator
     spec:

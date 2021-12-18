@@ -30,7 +30,7 @@ if __name__ == "__main__":
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
-    for it in progressbar.progressbar(range(500)):
+    for it in progressbar.progressbar(range(20)):
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
