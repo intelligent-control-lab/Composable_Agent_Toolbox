@@ -122,9 +122,6 @@ class CFSPlanner(IntegraterPlanner):
         x = x.flatten()
         dist = np.linalg.norm(x - obs_p) - obs_r
 
-        if dist < 0:
-            print(x, obs_p, dist)
-
         return dist
 
     def _CFS(self, 
@@ -205,7 +202,7 @@ class CFSPlanner(IntegraterPlanner):
         beq = matrix(beq,(len(beq),1),'d')
 
         # set the safety margin 
-        D = 2
+        D = 3
 
         # fig, ax = plt.subplots()
         # main CFS loop
@@ -296,7 +293,9 @@ class CFSPlanner(IntegraterPlanner):
         traj_pos_only = traj[:, :xd]
         traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_ob=len(obs_pos_list), obs_traj=obs_traj)
         traj[:, :xd] = traj_pos_safe
-        traj[:, -xd:] = 0.0 # velocity is no longer valid
+        # approximate velocity
+        traj[:-1, -xd:] = (traj_pos_safe[1:, :] - traj_pos_safe[:-1, :]) / dt
+        traj[-1, -xd:] = 0.0
 
         return traj[:, np.newaxis]
 
