@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from operator import concat
 from matplotlib.pyplot import axis
 import numpy as np
+np.set_printoptions(suppress=True)
 from cvxopt import matrix, solvers
 from .src.utils import *
 
@@ -121,6 +122,9 @@ class CFSPlanner(IntegraterPlanner):
         x = x.flatten()
         dist = np.linalg.norm(x - obs_p) - obs_r
 
+        if dist < 0:
+            print(x, obs_p, dist)
+
         return dist
 
     def _CFS(self, 
@@ -136,6 +140,9 @@ class CFSPlanner(IntegraterPlanner):
     ):
         # without obstacle, then collision free
         
+        # print('xref', x_ref)
+        # print('obs', obs_traj)
+
         if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
             return np.array(x_ref)
 
@@ -144,7 +151,7 @@ class CFSPlanner(IntegraterPlanner):
 
         # planning parameters 
         h = x_rs.shape[0]    
-        dimension = x_rs.shape[1] #
+        dimension = x_rs.shape[1] # state dimension
 
         # flatten the trajectory to one dimension
         # flatten to one dimension for applying qp, in the form of x0,y0,x1,y1,...
@@ -210,8 +217,13 @@ class CFSPlanner(IntegraterPlanner):
             Constraint = np.zeros((h * n_ob, len(x_rs)))
             
             for i in range(h):
-                # get reference pos at time step i
-                if i < h-1 and i > 0:
+
+                # first pos is enforced
+                if i == 0: # if i == h-1 or i == 0:
+                    s = np.zeros((1,1))
+                    l = np.zeros((1,2))
+                # other pos can be changed
+                else: # if i < h-1 and i > 0:
                     x_r = x_rs[i * dimension : (i + 1) * dimension] 
 
                     # get inequality value (distance)
@@ -227,9 +239,6 @@ class CFSPlanner(IntegraterPlanner):
                     # compute
                     s = dist - D - np.dot(ref_grad, x_r)
                     l = -1 * ref_grad
-                if i == h-1 or i == 0: # don't need inequality constraints for lst dimension 
-                    s = np.zeros((1,1))
-                    l = np.zeros((1,2))
 
                 # update 
                 Sstack = vstack_wrapper(Sstack, s)
@@ -254,6 +263,9 @@ class CFSPlanner(IntegraterPlanner):
         
         # return the reference trajectory      
         x_rs = x_rs[: h * dimension]
+
+        # print('x_rs', x_rs.reshape(h, dimension))
+
         return x_rs.reshape(h, dimension)
 
     def _plan(self, dt: float, goal: dict, est_data: dict) -> np.array:
@@ -276,7 +288,7 @@ class CFSPlanner(IntegraterPlanner):
             obs_traj.append(np.tile((state + obs_pos).reshape(1, -1), (N, 1))) # [N, xd]
 
         if len(obs_traj) > 1:
-            obs_traj = np.concat(obs_traj, axis=-1) # [T, n_obs * xd]
+            obs_traj = np.concat(obs_traj, axis=-1) # [N, xd * n_obs]
         else:
             obs_traj = obs_traj[0]
         
@@ -284,6 +296,7 @@ class CFSPlanner(IntegraterPlanner):
         traj_pos_only = traj[:, :xd]
         traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_ob=len(obs_pos_list), obs_traj=obs_traj)
         traj[:, :xd] = traj_pos_safe
+        traj[:, -xd:] = 0.0 # velocity is no longer valid
 
         return traj[:, np.newaxis]
 

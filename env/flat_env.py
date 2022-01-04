@@ -17,6 +17,10 @@ class FlatEnv(object):
         self.comp_agents = comp_agents
         self.reset()
 
+        # setup rendering
+        self.fig, self.ax = plt.subplots(1, 1, figsize=(5, 5))
+        # self.renderer = self.fig.canvas.renderer
+
     def reset(self):
         self.world.reset()
         # add world agent for all computational agents
@@ -36,16 +40,21 @@ class FlatEnv(object):
         return self.dt, env_info, sensor_data
 
     def render(self):
-        plt.cla()
+        
+        self.ax.cla()
+
+        self.ax.axis('equal')
+        self.ax.set(xlim=(0, 101), ylim=(0, 101))
 
         # obs location
         c_obs = '#A2AEAF'
         for name, agent in self.world.agents.items():
             if 'obs' in name:
-                # circ = plt.Circle(agent.pos, 2.0, color=c_obs, clip_on=False)
-                # ax = plt.gca()
-                # ax.add_patch(circ)
-                plt.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
+                circ = plt.Circle(
+                    agent.pos, 5.0, color='k', clip_on=False,
+                    fill=False)
+                self.ax.add_patch(circ)
+                # self.ax.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
 
         # agents location
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
@@ -61,7 +70,7 @@ class FlatEnv(object):
                 x.append(agent.pos[0])
                 y.append(agent.pos[1])
         
-        plt.scatter(x,y,s=100, color=cs[:len(x)])
+        self.ax.scatter(x,y,s=100, color=cs[:len(x)])
         
         # agent heading    return args[0]._bind(args[1:], kwargs)    return args[0]._bind(args[1:], kwargs)
         r = 3.0
@@ -69,14 +78,12 @@ class FlatEnv(object):
             if 'goal' not in name and agent.has_heading:
                 xc, yc = agent.pos.reshape(-1)
                 t = agent.heading
-                plt.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
+                self.ax.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
                     color='b', linestyle='-')
 
-        # plt.plot(human_traj[:,0],human_traj[:,1])
-        # plt.plot(robot_traj[:,0],robot_traj[:,1])
+        # self.ax.plot(human_traj[:,0],human_traj[:,1])
+        # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
 
-        # plt.axis('equal')
-        plt.gca().set_xlim((0, 100))
-        plt.gca().set_ylim((0, 100))
-        plt.draw()
+        # self.ax.draw(self.renderer)
+        self.fig.canvas.draw()
         plt.pause(0.001)
