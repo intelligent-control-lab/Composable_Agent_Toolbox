@@ -286,16 +286,18 @@ class CFSPlanner(IntegraterPlanner):
 
         if len(obs_traj) > 1:
             obs_traj = np.concat(obs_traj, axis=-1) # [N, xd * n_obs]
-        else:
+        elif len(obs_traj) == 1:
             obs_traj = obs_traj[0]
         
         # CFS
         traj_pos_only = traj[:, :xd]
         traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_ob=len(obs_pos_list), obs_traj=obs_traj)
-        traj[:, :xd] = traj_pos_safe
-        # approximate velocity
-        traj[:-1, -xd:] = (traj_pos_safe[1:, :] - traj_pos_safe[:-1, :]) / dt
-        traj[-1, -xd:] = 0.0
+        
+        if traj_pos_safe is not None:
+            traj[:, :xd] = traj_pos_safe
+            # approximate velocity
+            traj[:-1, -xd:] = (traj_pos_safe[1:, :] - traj_pos_safe[:-1, :]) / dt
+            traj[-1, -xd:] = 0.0
 
         return traj[:, np.newaxis]
 
