@@ -7,46 +7,6 @@ from cvxopt import matrix, solvers
 
 solvers.options['show_progress'] = False
 
-def vstack_wrapper(a, b):
-    if a == []:
-        return b
-    else:
-        x = np.vstack((a,b))
-        return x
-
-def jac_num(ineq, x, obs_p, eps=1e-6):
-    '''
-    compoute the jaccobian for a given function 
-    used for computing first-order gradient of distance function 
-    '''
-    # y = ineq(x,obs_p)
-
-    # # change to unified n-d array format
-    # if type(y) == np.float64:
-    #     y = np.array([y])
-
-    # grad = np.zeros((y.shape[0], x.shape[0]))
-    # xp = x
-    # for i in range(x.shape[0]):
-    #     xp[i] = x[i] + eps/2
-    #     yhi = ineq(xp,obs_p)
-    #     xp[i] = x[i] - eps/2
-    #     ylo = ineq(xp,obs_p)
-    #     grad[:,i] = (yhi - ylo) / eps
-    #     xp[i] = x[i]
-    # return grad
-
-    # use the analytical solution 
-    obs_p = obs_p.flatten()
-    
-    # flatten the input x 
-    x = x.flatten()
-    dist = np.linalg.norm(x - obs_p)
-    grad = np.zeros((1, 2))
-    grad[:,0] = 0.5/dist*2*(x[0]-obs_p[0])
-    grad[:,1] = 0.5/dist*2*(x[1]-obs_p[1])
-    return grad
-
 class Planner(ABC):
     def __init__(self, spec, model) -> None:
         self.spec = spec
@@ -156,7 +116,7 @@ class CFSPlanner(IntegraterPlanner):
         '''
         # norm distance restriction
         obs_p = obs.flatten()
-        obs_r = 5 # todo tune
+        obs_r = 5
         obs_r = np.array(obs_r)
         
         # flatten the input x 
@@ -172,7 +132,6 @@ class CFSPlanner(IntegraterPlanner):
         cq = [10,0,10], 
         cs = [0,1,0.1], 
         minimal_dis = 0, 
-        ts = 1, 
         maxIter = 30,
         stop_eps = 1e-3
     ):
@@ -218,7 +177,6 @@ class CFSPlanner(IntegraterPlanner):
         b = np.ones((h * n_obs, 1)) * (-minimal_dis)
         H = matrix(H,(len(H),len(H[0])),'d')
         f = matrix(f,(len(f), 1),'d')
-        # b = matrix(b,(len(b),1),'d')
 
         # reference trajctory cost
         J0 =  (x_sol - x_ref_vec).T @ Q @ (x_sol - x_ref_vec) + x_sol.T @ S @ x_sol # initial cost
@@ -253,48 +211,11 @@ class CFSPlanner(IntegraterPlanner):
             # A * x <= b
             A, b = [], []
             
-            # TODO: construct A, b matrices
-
-            # --------------------------------- solution --------------------------------- #
-            for i in range(h):
-                    
-                # first pos is enforced
-                if i == h-1 or i == 0:
-                    s = np.zeros((1,1))
-                    l = np.zeros((1,2))
-
-                    # update 
-                    b = vstack_wrapper(b, s)
-                    l_tmp = np.zeros((1, len(x_sol)))
-                    l_tmp[:,i*dimension:(i+1)*dimension] = l
-                    A = vstack_wrapper(A, l_tmp)
-
-                # other pos can be changed
-                elif i < h-1 and i > 0:
-                    x_t = x_sol[i * dimension : (i + 1) * dimension] 
-
-                    # get inequality value (distance)
-                    for obs_i in range(n_obs):
-                        # get obstacle at this time step 
-                        obs_p = obs_traj[i, obs_i * dimension : (obs_i+1) * dimension]  
-                        dist = self._ineq(x_t,obs_p)
-                        # print(dist)
-
-                        # get gradient 
-                        ref_grad = jac_num(self._ineq, x_t, obs_p)
-                        # print(ref_grad)
-
-                        # compute
-                        s = dist - D - np.dot(ref_grad, x_t)
-                        l = -1 * ref_grad
-
-                        # update 
-                        b = vstack_wrapper(b, s)
-                        l_tmp = np.zeros((1, len(x_sol)))
-                        l_tmp[:,i*dimension:(i+1)*dimension] = l
-                        A = vstack_wrapper(A, l_tmp)
-
-            # ------------------------------- solution ends ------------------------------ #
+            # ------------------------------ write your code ----------------------------- #
+            # TODO: construct A, b matrices that represent the CFS
+            # TODO: remove 'return None' to test your code
+            return None
+            # ------------------------------------- - ------------------------------------ #
 
             # convert to matrix
             A = matrix(A,(len(A),len(A[0])),'d')
