@@ -1,0 +1,70 @@
+name: obs2
+task:
+    type: FlatReachingTask
+    spec: {}
+model:
+    planning:
+        type: DoubleIntegrator
+        spec:
+            dT: 0.02
+            state_component: ['pos', 'vel']
+    control:
+        type: BallModel
+        spec:
+            control_input_dim: 2
+            state_component: ['pos', 'vel']
+planner:
+    type: IntegraterPlanner
+    spec:
+        horizon: 50
+        replanning_cycle: 1_000
+        state_dimension: 2
+controller:
+    type: Controller
+    spec:
+        feedback_controller: 
+            type: NaiveFeedbackController
+            spec:
+                kp: 15
+                kv: 100
+                u_max: [0, 0]
+        safe_controller: 
+            type: UnsafeController
+            spec:
+                u_max: [0, 0]
+                d_min: 10.0
+                k_v: 1.0
+                eta: 1
+estimator:
+    type: NaiveEstimator
+    spec:
+        init_x: [50.0, 20.0, 0.0, 0.0]
+        init_variance: [0.01, 0.01, 0.01, 0.01]
+        Rww: [0.001, 0.001, 0.001, 0.001]
+        Rvv: [0.001, 0.001, 0.001, 0.001]
+        alpha_ukf: 1
+        kappa_ukf: 0.1
+        beta_ukf: 2
+        time_sample: 0.01
+        kp: 40
+        kv: 40
+sensors:
+-   type: PVSensor
+    spec:
+        alias: cartesian_sensor
+        noise_var: 0.0
+-   type: StateSensor
+    spec:
+        alias: state_sensor
+        noise_var: 0.0
+-   type: RadarSensor
+    spec:
+        alias: obstacle_sensor
+        noise_var: 0.0
+-   type: GoalSensor
+    spec:
+        alias: goal_sensor
+        noise_var: 0.0
+-   type: RadioSensor
+    spec:
+        alias: communication_sensor

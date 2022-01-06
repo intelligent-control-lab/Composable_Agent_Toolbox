@@ -39,4 +39,4 @@ if __name__ == "__main__":
         dt, env_info, measurement_groups = env.step(actions)
         record.append((env_info,measurement_groups))
 
-    evaluator.evaluate(record)
+    # evaluator.evaluate(record)

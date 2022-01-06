@@ -126,7 +126,7 @@ class CFSPlanner(IntegraterPlanner):
 
     def _CFS(self, 
         x_ref,
-        n_ob,
+        n_obs,
         obs_traj,
         cq = [10,0,10], 
         cs = [0,1,0.1], 
@@ -136,26 +136,24 @@ class CFSPlanner(IntegraterPlanner):
         stop_eps = 1e-3
     ):
         # without obstacle, then collision free
-        
-        # print('xref', x_ref)
-        # print('obs', obs_traj)
 
-        if n_ob == 0 or len(obs_traj)==0: # no future obstacle information is provided 
+        if n_obs == 0 or len(obs_traj)==0: # no future obstacle information is provided 
             return np.array(x_ref)
 
         # has obstacle, the normal CFS procedure 
-        x_rs = np.array(x_ref)
 
         # planning parameters 
-        h = x_rs.shape[0]    
-        dimension = x_rs.shape[1] # state dimension
+        h = x_ref.shape[0] # horizon
+        dimension = x_ref.shape[1] # state dimension
 
         # flatten the trajectory to one dimension
         # flatten to one dimension for applying qp, in the form of x0,y0,x1,y1,...
-        x_rs = np.reshape(x_rs, (x_rs.size, 1))
-        x_origin = x_rs
+        x_ref_vec = x_ref.reshape(-1, 1)
 
-        # objective terms 
+        # decision variable
+        x_sol = x_ref_vec.copy()
+
+        # objective terms
         # identity
         Q1 = np.identity(h * dimension)
         S1 = Q1
@@ -174,29 +172,30 @@ class CFSPlanner(IntegraterPlanner):
         # quadratic term
         H =  Q + S 
         # linear term
-        f = -1 * np.dot(Q, x_origin)
+        f = -1 * np.dot(Q, x_ref_vec)
 
-        b = np.ones((h * n_ob, 1)) * (-minimal_dis)
+        b = np.ones((h * n_obs, 1)) * (-minimal_dis)
         H = matrix(H,(len(H),len(H[0])),'d')
         f = matrix(f,(len(f), 1),'d')
         # b = matrix(b,(len(b),1),'d')
 
-        # reference trajctory cost 
-        J0 =  np.dot(np.transpose(x_rs - x_origin), np.dot(Q, (x_rs - x_origin))) + np.dot(np.transpose(x_rs), np.dot(S, x_rs))
-        J = float('inf')
-        dlt = float('inf')
-        cnt = 0
+        # reference trajctory cost
+        J0 =  (x_sol - x_ref_vec).T @ Q @ (x_sol - x_ref_vec) + x_sol.T @ S @ x_sol # initial cost
+        J = float('inf') # new cost
+        dlt = float('inf') # improvement
+        cnt = 0 # iteration count
 
         # equality constraints 
         # start pos and end pos remain unchanged 
-        Aeq = np.zeros((dimension*2, len(x_rs)))
+        Aeq = np.zeros((dimension*2, len(x_ref_vec)))
         for i in range(dimension):
             Aeq[i,i] = 1
-            Aeq[dimension*2-i-1, len(x_rs)-i-1] = 1
+            Aeq[dimension*2-i-1, len(x_ref_vec)-i-1] = 1
         
         beq = np.zeros((dimension*2, 1))
-        beq[0:dimension,0] = x_rs[0:dimension,0]
-        beq[dimension:dimension*2, 0] = x_rs[dimension*(h-1): dimension*h, 0] 
+        beq[0:dimension,0] = x_ref_vec[0:dimension,0]
+        beq[dimension:dimension*2, 0] = x_ref_vec[dimension*(h-1): dimension*h, 0]
+
         # transform to convex optimization matrix 
         Aeq = matrix(Aeq,(len(Aeq),len(Aeq[0])),'d')
         beq = matrix(beq,(len(beq),1),'d')
@@ -204,66 +203,79 @@ class CFSPlanner(IntegraterPlanner):
         # set the safety margin 
         D = 3
 
-        # fig, ax = plt.subplots()
         # main CFS loop
         while dlt > stop_eps:
-            cnt += 1
-            Lstack, Sstack = [], []
-            # inequality constraints 
-            # l * x <= s
-            Constraint = np.zeros((h * n_ob, len(x_rs)))
-            
-            for i in range(h):
 
+            cnt += 1
+
+            # inequality constraints 
+            # A * x <= b
+            A, b = [], []
+            
+            # TODO: construct A, b matrices
+
+            # --------------------------------- solution --------------------------------- #
+            for i in range(h):
+                    
                 # first pos is enforced
-                if i == 0: # if i == h-1 or i == 0:
+                if i == h-1 or i == 0:
                     s = np.zeros((1,1))
                     l = np.zeros((1,2))
+
+                    # update 
+                    b = vstack_wrapper(b, s)
+                    l_tmp = np.zeros((1, len(x_sol)))
+                    l_tmp[:,i*dimension:(i+1)*dimension] = l
+                    A = vstack_wrapper(A, l_tmp)
+
                 # other pos can be changed
-                else: # if i < h-1 and i > 0:
-                    x_r = x_rs[i * dimension : (i + 1) * dimension] 
+                elif i < h-1 and i > 0:
+                    x_t = x_sol[i * dimension : (i + 1) * dimension] 
 
                     # get inequality value (distance)
-                    # get obstacle at this time step 
-                    obs_p = obs_traj[i,:]  
-                    dist = self._ineq(x_r,obs_p)
-                    # print(dist)
+                    for obs_i in range(n_obs):
+                        # get obstacle at this time step 
+                        obs_p = obs_traj[i, obs_i * dimension : (obs_i+1) * dimension]  
+                        dist = self._ineq(x_t,obs_p)
+                        # print(dist)
 
-                    # get gradient 
-                    ref_grad = jac_num(self._ineq, x_r, obs_p)
-                    # print(ref_grad)
+                        # get gradient 
+                        ref_grad = jac_num(self._ineq, x_t, obs_p)
+                        # print(ref_grad)
 
-                    # compute
-                    s = dist - D - np.dot(ref_grad, x_r)
-                    l = -1 * ref_grad
+                        # compute
+                        s = dist - D - np.dot(ref_grad, x_t)
+                        l = -1 * ref_grad
 
-                # update 
-                Sstack = vstack_wrapper(Sstack, s)
-                l_tmp = np.zeros((1, len(x_rs)))
-                l_tmp[:,i*dimension:(i+1)*dimension] = l
-                Lstack = vstack_wrapper(Lstack, l_tmp)
+                        # update 
+                        b = vstack_wrapper(b, s)
+                        l_tmp = np.zeros((1, len(x_sol)))
+                        l_tmp[:,i*dimension:(i+1)*dimension] = l
+                        A = vstack_wrapper(A, l_tmp)
 
-            Lstack = matrix(Lstack,(len(Lstack),len(Lstack[0])),'d')
-            Sstack = matrix(Sstack,(len(Sstack),1),'d')
+            # ------------------------------- solution ends ------------------------------ #
+
+            # convert to matrix
+            A = matrix(A,(len(A),len(A[0])),'d')
+            b = matrix(b,(len(b),1),'d')
 
             # QP solver 
-            sol = solvers.qp(H, f, Lstack, Sstack, Aeq, beq)
-            x_ts = sol['x']
-            x_ts = np.reshape(x_ts, (len(x_rs),1))
-
-            J = np.dot(np.transpose(x_ts - x_origin), np.dot(Q, (x_ts - x_origin))) + np.dot(np.transpose(x_ts), np.dot(S, x_ts))
-            dlt = min(abs(J - J0), np.linalg.norm(x_ts - x_rs))
+            sol = solvers.qp(H, f, A, b, Aeq, beq)
+            x_sol_new = sol['x']
+            x_sol_new = np.reshape(x_sol_new, (len(x_sol),1))
+            
+            # check convergence
+            J = (x_sol_new - x_ref_vec).T @ Q @ (x_sol_new - x_ref_vec) + x_sol_new.T @ S @ x_sol_new
+            dlt = min(abs(J - J0), np.linalg.norm(x_sol_new - x_sol))
             J0 = J
-            x_rs = x_ts
+            x_sol = x_sol_new
             if cnt >= maxIter:
                 break
         
         # return the reference trajectory      
-        x_rs = x_rs[: h * dimension]
+        x_sol = x_sol[: h * dimension]
 
-        # print('x_rs', x_rs.reshape(h, dimension))
-
-        return x_rs.reshape(h, dimension)
+        return x_sol.reshape(h, dimension)
 
     def _plan(self, dt: float, goal: dict, est_data: dict) -> np.array:
         
@@ -279,19 +291,20 @@ class CFSPlanner(IntegraterPlanner):
             if 'obs' in name:
                 obs_pos_list.append(info['rel_pos'])
         
+        # get obs absolute pos
         state = est_data["cartesian_sensor_est"]['pos'][:xd]
         obs_traj = []
         for obs_pos in obs_pos_list:
             obs_traj.append(np.tile((state + obs_pos).reshape(1, -1), (N, 1))) # [N, xd]
 
         if len(obs_traj) > 1:
-            obs_traj = np.concat(obs_traj, axis=-1) # [N, xd * n_obs]
+            obs_traj = np.concatenate(obs_traj, axis=-1) # [N, xd * n_obs]
         elif len(obs_traj) == 1:
             obs_traj = obs_traj[0]
         
         # CFS
         traj_pos_only = traj[:, :xd]
-        traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_ob=len(obs_pos_list), obs_traj=obs_traj)
+        traj_pos_safe = self._CFS(x_ref=traj_pos_only, n_obs=len(obs_pos_list), obs_traj=obs_traj)
         
         if traj_pos_safe is not None:
             traj[:, :xd] = traj_pos_safe

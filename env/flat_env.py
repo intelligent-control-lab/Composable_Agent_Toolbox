@@ -57,20 +57,26 @@ class FlatEnv(object):
                 # self.ax.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
 
         # agents location
-        cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
-        x = []
-        y = []
+        cs_agent = ['#ff0000', '#0000ff']
+        x_agent = []
+        y_agent = []
         for name, agent in self.world.agents.items():
             if 'goal' not in name and 'obs' not in name:
-                x.append(agent.pos[0])
-                y.append(agent.pos[1])
+                x_agent.append(agent.pos[0])
+                y_agent.append(agent.pos[1])
+        
+        self.ax.scatter(x_agent,y_agent,s=100, color=cs_agent[:len(x_agent)])
 
+        # goal location
+        cs_goal = ['#ff5500', '#3399ff']
+        x_goal = []
+        y_goal = []
         for name, agent in self.world.agents.items():
             if 'goal' in name and 'obs' not in name:
-                x.append(agent.pos[0])
-                y.append(agent.pos[1])
+                x_goal.append(agent.pos[0])
+                y_goal.append(agent.pos[1])
         
-        self.ax.scatter(x,y,s=100, color=cs[:len(x)])
+        self.ax.scatter(x_goal,y_goal,s=100, color=cs_goal[:len(x_goal)])
         
         # agent heading    return args[0]._bind(args[1:], kwargs)    return args[0]._bind(args[1:], kwargs)
         r = 3.0
