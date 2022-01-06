@@ -5,6 +5,8 @@ import numpy as np
 np.set_printoptions(suppress=True)
 from cvxopt import matrix, solvers
 
+solvers.options['show_progress'] = False
+
 def vstack_wrapper(a, b):
     if a == []:
         return b
