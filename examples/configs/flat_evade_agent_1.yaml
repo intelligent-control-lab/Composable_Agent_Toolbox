@@ -32,8 +32,8 @@ controller:
             kv: 50
             u_max: [200, 200]
         safe_controller: 
-          # type: UnsafeController
-          type: SafeSetController
+          type: UnsafeController
+          # type: SafeSetController
           # type: ZeroingBarrierFunctionController
           # type: SublevelSafeSetController
           # type: UnsafeController

@@ -47,4 +47,7 @@ if __name__ == "__main__":
     agent_process.join()
     env_process.join()
     
-    evaluator.evaluate(mgr_record)
+    record = []
+    while not mgr_record.empty():
+        record.append(mgr_record.get())
+    evaluator.evaluate(record)
