@@ -11,7 +11,7 @@ import multiprocessing
 
 if __name__ == "__main__":
 
-    with open('examples/configs/flat_evade_agent_1.yaml', 'r') as infile:
+    with open('examples/configs/mp_agent_1.yaml', 'r') as infile:
         agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     agent1 = agent.MPAgent(agent_module_spec)
     agents = [agent1]

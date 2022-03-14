@@ -33,9 +33,8 @@ class MPEnv(object):
     def step(self, mgr_actions, mgr_sensor_data, mgr_record, lock, iters, render=True):
         for _ in range(iters):
             print(f"env {_}")
-
             with lock:
-                self.world.simulate(mgr_actions, mgr_actions[self.comp_agents[0].name]['dt']) # is this received as mgr_dict or regular dict?
+                self.world.simulate(mgr_actions, mgr_actions[self.comp_agents[0].name]['dt'])
             env_info, sensor_data = self.world.measure()
             sensor_data['time'] = time.time()
             mgr_record.put((env_info, sensor_data))

@@ -11,6 +11,8 @@ class MPAgent(AgentBase):
         self.replanning_timer = self.planner.replanning_cycle
         self.last_control     = np.zeros((nu,1))
         self.last_time = 0
+        self.last_cycle = 0
+        self.cycle_time = module_spec["model"]["planning"]["spec"]["cycle_time"]
         # the size of last_control should be equal to the number of control inputs, 
         # for flat_world with discs, each robot has two inputs, for franka arm, we assume direct control over end-eff, so 
         # the control input is 3D
@@ -71,19 +73,24 @@ class MPAgent(AgentBase):
 
     def action(self, mgr_actions, mgr_sensor_data, lock, iters):
 
-        for _ in range(iters):
-            time.sleep(0.15)
-            print(f"agent {_}")
+        i = 0
+        while i < iters:
+            # ------------- compute dt and check user-specified cycle time -------------- #
+            dt = mgr_sensor_data['time'] - self.last_time
+            self.last_time += dt
+            self.last_cycle += dt
+            if self.last_cycle < self.cycle_time:
+                time.sleep(0.001)
+                continue
+            i += 1
+            self.last_cycle = 0
+            print(f"agent {i}")
 
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
 
             # ----------------------------- update estimation ---------------------------- #
             est_data, est_param = self.estimator.estimate(u, mgr_sensor_data[self.name])
-
-            # -------------------------------- compute dt -------------------------------- #
-            dt = mgr_sensor_data['time'] - self.last_time
-            self.last_time += dt
 
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
