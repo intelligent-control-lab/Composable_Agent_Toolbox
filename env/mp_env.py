@@ -31,8 +31,8 @@ class MPEnv(object):
         return env_info, sensor_data
 
     def step(self, mgr_actions, mgr_sensor_data, mgr_record, lock, iters, render=True):
-        for _ in range(iters):
-            print(f"env {_}")
+        for i in range(iters):
+            print(f"env {i}")
             with lock:
                 self.world.simulate(mgr_actions, mgr_actions[self.comp_agents[0].name]['dt'])
             env_info, sensor_data = self.world.measure()

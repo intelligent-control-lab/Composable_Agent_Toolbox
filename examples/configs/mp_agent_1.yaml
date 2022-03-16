@@ -8,7 +8,7 @@ model:
       type: DoubleIntegrator
       spec:
           dT: 0.2
-          cycle_time: 0.015
+          cycle_time: 0.15
           state_component: ['pos', 'vel']
     control:
       type: BallModel

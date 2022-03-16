@@ -76,7 +76,8 @@ class MPAgent(AgentBase):
         i = 0
         while i < iters:
             # ------------- compute dt and check user-specified cycle time -------------- #
-            dt = mgr_sensor_data['time'] - self.last_time
+            with lock:
+                dt = mgr_sensor_data['time'] - self.last_time
             self.last_time += dt
             self.last_cycle += dt
             if self.last_cycle < self.cycle_time:
@@ -90,7 +91,8 @@ class MPAgent(AgentBase):
             u = self.last_control
 
             # ----------------------------- update estimation ---------------------------- #
-            est_data, est_param = self.estimator.estimate(u, mgr_sensor_data[self.name])
+            with lock:
+                est_data, est_param = self.estimator.estimate(u, mgr_sensor_data[self.name])
 
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
