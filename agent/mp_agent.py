@@ -92,7 +92,8 @@ class MPAgent(AgentBase):
 
             # ----------------------------- update estimation ---------------------------- #
             with lock:
-                est_data, est_param = self.estimator.estimate(u, mgr_sensor_data[self.name])
+                sensor_data = mgr_sensor_data[self.name]
+            est_data, est_param = self.estimator.estimate(u, sensor_data)
 
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
