@@ -4,7 +4,7 @@ import numpy as np
 import importlib
 from .agent_base import AgentBase
 
-class MPAgent(AgentBase):
+class FlatEvadeAgentMP(AgentBase):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import importlib
 import time
 
-class MPEnv(object):
+class FlatEvadeEnvMP(object):
     def __init__(self, env_spec, comp_agents):
         '''
         Each environment has several pre-defined robot classes and sensor

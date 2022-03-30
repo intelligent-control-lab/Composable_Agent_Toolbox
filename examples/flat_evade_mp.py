@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     with open('examples/configs/mp_agent_1.yaml', 'r') as infile:
         agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    agent1 = agent.MPAgent(agent_module_spec)
+    agent1 = agent.FlatEvadeAgentMP(agent_module_spec)
     agents = [agent1]
 
     # The environment specs, including specs for the phsical agent model,
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     with open('examples/configs/flat_evade_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_module_spec, env_spec)
-    env = env.MPEnv(env_spec, agents)
+    env = env.FlatEvadeEnvMP(env_spec, agents)
 
     manager = multiprocessing.Manager()
 

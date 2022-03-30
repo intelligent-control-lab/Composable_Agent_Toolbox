@@ -7,8 +7,7 @@ model:
       # for single dimension
       type: DoubleIntegrator
       spec:
-          dT: 0.2
-          cycle_time: 0.15
+          cycle_time: 0.1
           state_component: ['pos', 'vel']
     control:
       type: BallModel
