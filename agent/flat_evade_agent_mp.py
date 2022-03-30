@@ -12,7 +12,7 @@ class FlatEvadeAgentMP(AgentBase):
         self.last_control     = np.zeros((nu,1))
         self.last_time = 0
         self.last_cycle = 0
-        self.cycle_time = module_spec["model"]["planning"]["spec"]["cycle_time"]
+        self.cycle_time = module_spec["cycle_time"]
         # the size of last_control should be equal to the number of control inputs, 
         # for flat_world with discs, each robot has two inputs, for franka arm, we assume direct control over end-eff, so 
         # the control input is 3D

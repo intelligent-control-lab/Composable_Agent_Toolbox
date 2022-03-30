@@ -7,8 +7,7 @@ model:
       # for single dimension
       type: DoubleIntegrator
       spec:
-          cycle_time: 0.1
-          state_component: ['pos', 'vel']
+        state_component: ['pos', 'vel']
     control:
       type: BallModel
       spec:
@@ -16,6 +15,7 @@ model:
       # type: UnicycleModel
       # spec:
       #     control_input_dim: 2
+cycle_time: 0.1
 planner:
     type: NaivePlanner
     spec:
