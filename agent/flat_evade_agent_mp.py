@@ -27,6 +27,8 @@ class FlatEvadeAgentMP(AgentBase):
     def instantiate_by_spec(self, module_spec):
         """Instantiate modules based on user given specs
         """
+
+        module_spec["model"]["planning"]["spec"]["dT"] = module_spec["cycle_time"]
         self.name           = module_spec["name"]
         self.planning_model = self._class_by_name("model",      module_spec["model"]["planning"]["type"])(module_spec["model"]["planning"]["spec"])
         self.control_model  = self._class_by_name("model",      module_spec["model"]["control" ]["type"])(module_spec["model"]["control" ]["spec"])
@@ -86,7 +88,6 @@ class FlatEvadeAgentMP(AgentBase):
             i += 1
             self.last_cycle = 0
             print(f"agent {i}")
-
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
 
