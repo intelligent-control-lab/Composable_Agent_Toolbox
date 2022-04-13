@@ -42,7 +42,9 @@ class FlatEvadeAgentMP(AgentBase):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def init_action(self, sensor_data):
-        
+        """Generate and return an initial agent action
+        """
+
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data[self.name])
         dt = sensor_data['time'] - self.last_time
@@ -74,6 +76,9 @@ class FlatEvadeAgentMP(AgentBase):
         return ret
 
     def action(self, mgr_actions, mgr_sensor_data, lock, iters):
+        """Continally use shared memory sensor data to calculate agent action 
+            and update shared memory action
+        """
 
         i = 0
         while i < iters:
@@ -90,7 +95,6 @@ class FlatEvadeAgentMP(AgentBase):
             print(f"agent {i}")
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
-
             # ----------------------------- update estimation ---------------------------- #
             with lock:
                 sensor_data = mgr_sensor_data[self.name]

@@ -11,20 +11,21 @@ import multiprocessing
 
 if __name__ == "__main__":
 
-    with open('examples/configs/mp_agent_1.yaml', 'r') as infile:
+    with open('configs/flat_evade_agent_1_mp.yaml', 'r') as infile:
         agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     agent1 = agent.FlatEvadeAgentMP(agent_module_spec)
     agents = [agent1]
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('examples/configs/flat_evade_env.yaml', 'r') as infile:
+    with open('configs/flat_evade_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_module_spec, env_spec)
     env = env.FlatEvadeEnvMP(env_spec, agents)
 
     manager = multiprocessing.Manager()
 
+    # initialize shared memory for record, sensor data, and actions
     mgr_record = manager.Queue()
     mgr_sensor_data = manager.dict()
     init_env_info, init_sensor_data = env.reset()
@@ -38,6 +39,7 @@ if __name__ == "__main__":
     lock = manager.Lock()
     iters = 500
 
+    # agent and env processes
     agent_process = multiprocessing.Process(target=agent1.action, args=(mgr_actions, mgr_sensor_data, lock, iters))
     env_process = multiprocessing.Process(target=env.step, args=(mgr_actions, mgr_sensor_data, mgr_record, lock, iters))
 
@@ -47,6 +49,7 @@ if __name__ == "__main__":
     agent_process.join()
     env_process.join()
     
+    # collect and evaluate record data
     record = []
     while not mgr_record.empty():
         record.append(mgr_record.get())
