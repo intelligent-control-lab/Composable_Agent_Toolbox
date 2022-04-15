@@ -15,7 +15,7 @@ model:
       # type: UnicycleModel
       # spec:
       #     control_input_dim: 2
-cycle_time: 0.01
+cycle_time: 0.25
 planner:
     type: NaivePlanner
     spec:
@@ -63,15 +63,15 @@ sensors:
 -   type: PVSensor
     spec:
         alias: cartesian_sensor
-        noise_var: 0.0
+        noise_var: 0.1
 -   type: StateSensor
     spec:
         alias: state_sensor
-        noise_var: 0.0
+        noise_var: 0.1
 -   type: RadarSensor
     spec:
         alias: obstacle_sensor
-        noise_var: 0.0
+        noise_var: 0.1
 -   type: GoalSensor
     spec:
         alias: goal_sensor
