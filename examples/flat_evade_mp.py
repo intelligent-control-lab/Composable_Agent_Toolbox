@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     with open('configs/flat_evade_agent_1_mp.yaml', 'r') as infile:
         agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    agent1 = agent.FlatEvadeAgentMP(agent_module_spec)
+    agent1 = agent.ModelBasedAgentMP(agent_module_spec)
     agents = [agent1]
 
     # The environment specs, including specs for the phsical agent model,

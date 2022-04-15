@@ -4,7 +4,7 @@ import numpy as np
 import importlib
 from .agent_base import AgentBase
 
-class FlatEvadeAgentMP(AgentBase):
+class ModelBasedAgentMP(AgentBase):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
         nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])
@@ -44,7 +44,7 @@ class FlatEvadeAgentMP(AgentBase):
     def init_action(self, sensor_data):
         """Generate and return an initial agent action
         """
-
+        
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data[self.name])
         dt = sensor_data['time'] - self.last_time
@@ -79,7 +79,7 @@ class FlatEvadeAgentMP(AgentBase):
         """Continally use shared memory sensor data to calculate agent action 
             and update shared memory action
         """
-
+        
         i = 0
         while i < iters:
             # ------------- compute dt and check user-specified cycle time -------------- #
@@ -93,6 +93,9 @@ class FlatEvadeAgentMP(AgentBase):
             i += 1
             self.last_cycle = 0
             print(f"agent {i}")
+            print(f"dt {dt}")
+            with lock:
+                print(f"agent time {mgr_sensor_data['time']}")
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
             # ----------------------------- update estimation ---------------------------- #
