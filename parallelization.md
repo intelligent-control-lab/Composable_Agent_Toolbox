@@ -28,7 +28,7 @@ One way of achieving parallelized computation is through Python's ```multiproces
   - The global ```cycle_time``` parameter has been added. It controls the frequency at which the agent process computes/updates actions.
 
 ### Usage
-```
+```bash
 cd $REPO_PATH
 cd examples
 python flat_evade_mp.py
