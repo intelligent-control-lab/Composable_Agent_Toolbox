@@ -33,7 +33,7 @@ Largely the same as configuration in ```flat_evade_agent_1.yaml``` and ```flat_e
 - The global ```cycle_time``` parameter has been added. It controls the frequency at which the agent process computes/updates actions.
 
 ```examples/configs/flat_evade_env_mp.yaml```
-- The global ```dT``` parameter has been removed. It is now calculated within the agent process itself as the time between consecutive computations.
+- The global ```dt``` parameter has been removed. It is now calculated within the agent process itself as the time between consecutive computations.
 
 ### Usage
 ```bash
