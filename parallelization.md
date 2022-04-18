@@ -26,10 +26,10 @@ One way of achieving parallelized computation is through Python's ```multiproces
   - Update sensor data shared proxy with latest sensor data using lock.
 
 ### Configuration 
-```examples/configs/flat_evade_agent_1_mp.yaml```
-- Largely the same as configuration in ```flat_evade_agent_1.yaml```, but with some key differences:
-  - The model/planning/spec ```dT``` parameter has been removed. It is now calculated within the agent process itself as the time between consecutive computations.
-  - The global ```cycle_time``` parameter has been added. It controls the frequency at which the agent process computes/updates actions.
+```examples/configs/flat_evade_agent_1_mp.yaml```, ```examples/configs/flat_evade_env_mp.yaml```
+- Largely the same as configuration in ```flat_evade_agent_1.yaml``` and ```flat_evade_env.yaml```, but with some key differences:
+  - The model/planning/spec ```dT``` parameter has been removed from both files. It is now calculated within the agent process itself as the time between consecutive computations.
+  - The global ```cycle_time``` parameter has been added to ```flat_evade_agent_1.yaml``. It controls the frequency at which the agent process computes/updates actions.
 
 ### Usage
 ```bash
