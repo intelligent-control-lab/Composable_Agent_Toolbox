@@ -28,9 +28,9 @@ controller:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            kp: 200
-            kv: 50
-            u_max: [3, 3]
+            kp: 8
+            kv: 2
+            u_max: [4, 4]
         safe_controller: 
           type: UnsafeController
           # type: SafeSetController
@@ -63,15 +63,15 @@ sensors:
 -   type: PVSensor
     spec:
         alias: cartesian_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: StateSensor
     spec:
         alias: state_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: RadarSensor
     spec:
         alias: obstacle_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: GoalSensor
     spec:
         alias: goal_sensor

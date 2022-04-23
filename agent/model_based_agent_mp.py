@@ -10,7 +10,7 @@ class ModelBasedAgentMP(AgentBase):
         nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])
         self.replanning_timer = self.planner.replanning_cycle
         self.last_control     = np.zeros((nu,1))
-        self.last_time = 0
+        self.last_time = time.time()
         self.last_cycle = 0
         self.cycle_time = module_spec["cycle_time"]
         # the size of last_control should be equal to the number of control inputs, 
@@ -47,8 +47,10 @@ class ModelBasedAgentMP(AgentBase):
         
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data[self.name])
-        dt = sensor_data['time'] - self.last_time
-        self.last_time += dt
+        dt = 0
+        self.last_time = sensor_data['time']
+        print(f'dt {dt}')
+        print(f'self.last_time {self.last_time}')
         
         goal = self.task.goal(est_data) # todo need goal type for planner
         if self.replanning_timer == self.planner.replanning_cycle:
@@ -63,6 +65,7 @@ class ModelBasedAgentMP(AgentBase):
         control = self.controller(
                 dt, est_data, next_traj_point, self.task.goal_type(est_data),
                 self.planner.state_dimension)
+        print(control)
             
         self.last_control = control
 
@@ -79,7 +82,7 @@ class ModelBasedAgentMP(AgentBase):
         """Continally use shared memory sensor data to calculate agent action 
             and update shared memory action
         """
-        
+
         i = 0
         while i < iters:
             # ------------- compute dt and check user-specified cycle time -------------- #
@@ -93,14 +96,18 @@ class ModelBasedAgentMP(AgentBase):
             i += 1
             self.last_cycle = 0
             print(f"agent {i}")
-            print(f"dt {dt}")
-            with lock:
-                print(f"agent time {mgr_sensor_data['time']}")
+            print(f'dt {dt}')
+            print(f'self.last_time {self.last_time}\n')
+            
+            # print(f"agent dt {dt}")
+            # with lock:
+                # print(f"agent time {mgr_sensor_data['time']}")
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
             # ----------------------------- update estimation ---------------------------- #
+            sensor_data = {}
             with lock:
-                sensor_data = mgr_sensor_data[self.name]
+                sensor_data.update(mgr_sensor_data[self.name])
             est_data, est_param = self.estimator.estimate(u, sensor_data)
 
             # ------------------------- update planned trajectory ------------------------ #
@@ -108,7 +115,7 @@ class ModelBasedAgentMP(AgentBase):
             if self.replanning_timer == self.planner.replanning_cycle:
                 # add the future planning information for another agent 
                 self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
-                self.replanning_timer = 0
+                # print(f'\nPLANNED TRAJ:\n{self.planned_traj}\n')
 
             next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
             next_traj_point = np.vstack(next_traj_point.ravel())
@@ -128,6 +135,10 @@ class ModelBasedAgentMP(AgentBase):
                     "state":est_param["ego_state_est"]
                 }
 
+            # print(control)
+
+            # print(f"lasttime {self.last_time}")
+            # print(f"time {time.time()}")
             with lock:
                 mgr_actions[self.name] = actions
 
