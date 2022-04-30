@@ -22,7 +22,6 @@ class FlatEvadeEnvMP(object):
     def reset(self):
         """ Reset env
         """
-        
         self.world.reset()
         for i in range(len(self.comp_agents)):
             self.world.add_agent(
@@ -33,7 +32,7 @@ class FlatEvadeEnvMP(object):
         sensor_data['time'] = time.time()
         return env_info, sensor_data
 
-    def step(self, mgr_actions, mgr_sensor_data, mgr_record, lock, iters, render=True):
+    def step(self, mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters, render=True):
         """ Continually use shared memory actions to update env state, collect sensor 
             data and update shared memory sensor data and record
         """
@@ -46,10 +45,15 @@ class FlatEvadeEnvMP(object):
             env_info, sensor_data = self.world.measure()
             sensor_data['time'] = time.time()
             mgr_record.put((env_info, sensor_data))
+            # print(sensor_data['robot']['cartesian_sensor'])
+            # print(sensor_data['robot']['goal_sensor'])
             with lock:
                 mgr_sensor_data.update(sensor_data)
             if render:
                 self.render()
+
+        with lock:
+            mgr_running.value = False
 
     def render(self):
         plt.cla()

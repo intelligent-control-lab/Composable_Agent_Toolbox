@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import time
 from agent import sensor
 import numpy as np
@@ -50,7 +51,6 @@ class ModelBasedAgentMP(AgentBase):
         dt = 0
         self.last_time = sensor_data['time']
         print(f'dt {dt}')
-        print(f'self.last_time {self.last_time}')
         
         goal = self.task.goal(est_data) # todo need goal type for planner
         if self.replanning_timer == self.planner.replanning_cycle:
@@ -65,7 +65,6 @@ class ModelBasedAgentMP(AgentBase):
         control = self.controller(
                 dt, est_data, next_traj_point, self.task.goal_type(est_data),
                 self.planner.state_dimension)
-        print(control)
             
         self.last_control = control
 
@@ -78,16 +77,20 @@ class ModelBasedAgentMP(AgentBase):
         
         return ret
 
-    def action(self, mgr_actions, mgr_sensor_data, lock, iters):
+    def action(self, mgr_actions, mgr_sensor_data, mgr_running, lock):
         """Continally use shared memory sensor data to calculate agent action 
             and update shared memory action
         """
 
         i = 0
-        while i < iters:
-            # ------------- compute dt and check user-specified cycle time -------------- #
+        while True:
             with lock:
-                dt = mgr_sensor_data['time'] - self.last_time
+                if not mgr_running.value: 
+                    break
+            # ------------- compute dt and check user-specified cycle time -------------- #
+            # with lock:
+            #     dt = mgr_sensor_data['time'] - self.last_time
+            dt = time.time() - self.last_time # use this instead??
             self.last_time += dt
             self.last_cycle += dt
             if self.last_cycle < self.cycle_time:
@@ -96,12 +99,9 @@ class ModelBasedAgentMP(AgentBase):
             i += 1
             self.last_cycle = 0
             print(f"agent {i}")
-            print(f'dt {dt}')
-            print(f'self.last_time {self.last_time}\n')
-            
-            # print(f"agent dt {dt}")
-            # with lock:
-                # print(f"agent time {mgr_sensor_data['time']}")
+            # print(f'dt {dt}')
+            # print(f'self.last_time {self.last_time}\n')
+
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
             # ----------------------------- update estimation ---------------------------- #
@@ -109,6 +109,10 @@ class ModelBasedAgentMP(AgentBase):
             with lock:
                 sensor_data.update(mgr_sensor_data[self.name])
             est_data, est_param = self.estimator.estimate(u, sensor_data)
+
+            # goal_x = sensor_data['goal_sensor']['rel_pos'][0] + sensor_data['cartesian_sensor']['pos'][0]
+            # goal_y = sensor_data['goal_sensor']['rel_pos'][1] + sensor_data['cartesian_sensor']['pos'][1]
+            # print(f'goal pos: {goal_x, goal_y}')
 
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
@@ -136,10 +140,8 @@ class ModelBasedAgentMP(AgentBase):
                     "state":est_param["ego_state_est"]
                 }
 
-            # print(control)
+            print(f'control:\n{control}\n\n')
 
-            # print(f"lasttime {self.last_time}")
-            # print(f"time {time.time()}")
             with lock:
                 mgr_actions[self.name] = actions
 

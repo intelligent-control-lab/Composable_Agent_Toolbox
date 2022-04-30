@@ -11,14 +11,14 @@ import multiprocessing
 
 if __name__ == "__main__":
 
-    with open('configs/flat_evade_agent_1_mp.yaml', 'r') as infile:
+    with open('examples/configs/flat_evade_agent_1_mp.yaml', 'r') as infile:
         agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     agent1 = agent.ModelBasedAgentMP(agent_module_spec)
     agents = [agent1]
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('configs/flat_evade_env_mp.yaml', 'r') as infile:
+    with open('examples/configs/flat_evade_env_mp.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_module_spec, env_spec)
     env = env.FlatEvadeEnvMP(env_spec, agents)
@@ -37,11 +37,12 @@ if __name__ == "__main__":
     mgr_actions[agent1.name] = init_actions
 
     lock = manager.Lock()
+    mgr_running = manager.Value('b', True)
     iters = 500
 
     # agent and env processes
-    agent_process = multiprocessing.Process(target=agent1.action, args=(mgr_actions, mgr_sensor_data, lock, iters))
-    env_process = multiprocessing.Process(target=env.step, args=(mgr_actions, mgr_sensor_data, mgr_record, lock, iters))
+    agent_process = multiprocessing.Process(target=agent1.action, args=(mgr_actions, mgr_sensor_data, mgr_running, lock))
+    env_process = multiprocessing.Process(target=env.step, args=(mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters))
 
     agent_process.start()
     env_process.start()
