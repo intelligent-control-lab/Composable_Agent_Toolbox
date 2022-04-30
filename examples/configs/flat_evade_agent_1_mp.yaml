@@ -15,7 +15,7 @@ model:
       # type: UnicycleModel
       # spec:
       #     control_input_dim: 2
-cycle_time: 0.25
+cycle_time: 0.2
 planner:
     type: NaivePlanner
     spec:
@@ -28,9 +28,9 @@ controller:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            kp: 8
-            kv: 2
-            u_max: [4, 4]
+            kp: 200
+            kv: 50
+            u_max: [200, 200]
         safe_controller: 
           type: UnsafeController
           # type: SafeSetController
