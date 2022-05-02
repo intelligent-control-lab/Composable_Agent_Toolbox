@@ -1,5 +1,6 @@
 import multiprocessing
 import numpy as np
+import progressbar
 from agent import sensor
 import env.flat_world
 import matplotlib.pyplot as plt
@@ -36,17 +37,16 @@ class FlatEvadeEnvMP(object):
         """ Continually use shared memory actions to update env state, collect sensor 
             data and update shared memory sensor data and record
         """
-        for i in range(iters):
-            print(f"env {i}")
+        print("Simulation progress:")
+        for it in progressbar.progressbar(range(iters)):
+            # print(f"env {i}")
             actions = {}
             with lock:
                 actions.update(mgr_actions)
-            self.world.simulate(actions, actions[self.comp_agents[0].name]['dt'])
+            self.world.simulate(actions, self.env_spec['dt'])
             env_info, sensor_data = self.world.measure()
             sensor_data['time'] = time.time()
             mgr_record.put((env_info, sensor_data))
-            # print(sensor_data['robot']['cartesian_sensor'])
-            # print(sensor_data['robot']['goal_sensor'])
             with lock:
                 mgr_sensor_data.update(sensor_data)
             if render:

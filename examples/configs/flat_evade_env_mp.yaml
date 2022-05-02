@@ -18,6 +18,7 @@ world:
     #         spec:
     #             reaching_eps: 0.1
     #             goal: "robot"
+dt: 0.02
 agent_env_spec:
     robot:
         type: BB8Agent
