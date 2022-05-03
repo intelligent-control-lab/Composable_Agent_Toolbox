@@ -6,7 +6,6 @@ from .agent_base import AgentBase
 class ModelBasedAgent(AgentBase):
     def __init__(self, module_spec):
         self.instantiate_by_spec(module_spec)
-
         nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])
         self.replanning_timer = self.planner.replanning_cycle
         self.last_control     = np.zeros((nu,1))  
@@ -24,6 +23,7 @@ class ModelBasedAgent(AgentBase):
     def instantiate_by_spec(self, module_spec):
         """Instantiate modules based on user given specs
         """
+        self.module_spec = module_spec # for access by mp_wrapper
         self.name           = module_spec["name"]
         self.planning_model = self._class_by_name("model",      module_spec["model"]["planning"]["type"])(module_spec["model"]["planning"]["spec"])
         self.control_model  = self._class_by_name("model",      module_spec["model"]["control" ]["type"])(module_spec["model"]["control" ]["spec"])
