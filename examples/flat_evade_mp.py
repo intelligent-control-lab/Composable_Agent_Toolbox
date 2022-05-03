@@ -11,21 +11,20 @@ import multiprocessing
 
 if __name__ == "__main__":
 
-    with open('examples/configs/flat_evade_agent_1_mp.yaml', 'r') as infile:
-        agent1_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-
-    with open('examples/configs/flat_evade_agent_2_mp.yaml', 'r') as infile:
-        agent2_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-
-    agent_specs = [agent1_module_spec, agent2_module_spec]
-    agents = [agent.ModelBasedAgentMP(spec) for spec in agent_specs]
-
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('examples/configs/flat_evade_env.yaml', 'r') as infile:
+    with open('configs/flat_evade_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-    evaluator = evaluator.Evaluator(agent1_module_spec, env_spec)
+
+    agent_specs = []
+    for agent_name, agent_spec_file in env_spec['agent_comp_spec'].items():
+        with open(agent_spec_file, 'r') as infile:
+            agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+            agent_specs.append(agent_module_spec)
+    agents = [agent.ModelBasedAgentMP(spec) for spec in agent_specs]
+
     env = env.MPWrapper(env.FlatEvadeEnv(env_spec, agents))
+    evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
 
     manager = multiprocessing.Manager()
 

@@ -19,6 +19,9 @@ world:
     #             reaching_eps: 0.1
     #             goal: "robot"
 dt: 0.02
+agent_comp_spec:
+    robot: configs/flat_evade_agent_1_mp.yaml
+    human: configs/flat_evade_agent_2_mp.yaml
 agent_env_spec:
     robot:
         type: BB8Agent
