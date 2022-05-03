@@ -1,4 +1,4 @@
-name: robot
+name: human
 task:
     type: FlatEvadeTask
     spec: {}
@@ -7,7 +7,7 @@ model:
       # for single dimension
       type: DoubleIntegrator
       spec:
-        state_component: ['pos', 'vel']
+          state_component: ['pos', 'vel']
     control:
       type: BallModel
       spec:
@@ -26,26 +26,15 @@ controller:
     type: Controller
     spec:
         feedback_controller: 
-          type: NaiveFeedbackController
-          spec:
-            kp: 200
-            kv: 50
-            u_max: [200, 200]
+            type: NaiveFeedbackController
+            spec:
+                kp: 200
+                kv: 50
+                u_max: [200, 200]
         safe_controller: 
-        #   type: UnsafeController
-          type: SafeSetController
-        #   type: ZeroingBarrierFunctionController
-          # type: SublevelSafeSetController
-          # type: UnsafeController
-          # type: PotentialFieldController
-          # type: SlidingModeController
-          spec:
-              d_min: 15.0
-              k_v: 5.0
-              eta: 1
-              c: 1000
-              lambd: 1
-              u_max: [200, 200]
+            type: UnsafeController
+            spec:
+                u_max: [200, 200]
 estimator:
     type: NaiveEstimator
     spec:
@@ -57,8 +46,8 @@ estimator:
         kappa_ukf: 0.1
         beta_ukf: 2
         time_sample: 0.01
-        kp: 40
-        kv: 40
+        kp: 6
+        kv: 8
 sensors:
 -   type: PVSensor
     spec:

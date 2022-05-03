@@ -32,7 +32,7 @@ controller:
             kv: 50
             u_max: [200, 200]
         safe_controller: 
-          # type: UnsafeController
+        #   type: UnsafeController
           type: SafeSetController
           # type: ZeroingBarrierFunctionController
           # type: SublevelSafeSetController
@@ -63,7 +63,7 @@ sensors:
 -   type: PVSensor
     spec:
         alias: cartesian_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: StateSensor
     spec:
         alias: state_sensor
@@ -75,7 +75,7 @@ sensors:
 -   type: GoalSensor
     spec:
         alias: goal_sensor
-        noise_var: 0.0
+        noise_var: 0.1
 -   type: RadioSensor
     spec:
         alias: communication_sensor

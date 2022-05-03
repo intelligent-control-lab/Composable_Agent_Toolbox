@@ -49,8 +49,8 @@ class ModelBasedAgentMP(AgentBase):
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data[self.name])
         dt = 0
-        self.last_time = sensor_data['time']
-        print(f'dt {dt}')
+        self.last_time = time.time()
+        # print(f'dt {dt}')
         
         goal = self.task.goal(est_data) # todo need goal type for planner
         if self.replanning_timer == self.planner.replanning_cycle:
@@ -89,7 +89,7 @@ class ModelBasedAgentMP(AgentBase):
                     break
             # ------------- compute dt and check user-specified cycle time -------------- #
             # with lock:
-            #     dt = mgr_sensor_data['time'] - self.last_time
+                # dt = mgr_sensor_data['time'] - self.last_time
             dt = time.time() - self.last_time # use this instead??
             self.last_time += dt
             self.last_cycle += dt
@@ -98,9 +98,7 @@ class ModelBasedAgentMP(AgentBase):
                 continue
             i += 1
             self.last_cycle = 0
-            print(f"agent {i}")
-            # print(f'dt {dt}')
-            # print(f'self.last_time {self.last_time}\n')
+            # print(f"agent {self.name} {i}")
 
             # --------------------------- get previous control --------------------------- #
             u = self.last_control
@@ -110,16 +108,11 @@ class ModelBasedAgentMP(AgentBase):
                 sensor_data.update(mgr_sensor_data[self.name])
             est_data, est_param = self.estimator.estimate(u, sensor_data)
 
-            # goal_x = sensor_data['goal_sensor']['rel_pos'][0] + sensor_data['cartesian_sensor']['pos'][0]
-            # goal_y = sensor_data['goal_sensor']['rel_pos'][1] + sensor_data['cartesian_sensor']['pos'][1]
-            # print(f'goal pos: {goal_x, goal_y}')
-
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
             if self.replanning_timer == self.planner.replanning_cycle:
                 # add the future planning information for another agent 
                 self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
-                # print(f'\nPLANNED TRAJ:\n{self.planned_traj}\n')
                 self.replanning_timer = 0
 
             next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
@@ -139,8 +132,6 @@ class ModelBasedAgentMP(AgentBase):
                     "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
                     "state":est_param["ego_state_est"]
                 }
-
-            print(f'control:\n{control}\n\n')
 
             with lock:
                 mgr_actions[self.name] = actions
