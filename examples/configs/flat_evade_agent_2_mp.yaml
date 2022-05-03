@@ -20,7 +20,7 @@ planner:
     type: NaivePlanner
     spec:
         horizon: 20
-        replanning_cycle: 10
+        replanning_cycle: 100
         state_dimension: 2
 controller:
     type: Controller
@@ -28,9 +28,9 @@ controller:
         feedback_controller: 
             type: NaiveFeedbackController
             spec:
-                kp: 400
+                kp: 4000
                 kv: 80
-                u_max: [500, 500]
+                u_max: [5000, 5000]
         safe_controller: 
             type: UnsafeController
             spec:
