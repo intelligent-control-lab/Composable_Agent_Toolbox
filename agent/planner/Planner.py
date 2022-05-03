@@ -58,6 +58,13 @@ class Planner(ABC):
         return self._state_dimension
 
     @abstractmethod
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+        '''
+            Select next point
+        '''
+        pass
+
+    @abstractmethod
     def _plan(self, dt: float, goal: dict, est_data: dict) -> np.array:
         '''
             Implementation of planner
@@ -86,6 +93,18 @@ class NaivePlanner(Planner):
             traj.append(pos_vel + frac*i)
 
         return np.array(traj)
+    
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+        
+        pos = est_data["cartesian_sensor_est"]["pos"]
+        goal = np.vstack(traj[-1].ravel())
+        for i, pt in enumerate(traj):
+            pos_ref = np.vstack(pt.ravel())
+            if (goal[:self.state_dimension] - pos).T @ \
+                (pos_ref[self.state_dimension] - pos) > 0:
+                return pos_ref
+
+        return goal
 
 class IntegraterPlanner(Planner):
 

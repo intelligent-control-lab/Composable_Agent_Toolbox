@@ -96,6 +96,7 @@ class ModelBasedAgentMP(AgentBase):
             if self.last_cycle < self.cycle_time:
                 time.sleep(0.001)
                 continue
+            dt = self.last_cycle
             i += 1
             self.last_cycle = 0
             # print(f"agent {self.name} {i}")
@@ -115,8 +116,15 @@ class ModelBasedAgentMP(AgentBase):
                 self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
                 self.replanning_timer = 0
 
-            next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-            next_traj_point = np.vstack(next_traj_point.ravel())
+            # --------------------------- select next waypoint --------------------------- #
+            # ! increment point by one each time
+            # next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
+            # next_traj_point = np.vstack(next_traj_point.ravel())
+            # ! find next point that is "in the front"
+            next_traj_point = self.planner.next_point(
+                self.planned_traj[self.replanning_timer:], est_data)
+            # ! always track the end goal
+            # next_traj_point = np.vstack(self.planned_traj[-1].ravel())
             self.replanning_timer += 1
 
             # --------------------------- compute agent control -------------------------- #

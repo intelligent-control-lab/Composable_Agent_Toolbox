@@ -18,7 +18,7 @@ world:
     #         spec:
     #             reaching_eps: 0.1
     #             goal: "robot"
-dt: 0.02
+dt: 0.01
 agent_comp_spec:
     robot: configs/flat_evade_agent_1_mp.yaml
     human: configs/flat_evade_agent_2_mp.yaml
