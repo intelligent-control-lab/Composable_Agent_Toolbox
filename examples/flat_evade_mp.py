@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('examples/configs/flat_evade_env_mp.yaml', 'r') as infile:
+    with open('examples/configs/flat_evade_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent1_module_spec, env_spec)
     env = env.MPWrapper(env.FlatEvadeEnv(env_spec, agents))
