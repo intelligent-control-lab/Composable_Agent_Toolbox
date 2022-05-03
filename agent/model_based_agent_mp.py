@@ -118,11 +118,11 @@ class ModelBasedAgentMP(AgentBase):
 
             # --------------------------- select next waypoint --------------------------- #
             # ! increment point by one each time
-            next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-            next_traj_point = np.vstack(next_traj_point.ravel())
+            # next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
+            # next_traj_point = np.vstack(next_traj_point.ravel())
             # ! find next point that is "in the front"
-            # next_traj_point = self.planner.next_point(
-            #     self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1):], est_data)
+            next_traj_point = self.planner.next_point(
+                self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1):], est_data)
             # ! always track the end goal
             # next_traj_point = np.vstack(self.planned_traj[-1].ravel())
             self.replanning_timer += 1
