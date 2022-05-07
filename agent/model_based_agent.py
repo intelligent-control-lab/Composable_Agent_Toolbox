@@ -23,7 +23,7 @@ class ModelBasedAgent(AgentBase):
     def instantiate_by_spec(self, module_spec):
         """Instantiate modules based on user given specs
         """
-        self.module_spec = module_spec # for access by mp_wrapper
+        self.module_spec    = module_spec # for access by mp_wrapper
         self.name           = module_spec["name"]
         self.planning_model = self._class_by_name("model",      module_spec["model"]["planning"]["type"])(module_spec["model"]["planning"]["spec"])
         self.control_model  = self._class_by_name("model",      module_spec["model"]["control" ]["type"])(module_spec["model"]["control" ]["spec"])

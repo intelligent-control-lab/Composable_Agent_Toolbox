@@ -28,9 +28,9 @@ controller:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            kp: 400
-            kv: 80
-            u_max: [500, 500]
+            kp: 200
+            kv: 50
+            u_max: [200, 200]
         safe_controller: 
           # type: UnsafeController
           type: SafeSetController

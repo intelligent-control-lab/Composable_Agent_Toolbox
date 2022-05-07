@@ -20,8 +20,8 @@ world:
     #             goal: "robot"
 dt: 0.01
 agent_comp_spec:
-    robot: configs/flat_evade_agent_1_mp.yaml
-    human: configs/flat_evade_agent_2_mp.yaml
+    robot: configs/flat_evade_agent_1.yaml
+    human: configs/flat_evade_agent_2.yaml
 agent_env_spec:
     robot:
         type: BB8Agent
