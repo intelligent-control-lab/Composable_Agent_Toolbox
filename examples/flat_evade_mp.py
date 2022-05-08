@@ -6,7 +6,6 @@ sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
 import numpy as np
 import evaluator, agent, env
 import time, yaml
-import progressbar
 import multiprocessing
 
 if __name__ == "__main__":
@@ -34,15 +33,16 @@ if __name__ == "__main__":
     dt, init_env_info, init_sensor_data = environ.reset()
     mgr_record.put((init_env_info, init_sensor_data))
     mgr_sensor_data.update(init_sensor_data)
+    lock = manager.Lock()
 
     mgr_actions = manager.dict()
     for ag in agents:
         init_actions = ag.init_action(init_sensor_data)
-        mgr_actions[ag.name] = init_actions
+        with lock:
+            mgr_actions[ag.name] = init_actions
 
-    lock = manager.Lock()
-    mgr_running = manager.Value('b', True)
     iters = 1000
+    mgr_running = manager.Value('b', True)
 
     # agent and env processes
     env_process = multiprocessing.Process(target=environ.step_loop, args=(mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters))
