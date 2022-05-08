@@ -160,6 +160,18 @@ class IntegraterPlanner(Planner):
 
         return traj
 
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+        
+        pos = est_data["cartesian_sensor_est"]["pos"]
+        goal = np.vstack(traj[-1].ravel())
+        for i, pt in enumerate(traj):
+            pos_ref = np.vstack(pt.ravel())
+            if (goal[:self.state_dimension] - pos).T @ \
+                (pos_ref[self.state_dimension] - pos) > 0:
+                return pos_ref
+
+        return goal 
+
 
 class CFSPlanner(IntegraterPlanner):
 
@@ -372,4 +384,14 @@ class CFSPlanner(IntegraterPlanner):
 
         return traj[:, np.newaxis]
 
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+        
+        pos = est_data["cartesian_sensor_est"]["pos"]
+        goal = np.vstack(traj[-1].ravel())
+        for i, pt in enumerate(traj):
+            pos_ref = np.vstack(pt.ravel())
+            if (goal[:self.state_dimension] - pos).T @ \
+                (pos_ref[self.state_dimension] - pos) > 0:
+                return pos_ref
 
+        return goal
