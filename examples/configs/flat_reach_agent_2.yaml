@@ -16,6 +16,7 @@ model:
       # type: UnicycleModel
       # spec:
       #     control_input_dim: 2
+cycle_time: 0.2
 planner:
     type: CFSPlanner
     spec:
