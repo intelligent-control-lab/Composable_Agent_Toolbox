@@ -12,7 +12,7 @@ class MPWrapper(object):
 
     def init_action(self, sensor_data):
         self.last_time = time.time()
-        dt = 0
+        dt = 0.01
         action = self.agent.action(dt, sensor_data[self.name])
         action['dt'] = dt
         return action
@@ -32,8 +32,8 @@ class MPWrapper(object):
                 time.sleep(0.001)
                 continue
             dt = self.last_cycle
-            i += 1
             self.last_cycle = 0
+            i += 1
 
             sensor_data = {}
             with lock:
@@ -42,5 +42,6 @@ class MPWrapper(object):
             actions['dt'] = dt
             # control = actions['control']
             # print(f'agent wrapper:\n{control}')
+            # print(actions['broadcast']['planned_traj'])
             with lock:
                 mgr_actions[self.name] = actions

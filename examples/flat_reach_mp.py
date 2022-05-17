@@ -42,7 +42,7 @@ if __name__ == "__main__":
         with lock:
             mgr_actions[ag.name] = init_actions
 
-    iters = 1000
+    iters = 200
     mgr_running = manager.Value('b', True)
 
     # agent and env processes
