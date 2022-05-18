@@ -1,0 +1,14 @@
+env: 
+  type: FlatEvadeEnv
+  spec: configs/flat_evade_env.yaml
+agents:
+  robot: 
+    type: ModelBasedAgent
+    spec: configs/flat_evade_agent_1.yaml
+  human: 
+    type: ModelBasedAgent
+    spec: configs/flat_evade_agent_2.yaml
+
+iters: 500
+render: true
+debug_mode: false

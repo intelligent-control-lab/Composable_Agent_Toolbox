@@ -1,29 +1,39 @@
-import multiprocessing
-import yaml
+import importlib
+import sys
+from os.path import abspath, join, dirname
 
-import agent
-import env
-import evaluator
+sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
+import evaluator, agent, env
+import yaml
+import multiprocessing
+
+def class_by_name(module_name, class_name):
+    return getattr(importlib.import_module(module_name), class_name)
 
 if __name__ == '__main__':
 
     # config.yaml would contain yaml filenames of user's desired agents/env
-    with open('examples/configs/config.yaml', 'r') as infile:
+    with open('configs/config.yaml', 'r') as infile:
         config_spec = yaml.load(infile, Loader=yaml.SafeLoader)
 
-    env_spec_file = config_spec['env']
+    env_spec_file = config_spec['env']['spec']
+    env_type = config_spec['env']['type']
     with open(env_spec_file, 'r') as infile:
-        env_spec = yaml.load(env_spec_file, Loader=yaml.SafeLoader)
+        env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
 
+    agent_types = []
     agent_specs = []
-    for agent_name, agent_spec_file in config_spec['agents'].items():
-        with open(agent_spec_file, 'r') as infile:
+    for agent_name in config_spec['agents']:
+        agent_types.append(config_spec['agents'][agent_name]['type'])
+        spec_file = config_spec['agents'][agent_name]['spec']
+        with open(spec_file, 'r') as infile:
             agent_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-            agent_specs.append(agent_spec)
+        agent_specs.append(agent_spec)
 
-    # TODO: figure out how to customize TYPE of agent and TYPE of env (e.g. modelfree, flatevade)
-    agents = [agent.MPWrapper(agent.ModelBasedAgent(spec)) for spec in agent_specs]
-    environ = env.MPWrapper(env.FlatEnv(env_spec, agents))
+    agents = []
+    for type, spec in zip(agent_types, agent_specs):
+        agents.append(agent.MPWrapper(class_by_name('agent', type)(spec)))
+    environ = env.MPWrapper(class_by_name('env', env_type)(env_spec, agents))
     evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
 
     manager = multiprocessing.Manager()
@@ -42,8 +52,7 @@ if __name__ == '__main__':
         with lock:
             mgr_actions[ag.name] = init_actions
 
-    # TODO: make iter num configurable?
-    iters = 200
+    iters = config_spec['iters']
     mgr_running = manager.Value('b', True)
 
     # agent and env processes
