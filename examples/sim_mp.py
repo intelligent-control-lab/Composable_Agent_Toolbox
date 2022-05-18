@@ -33,18 +33,21 @@ if __name__ == '__main__':
     agents = []
     for type, spec in zip(agent_types, agent_specs):
         agents.append(agent.MPWrapper(class_by_name('agent', type)(spec)))
-    environ = env.MPWrapper(class_by_name('env', env_type)(env_spec, agents))
+    env = env.MPWrapper(class_by_name('env', env_type)(env_spec, agents))
     evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
+
+    debug_modes = {mode: val for mode, val in config_spec['debug'].items()}
 
     manager = multiprocessing.Manager()
 
     # initialize shared memory for record, sensor data, and actions
     mgr_record = manager.Queue()
     mgr_sensor_data = manager.dict()
-    dt, init_env_info, init_sensor_data = environ.reset()
+    dt, init_env_info, init_sensor_data = env.reset()
     mgr_record.put((init_env_info, init_sensor_data))
     mgr_sensor_data.update(init_sensor_data)
     lock = manager.Lock()
+    mgr_running = manager.Value('b', True)
 
     mgr_actions = manager.dict()
     for ag in agents:
@@ -53,11 +56,14 @@ if __name__ == '__main__':
             mgr_actions[ag.name] = init_actions
 
     iters = config_spec['iters']
-    mgr_running = manager.Value('b', True)
+    render = config_spec['render']
 
     # agent and env processes
-    env_process = multiprocessing.Process(target=environ.step_loop, args=(mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters))
-    agent_processes = [multiprocessing.Process(target=ag.action_loop, args=(mgr_actions, mgr_sensor_data, mgr_running, lock)) for ag in agents]
+    env_process = multiprocessing.Process(target=env.step_loop, args=
+        (mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters, debug_modes, render))
+    agent_processes = [multiprocessing.Process(target=ag.action_loop, args=
+        (mgr_actions, mgr_sensor_data, mgr_running, lock)) 
+    for ag in agents]
 
     env_process.start()
     for proc in agent_processes:

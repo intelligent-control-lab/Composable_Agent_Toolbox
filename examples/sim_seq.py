@@ -38,6 +38,8 @@ if __name__ == '__main__':
     evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
 
     iters = config_spec['iters']
+    debug_modes = {mode: val for mode, val in config_spec['debug'].items()}
+    render = config_spec['render']
 
     dt, env_info, measurement_groups = env.reset()
     record = []
@@ -48,7 +50,7 @@ if __name__ == '__main__':
             # an action is dictionary which must contain a key "control"
             actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
-        dt, env_info, measurement_groups = env.step(actions)
+        dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
         record.append((env_info,measurement_groups))
 
     evaluator.evaluate(record)

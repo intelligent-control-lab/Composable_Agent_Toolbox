@@ -32,14 +32,14 @@ class FlatEnv(object):
         env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
-    def step(self, actions, render=True):
+    def step(self, actions, debug_modes, render=True):
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
         if render:
-            self.render()
+            self.render(actions, debug_modes)
         return self.dt, env_info, sensor_data
 
-    def render(self):
+    def render(self, actions, debug_modes):
         
         self.ax.cla()
 
@@ -86,6 +86,14 @@ class FlatEnv(object):
                 t = agent.heading
                 self.ax.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
                     color='b', linestyle='-')
+
+        if debug_modes['render_traj']:
+            traj_x = []
+            traj_y = []
+            for pt in actions[self.comp_agents[0].name]['broadcast']['planned_traj']:
+                traj_x.append(pt[0][0])
+                traj_y.append(pt[0][1])
+            plt.plot(traj_x, traj_y, color='black')
 
         # self.ax.plot(human_traj[:,0],human_traj[:,1])
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
