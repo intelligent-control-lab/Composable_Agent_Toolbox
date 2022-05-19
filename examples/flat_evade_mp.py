@@ -1,5 +1,6 @@
 import sys
 from os.path import abspath, join, dirname
+import progressbar
 
 from sympy import init_session
 sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
@@ -12,12 +13,12 @@ if __name__ == "__main__":
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('examples/configs/flat_evade_env.yaml', 'r') as infile:
+    with open('configs/flat_evade_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
 
     agent_specs = []
     for agent_name, agent_spec_file in env_spec['agent_comp_spec'].items():
-        with open(f'examples/{agent_spec_file}', 'r') as infile:
+        with open(f'{agent_spec_file}', 'r') as infile:
             agent_module_spec = yaml.load(infile, Loader=yaml.SafeLoader)
             agent_specs.append(agent_module_spec)
     agents = [agent.MPWrapper(agent.ModelBasedAgent(spec)) for spec in agent_specs]
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         with lock:
             mgr_actions[ag.name] = init_actions
 
-    iters = 1000
+    iters = 500
     mgr_running = manager.Value('b', True)
 
     # agent and env processes
@@ -53,7 +54,7 @@ if __name__ == "__main__":
         proc.start()
 
     env_process.join()
-    for proc in agent_processes:
+    for proc in agent_processes:    
         proc.join()
     
     # collect and evaluate record data

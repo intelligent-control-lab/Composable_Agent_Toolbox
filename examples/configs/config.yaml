@@ -10,7 +10,7 @@
 #     type: ModelBasedAgent
 #     spec: configs/flat_evade_agent_2.yaml
 
-env: 
+env:
   type: FlatEnv
   spec: configs/flat_reach_env.yaml
 
@@ -25,7 +25,7 @@ agents:
     type: ModelBasedAgent
     spec: configs/flat_reach_obs_2.yaml
 
-iters: 500
+iters: 200
 render: true
 
 debug:

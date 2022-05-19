@@ -40,8 +40,5 @@ class MPWrapper(object):
                 sensor_data = mgr_sensor_data[self.name]
             actions = self.agent.action(dt, sensor_data)
             actions['dt'] = dt
-            # control = actions['control']
-            # print(f'agent wrapper:\n{control}')
-            # print(actions['broadcast']['planned_traj'])
             with lock:
                 mgr_actions[self.name] = actions

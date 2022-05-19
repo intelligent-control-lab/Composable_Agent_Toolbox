@@ -47,6 +47,14 @@ controller:
             type: UnsafeController
             spec:
                 u_max: [40, 5]
+            # type: SafeSetController
+            # spec:
+            #   d_min: 15.0
+            #   k_v: 5.0
+            #   eta: 1
+            #   c: 1000
+            #   lambd: 1
+            #   u_max: [200, 200]
 
 estimator:
     type: NaiveEstimator
