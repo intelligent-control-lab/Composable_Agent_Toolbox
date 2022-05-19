@@ -43,6 +43,7 @@ Use in place of conventional ```step()``` to pass as process target method.
 
 ### Configuration 
 ```examples/config.yaml```
+
 Central configuration file for both sequential and parallel simulation. Specifies types and config filenames for env and agents.
 
 - ```debug```
