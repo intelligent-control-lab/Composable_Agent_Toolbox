@@ -2,42 +2,58 @@
 The objective of this subproject is to parallelize agent computation from environment simulation, allowing for more flexible and realistic benchmarking. Ideally, the user can simply choose between parallel vs. sequential simulation at runtime, with this choice being independent of other user configurations.
 
 ## Multiprocessing
-One way of achieving parallelized computation is through Python's ```multiprocessing``` library. As a proof of concept, a multiprocessed version of ```flat_evade.py``` is in development. For simplicity, only a single agent is currently being used. Files with multiprocessing structure are denoted with ```_mp``` at the end of the file name (e.g. ```flat_evade_mp.py```), and classes with multiprocessing structure are denoted with ```MP``` at the end of the class name (e.g. ```FlatEvadeEnvMP```).
+### Main Script (Main Process)
+```examples/sim_mp.py```
 
-### Main Process 
-```examples/flat_evade_mp.py```
-- Initialize a server process manager object (```multiprocessing.Manager()```), and using this initialize shared object proxies for actions, sensor data, and simulation record (```Manager.dict()```, ```Manager.Queue()```).
-- Initialize a lock object (```Manager.Lock()```) to prevent race conditions among processes when accessing shared memory.
-- Initialize agent process(es) and env process (```multiprocessing.Process()```), passing object proxies, lock, and some constant for the number of simulation iterations.
-- Start and join processes, then pop values from record proxy for evaluation.
+Enables user to run any configured simulation in parallel using multiprocessing.
+- Read user configurations from ```config.yaml```.
+- Initialize a server process manager object, and use this to initialize shared object proxies for actions, sensor data, and simulation record.
+- Initialize, start and join env and agent processes, passing object proxies, lock, etc.
+- Pop values from record proxy and evaluate.
 
-### Agent Process 
-```agent/model_based_agent_mp.py/ModelBasedAgentMP::action()```
-- For specified number of iterations:
-  - Get latest sensor data from shared proxy using lock.
-  - Compute agent action using sensor data.
-  - Update actions shared proxy with latest action using lock.
+### Agent Multiprocessing Wrapper (Agent Process)
+```agent/MPWrapper.py```
 
-### Env Process 
-```env/flat_evade_env_mp.py/FlatEvadeEnvMP::step()```
+Wrapper class enabling seamless simulation of any agent object within its own process. Wrapper object maintains all functionality of agent object. 
+
+Ex: ```agent = agent.ModelBasedAgent(agent_spec)``` -> ```agent = agent.MPWrapper(agent.ModelBasedAgent(agent_spec))```
+
+```agent/MPWrapper.py::action_loop()```
+
+Use in place of conventional ```action()``` to pass as process target method.
+- While env running:
+  - Get latest sensor data from shared proxy.
+  - Send sensor data to agent object to compute action.
+  - Update actions shared proxy with latest action.
+
+### Env Multiprocessing Wrapper (Env Process)
+```env/MPWrapper.py```
+
+Wrapper class enabling seamless simulation of any env object within its own process. Wrapper object maintains all functionality of env object.
+
+Ex: ```env = env.FlatEvadeEnv(env_spec, agents)``` -> ```env = env.MPWrapper(env.FlatEvadeEnv(env_spec, agents))```
+
+```env/MPWrapper.py::step_loop()```
+
+Use in place of conventional ```step()``` to pass as process target method.
 - For specified number of iterations:
   - Get latest actions from shared proxy using lock.
   - Simulate env using actions.
   - Update sensor data shared proxy with latest sensor data using lock.
 
 ### Configuration 
-Largely the same as configuration in ```flat_evade_agent_1.yaml``` and ```flat_evade_env.yaml```, but with some key differences:
+```examples/config.yaml```
 
-```examples/configs/flat_evade_agent_1_mp.yaml```
-- The model/planning/spec ```dT``` parameter has been removed. It is now calculated within the agent process itself as the time between consecutive computations.
-- The global ```cycle_time``` parameter has been added. It controls the frequency at which the agent process computes/updates actions.
+Central configuration file for both sequential and parallel simulation. Specifies types and config filenames for env and agents.
 
-```examples/configs/flat_evade_env_mp.yaml```
-- The global ```dt``` parameter has been removed. It is now calculated within the agent process itself as the time between consecutive computations.
+- ```debug```
+  - ```render_traj```: renders trajectory of primary agent if ```true```
+
+**Note:** All agent config files must contain a global ```cycle_time``` parameter to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent's process.
 
 ### Usage
 ```bash
 cd $REPO_PATH
 cd examples
-python flat_evade_mp.py
+python sim_mp.py
 ```
