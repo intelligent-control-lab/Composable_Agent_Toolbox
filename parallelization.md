@@ -49,7 +49,7 @@ Central configuration file for both sequential and parallel simulation. Specifie
 - ```debug```
   - ```render_traj```: renders trajectory of primary agent if ```true```
 
-**Note:** All agent config files must contain a global ```cycle_time``` parameter to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent process.
+**Note:** All agent config files must contain a global ```cycle_time``` parameter to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent's process.
 
 ### Usage
 ```bash
