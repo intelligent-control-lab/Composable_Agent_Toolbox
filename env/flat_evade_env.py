@@ -56,6 +56,8 @@ class FlatEvadeEnv(object):
                 traj_x.append(pt[0])
                 traj_y.append(pt[1])
             plt.plot(traj_x, traj_y, color='black')
+            next_point = actions[self.comp_agents[0].name]['broadcast']['next_point']
+            plt.scatter([next_point[0]], [next_point[1]], c='gray')
         
         cs = ['#ff0000', '#0000ff', '#ff5500', '#3399ff']
         plt.scatter(x,y,s=100, color=cs[:len(x)])

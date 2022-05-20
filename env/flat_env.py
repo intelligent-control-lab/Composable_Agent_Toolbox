@@ -93,7 +93,9 @@ class FlatEnv(object):
             for pt in actions[self.comp_agents[0].name]['broadcast']['planned_traj']:
                 traj_x.append(pt[0][0])
                 traj_y.append(pt[0][1])
-            plt.plot(traj_x, traj_y, color='black')
+            self.ax.plot(traj_x, traj_y, color='black')
+            next_point = actions[self.comp_agents[0].name]['broadcast']['next_point']
+            self.ax.scatter([next_point[0]], [next_point[1]], c='gray')
 
         # self.ax.plot(human_traj[:,0],human_traj[:,1])
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
