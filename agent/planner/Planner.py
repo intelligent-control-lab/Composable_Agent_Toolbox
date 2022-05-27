@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
+import math
 from operator import concat
 from matplotlib.pyplot import axis
 import numpy as np
+import sympy
+from numpy.polynomial import polynomial as P
+from numpy.polynomial import Polynomial
 np.set_printoptions(suppress=True)
 from cvxopt import matrix, solvers
 
@@ -58,7 +62,7 @@ class Planner(ABC):
         return self._state_dimension
 
     @abstractmethod
-    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
         '''
             Select next point
         '''
@@ -94,7 +98,7 @@ class NaivePlanner(Planner):
 
         return np.array(traj)
     
-    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
         goal = np.vstack(traj[-1].ravel())
@@ -160,7 +164,7 @@ class IntegraterPlanner(Planner):
 
         return traj
 
-    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
         goal = np.vstack(traj[-1].ravel())
@@ -207,8 +211,11 @@ class CFSPlanner(IntegraterPlanner):
     ):
         # without obstacle, then collision free
 
+        self.n_obs = n_obs
         if n_obs == 0 or len(obs_traj)==0: # no future obstacle information is provided 
             return np.array(x_ref)
+
+        self.approx_func = None
 
         # has obstacle, the normal CFS procedure 
 
@@ -384,16 +391,52 @@ class CFSPlanner(IntegraterPlanner):
 
         return traj[:, np.newaxis]
 
-    def next_point(self, traj: np.array, est_data: dict) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
-        vel = est_data["cartesian_sensor_est"]["vel"]
 
         goal = np.vstack(traj[-1].ravel())
+        # for i, pt in enumerate(traj):
+        #     pos_ref = np.vstack(pt.ravel())
+        #     if (goal[:self.state_dimension] - pos).T @ \
+        #         (pos_ref[:self.state_dimension] - pos) > 0:
+        #             return pos_ref
+
+        # agent needs to be able to follow trajectory and get next point along it
+
+        # create polynomial approximation of curve of traj
+        # only need to recalculate approximation on replanning_timer intervals
+        if replanning:
+            approx = Polynomial(P.polyfit([pt[0][0] for pt in traj], [pt[0][1] for pt in traj], self.n_obs + 1))
+            self.approx_func = sympy.sympify(approx.__str__().replace('x', '*x'))
+
+        # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
+        cur_len = self._arc_len(self.approx_func, goal[0], pos[0])
+        print(f'cur len {cur_len}')
+        # iterate thru all points in trajx and return first point with more progress (less arc length) than current
         for i, pt in enumerate(traj):
             pos_ref = np.vstack(pt.ravel())
-            if (goal[:self.state_dimension] - pos).T @ \
-                (pos_ref[:self.state_dimension] - pos) > 0:
-                    return pos_ref
+            pt_len = self._arc_len(self.approx_func, goal[0], pos_ref[0])
+            print(f'pt {i} len {pt_len}')
+            if pt_len < 0:
+                return goal
+            if pt_len < cur_len:
+                return pos_ref
 
         return goal
+
+    def _arc_len(self, f, a, b):
+        x = sympy.Symbol('x')
+        deriv = sympy.Derivative(f, x).doit()
+        a_len = sympy.Integral(sympy.sqrt(1 + deriv**2), (x, a, b)).n()
+
+        # alternative implementation w/ numpy
+        # inner_func = sympy.sqrt(1 + sympy.Derivative(f, x)**2).doit()
+        # inp = []
+        # i = float(a)
+        # while i < float(b):
+        #     inp.append(inner_func.subs(x, i))
+        #     i += 1
+        # a_len = np.trapz(inp)
+        
+        return a_len
