@@ -421,10 +421,11 @@ class CFSPlanner(IntegraterPlanner):
 
     def _arc_len(self, f, start, end):
         segment = f[start : end]
-        # alternative: dydx = np.diff([pt[0][1] for pt in segment]) / np.diff([pt[0][0] for pt in segment])
-        dydx = np.gradient(segment.ravel())
+        x = [pt[0][0] for pt in segment]
+        y = [pt[0][1] for pt in segment]
+        dydx = np.diff(y) / np.diff(x)
         vals = [math.sqrt(1 + d**2) for d in dydx]
 
-        # alternative: a_len = np.trapz(vals, x=dydx)
-        a_len = scipy.integrate.simpson(vals, x=dydx)
+        # throws exception: a_len = scipy.integrate.simpson(vals)
+        a_len = np.trapz(vals)
         return a_len
