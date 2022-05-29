@@ -3,6 +3,8 @@ import math
 from operator import concat
 from matplotlib.pyplot import axis
 import numpy as np
+import scipy
+from scipy import integrate
 import sympy
 from numpy.polynomial import polynomial as P
 from numpy.polynomial import Polynomial
@@ -412,12 +414,12 @@ class CFSPlanner(IntegraterPlanner):
 
         # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
         cur_len = self._arc_len(self.approx_func, goal[0], pos[0])
-        print(f'cur len {cur_len}')
+        # print(f'cur len {cur_len}')
         # iterate thru all points in trajx and return first point with more progress (less arc length) than current
         for i, pt in enumerate(traj):
             pos_ref = np.vstack(pt.ravel())
             pt_len = self._arc_len(self.approx_func, goal[0], pos_ref[0])
-            print(f'pt {i} len {pt_len}')
+            # print(f'pt {i} len {pt_len}')
             if pt_len < 0:
                 return goal
             if pt_len < cur_len:
@@ -425,18 +427,11 @@ class CFSPlanner(IntegraterPlanner):
 
         return goal
 
-    def _arc_len(self, f, a, b):
+    def _arc_len(self, f, a, b, n=10):
         x = sympy.Symbol('x')
-        deriv = sympy.Derivative(f, x).doit()
-        a_len = sympy.Integral(sympy.sqrt(1 + deriv**2), (x, a, b)).n()
+        inner_func = sympy.sqrt(1 + sympy.Derivative(f, x)**2).doit()
+        dx = (b - a) / n
+        vals = np.array([inner_func.subs(x, i) for i in np.arange(a, b, dx)])
 
-        # alternative implementation w/ numpy
-        # inner_func = sympy.sqrt(1 + sympy.Derivative(f, x)**2).doit()
-        # inp = []
-        # i = float(a)
-        # while i < float(b):
-        #     inp.append(inner_func.subs(x, i))
-        #     i += 1
-        # a_len = np.trapz(inp)
-        
+        a_len = integrate.simpson(vals, dx=dx)
         return a_len
