@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import math
 from operator import concat
+import time
 from matplotlib.pyplot import axis
 import numpy as np
 import scipy.integrate
@@ -63,7 +64,7 @@ class Planner(ABC):
         return self._state_dimension
 
     @abstractmethod
-    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
         '''
             Select next point
         '''
@@ -99,7 +100,7 @@ class NaivePlanner(Planner):
 
         return np.array(traj)
     
-    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
         goal = np.vstack(traj[-1].ravel())
@@ -165,7 +166,7 @@ class IntegraterPlanner(Planner):
 
         return traj
 
-    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
         goal = np.vstack(traj[-1].ravel())
@@ -215,8 +216,6 @@ class CFSPlanner(IntegraterPlanner):
         self.n_obs = n_obs
         if n_obs == 0 or len(obs_traj)==0: # no future obstacle information is provided 
             return np.array(x_ref)
-
-        self.approx_func = None
 
         # has obstacle, the normal CFS procedure 
 
@@ -392,7 +391,7 @@ class CFSPlanner(IntegraterPlanner):
 
         return traj[:, np.newaxis]
 
-    def next_point(self, traj: np.array, est_data: dict, replanning: bool) -> np.array:
+    def next_point(self, traj: np.array, est_data: dict) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
 
@@ -403,22 +402,15 @@ class CFSPlanner(IntegraterPlanner):
         #         (pos_ref[:self.state_dimension] - pos) > 0:
         #             return pos_ref
 
-        # agent needs to be able to follow trajectory and get next point along it
-
-        # create polynomial approximation of curve of traj
-        # only need to recalculate approximation on replanning_timer intervals
-        if replanning:
-            print('replanning')
-            approx = Polynomial(P.polyfit([pt[0][0] for pt in traj], [pt[0][1] for pt in traj], self.n_obs + 1))
-            self.approx_func = sympy.sympify(approx.__str__().replace('x', '*x'))
-
         # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
-        cur_len = self._arc_len(self.approx_func, goal[0], pos[0])
+        x_vals = np.array([pt[0][0] for pt in traj])
+        cur_len = self._arc_len(traj, np.abs(x_vals - pos[0]).argmin(), len(traj)) # pass closest pt on traj to current pos
         # print(f'cur len {cur_len}')
+
         # iterate thru all points in trajx and return first point with more progress (less arc length) than current
         for i, pt in enumerate(traj):
             pos_ref = np.vstack(pt.ravel())
-            pt_len = self._arc_len(self.approx_func, goal[0], pos_ref[0])
+            pt_len = self._arc_len(traj, i, len(traj))
             # print(f'pt {i} len {pt_len}')
             if pt_len < 0:
                 return goal
@@ -427,12 +419,12 @@ class CFSPlanner(IntegraterPlanner):
 
         return goal
 
-    def _arc_len(self, f, a, b, n=10):
-        x = sympy.Symbol('x')
-        inner_func = sympy.sqrt(1 + sympy.Derivative(f, x)**2).doit()
-        dx = (max(a, b) - min(a, b)) / n
-        vals = np.array([inner_func.subs(x, i) for i in np.arange(min(a, b), max(a, b), dx)])
+    def _arc_len(self, f, start, end):
+        segment = f[start : end]
+        # alternative: dydx = np.diff([pt[0][1] for pt in segment]) / np.diff([pt[0][0] for pt in segment])
+        dydx = np.gradient(segment.ravel())
+        vals = [math.sqrt(1 + d**2) for d in dydx]
 
-        # use Simpson's rule to approximate arc length
-        a_len = scipy.integrate.simpson(vals, dx=dx)
+        # alternative: a_len = np.trapz(vals)
+        a_len = scipy.integrate.simpson(vals)
         return a_len
