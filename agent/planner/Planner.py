@@ -425,6 +425,6 @@ class CFSPlanner(IntegraterPlanner):
         dydx = np.gradient(segment.ravel())
         vals = [math.sqrt(1 + d**2) for d in dydx]
 
-        # alternative: a_len = np.trapz(vals)
-        a_len = scipy.integrate.simpson(vals)
+        # alternative: a_len = np.trapz(vals, x=dydx)
+        a_len = scipy.integrate.simpson(vals, x=dydx)
         return a_len
