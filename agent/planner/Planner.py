@@ -3,8 +3,7 @@ import math
 from operator import concat
 from matplotlib.pyplot import axis
 import numpy as np
-import scipy
-from scipy import integrate
+import scipy.integrate
 import sympy
 from numpy.polynomial import polynomial as P
 from numpy.polynomial import Polynomial
@@ -409,6 +408,7 @@ class CFSPlanner(IntegraterPlanner):
         # create polynomial approximation of curve of traj
         # only need to recalculate approximation on replanning_timer intervals
         if replanning:
+            print('replanning')
             approx = Polynomial(P.polyfit([pt[0][0] for pt in traj], [pt[0][1] for pt in traj], self.n_obs + 1))
             self.approx_func = sympy.sympify(approx.__str__().replace('x', '*x'))
 
@@ -430,8 +430,9 @@ class CFSPlanner(IntegraterPlanner):
     def _arc_len(self, f, a, b, n=10):
         x = sympy.Symbol('x')
         inner_func = sympy.sqrt(1 + sympy.Derivative(f, x)**2).doit()
-        dx = (b - a) / n
-        vals = np.array([inner_func.subs(x, i) for i in np.arange(a, b, dx)])
+        dx = (max(a, b) - min(a, b)) / n
+        vals = np.array([inner_func.subs(x, i) for i in np.arange(min(a, b), max(a, b), dx)])
 
-        a_len = integrate.simpson(vals, dx=dx)
+        # use Simpson's rule to approximate arc length
+        a_len = scipy.integrate.simpson(vals, dx=dx)
         return a_len
