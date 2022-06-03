@@ -402,22 +402,36 @@ class CFSPlanner(IntegraterPlanner):
         #         (pos_ref[:self.state_dimension] - pos) > 0:
         #             return pos_ref
 
-        # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
-        x_vals = np.array([pt[0][0] for pt in traj])
-        cur_len = self._arc_len(traj, np.abs(x_vals - pos[0]).argmin(), len(traj)) # pass closest pt on traj to current pos
-        # print(f'cur len {cur_len}')
-
-        # iterate thru all points in trajx and return first point with more progress (less arc length) than current
-        for i, pt in enumerate(traj):
-            pos_ref = np.vstack(pt.ravel())
-            pt_len = self._arc_len(traj, i, len(traj))
-            # print(f'pt {i} len {pt_len}')
-            if pt_len < 0:
-                return goal
-            if pt_len < cur_len:
+        for i in range(len(traj) - 1):
+            pos_ref = np.vstack(traj[i].ravel())
+            next_pos_ref = np.vstack(traj[i+1].ravel())
+            angle = self.get_angle(pos, pos_ref[:self.state_dimension], next_pos_ref[:self.state_dimension])
+            if angle < 90:
                 return pos_ref
 
+        # # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
+        # x_vals = np.array([pt[0][0] for pt in traj])
+        # cur_len = self._arc_len(traj, np.abs(x_vals - pos[0]).argmin(), len(traj)) # pass closest pt on traj to current pos
+        # # print(f'cur len {cur_len}')
+
+        # # iterate thru all points in traj and return first point with more progress (less arc length) than current
+        # for i, pt in enumerate(traj):
+        #     pos_ref = np.vstack(pt.ravel())
+        #     pt_len = self._arc_len(traj, i, len(traj))
+        #     # print(f'pt {i} len {pt_len}')
+        #     if pt_len < 0:
+        #         return goal
+        #     if pt_len < cur_len:
+        #         return pos_ref
+
         return goal
+
+    def get_angle(self, p1, p2, p3):
+        ba = np.array(p1) - np.array(p2)
+        bc = np.array(p3) - np.array(p2)
+        angle = np.arccos(np.dot(ba.T, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc)))
+        return np.degrees(angle)
+
 
     def _arc_len(self, f, start, end):
         segment = f[start : end]
