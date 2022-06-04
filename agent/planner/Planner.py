@@ -394,22 +394,25 @@ class CFSPlanner(IntegraterPlanner):
     def next_point(self, traj: np.array, est_data: dict) -> np.array:
         
         pos = est_data["cartesian_sensor_est"]["pos"]
-
         goal = np.vstack(traj[-1].ravel())
+
+        # # classic implementation
         # for i, pt in enumerate(traj):
         #     pos_ref = np.vstack(pt.ravel())
         #     if (goal[:self.state_dimension] - pos).T @ \
         #         (pos_ref[:self.state_dimension] - pos) > 0:
         #             return pos_ref
 
+        # find the next tracking point pt_i such that {vector: current_pos --> pt_i} 
+        # and {vector: pt_i --> pt_i+1} form a <90 degree angle
         for i in range(len(traj) - 1):
             pos_ref = np.vstack(traj[i].ravel())
             next_pos_ref = np.vstack(traj[i+1].ravel())
-            angle = self.get_angle(pos, pos_ref[:self.state_dimension], next_pos_ref[:self.state_dimension])
+            angle = self._get_angle(pos, pos_ref[:self.state_dimension], next_pos_ref[:self.state_dimension])
             if angle < 90:
                 return pos_ref
 
-        # # use arclength (integral(a, b, sqrt(1 - f'(x)^2))) to find current progress thru traj
+        # # use arclength to find current progress thru traj
         # x_vals = np.array([pt[0][0] for pt in traj])
         # cur_len = self._arc_len(traj, np.abs(x_vals - pos[0]).argmin(), len(traj)) # pass closest pt on traj to current pos
         # # print(f'cur len {cur_len}')
@@ -426,7 +429,9 @@ class CFSPlanner(IntegraterPlanner):
 
         return goal
 
-    def get_angle(self, p1, p2, p3):
+    def _get_angle(self, p1, p2, p3):
+        '''Find the angle between points p1, p2, p3 in [x, y] form, 
+            where p2 is the vertex.'''
         ba = np.array(p1) - np.array(p2)
         bc = np.array(p3) - np.array(p2)
         angle = np.arccos(np.dot(ba.T, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc)))
@@ -434,6 +439,8 @@ class CFSPlanner(IntegraterPlanner):
 
 
     def _arc_len(self, f, start, end):
+        '''Find the arc length of numerically defined function f over indeces start to end 
+            using (integral(a, b, sqrt(1 - f'(x)^2)))'''
         segment = f[start : end]
         x = [pt[0][0] for pt in segment]
         y = [pt[0][1] for pt in segment]
