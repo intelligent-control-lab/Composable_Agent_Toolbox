@@ -94,6 +94,7 @@ class FlatEnv(object):
                 traj_x.append(pt[0][0])
                 traj_y.append(pt[0][1])
             self.ax.plot(traj_x, traj_y, color='black')
+        if debug_modes['render_next_traj_point']:
             next_point = actions[self.comp_agents[0].name]['broadcast']['next_point']
             self.ax.scatter([next_point[0]], [next_point[1]], c='gray')
 
