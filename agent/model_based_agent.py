@@ -1,3 +1,4 @@
+from distutils.log import debug
 from agent import sensor
 import numpy as np
 import importlib
@@ -36,7 +37,7 @@ class ModelBasedAgent(AgentBase):
         for i in range(len(module_spec["sensors"])):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
-    def action(self, dt, sensors_data):
+    def action(self, dt, sensors_data, debug_modes):
 
         # --------------------------- get previous control --------------------------- #
         u = self.last_control
@@ -59,6 +60,7 @@ class ModelBasedAgent(AgentBase):
         self.replanning_timer += 1
         # if self.name == 'human':
         #     print(next_traj_point)
+        # print(f'traj: {self.planned_traj}')
 
         # --------------------------- compute agent control -------------------------- #
         control = self.controller(
@@ -71,9 +73,14 @@ class ModelBasedAgent(AgentBase):
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                # "planned_traj": self.planned_traj,
                 "state":est_param["ego_state_est"],
                 "next_point":next_traj_point
             }
+
+        if debug_modes['log_traj']: print(f'traj: {self.planned_traj}')
+        if debug_modes['log_next_traj_point']: print(f'next_traj_point: {next_traj_point}')
+        if debug_modes['log_control']: print(f'control: {control}')
 
         return ret
 

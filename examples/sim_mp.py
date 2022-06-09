@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     mgr_actions = manager.dict()
     for ag in agents:
-        init_actions = ag.init_action(init_sensor_data)
+        init_actions = ag.init_action(init_sensor_data, debug_modes)
         with lock:
             mgr_actions[ag.name] = init_actions
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     env_process = multiprocessing.Process(target=env.step_loop, args=
         (mgr_actions, mgr_sensor_data, mgr_record, mgr_running, lock, iters, debug_modes, render))
     agent_processes = [multiprocessing.Process(target=ag.action_loop, args=
-        (mgr_actions, mgr_sensor_data, mgr_running, lock)) 
+        (mgr_actions, mgr_sensor_data, mgr_running, lock, debug_modes)) 
     for ag in agents]
 
     env_process.start()

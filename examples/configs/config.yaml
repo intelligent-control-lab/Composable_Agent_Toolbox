@@ -29,4 +29,8 @@ iters: 200
 render: true
 
 debug:
-  render_traj: true
+  render_traj: false
+  render_next_traj_point: true
+  log_traj: false
+  log_next_traj_point: true
+  log_control: true
