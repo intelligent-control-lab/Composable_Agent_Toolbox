@@ -37,7 +37,15 @@ class FlatEnv(object):
         env_info, sensor_data = self.world.measure()
         if render:
             self.render(actions, debug_modes)
+        self.log_debug(sensor_data, debug_modes)
         return self.dt, env_info, sensor_data
+
+    def log_debug(self, sensor_data, debug_modes):
+        if debug_modes['log_agent_state']:
+            for ag in self.comp_agents:
+                state = sensor_data[ag.name]['cartesian_sensor']
+                print(f"({ag.name}) pos: {state['pos']}\n")
+                print(f"({ag.name}) vel: {state['vel']}\n")
 
     def render(self, actions, debug_modes):
         

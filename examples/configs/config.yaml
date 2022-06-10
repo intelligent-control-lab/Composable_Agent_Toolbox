@@ -34,3 +34,4 @@ debug:
   log_traj: false
   log_next_traj_point: false
   log_control: false
+  log_agent_state: true
