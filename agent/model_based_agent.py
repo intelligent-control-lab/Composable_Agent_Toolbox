@@ -55,8 +55,10 @@ class ModelBasedAgent(AgentBase):
         # --------------------------- select next waypoint --------------------------- #
         # next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
         # next_traj_point = np.vstack(next_traj_point.ravel())
-        next_traj_point = self.planner.next_point(
-                self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1):], est_data)
+        # print(min(self.replanning_timer, self.planned_traj.shape[0]-1))
+        # next_traj_point = self.planner.next_point(
+        #         self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1):], est_data)
+        next_traj_point = self.planner.next_point(self.planned_traj, est_data)
         self.replanning_timer += 1
         # if self.name == 'human':
         #     print(next_traj_point)
@@ -72,15 +74,18 @@ class ModelBasedAgent(AgentBase):
         ret = {"control"  : control}
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
-                "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
-                # "planned_traj": self.planned_traj,
+                # "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],
+                "planned_traj": self.planned_traj,
                 "state":est_param["ego_state_est"],
                 "next_point":next_traj_point
             }
-
-        if debug_modes['log_traj']: print(f'traj: {self.planned_traj}')
-        if debug_modes['log_next_traj_point']: print(f'next_traj_point: {next_traj_point}')
-        if debug_modes['log_control']: print(f'control: {control}')
+        
+        if debug_modes['log_traj']: 
+            print(f'({self.name}) traj: {self.planned_traj}\n')
+        if debug_modes['log_next_traj_point']: 
+            print(f'({self.name}) next_traj_point: {next_traj_point}\n')
+        if debug_modes['log_control']: 
+            print(f'({self.name}) control: {control}\n')
 
         return ret
 

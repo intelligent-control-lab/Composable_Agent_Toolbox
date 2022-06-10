@@ -403,31 +403,38 @@ class CFSPlanner(IntegraterPlanner):
         #         (pos_ref[:self.state_dimension] - pos) > 0:
         #             return pos_ref
 
-        # find the next tracking point pt_i such that {vector: current_pos --> pt_i} 
-        # and {vector: pt_i --> pt_i+1} form a <90 degree angle
-        for i in range(len(traj) - 1):
-            pos_ref = np.vstack(traj[i].ravel())
-            next_pos_ref = np.vstack(traj[i+1].ravel())
-            angle = self._get_angle(pos, pos_ref[:self.state_dimension], next_pos_ref[:self.state_dimension])
-            if angle < 90:
-                return pos_ref
-
-        # # use arclength to find current progress thru traj
-        # x_vals = np.array([pt[0][0] for pt in traj])
-        # cur_len = self._arc_len(traj, np.abs(x_vals - pos[0]).argmin(), len(traj)) # pass closest pt on traj to current pos
-        # # print(f'cur len {cur_len}')
-
-        # # iterate thru all points in traj and return first point with more progress (less arc length) than current
-        # for i, pt in enumerate(traj):
-        #     pos_ref = np.vstack(pt.ravel())
-        #     pt_len = self._arc_len(traj, i, len(traj))
-        #     # print(f'pt {i} len {pt_len}')
-        #     if pt_len < 0:
-        #         return goal
-        #     if pt_len < cur_len:
+        # # find the next tracking point pt_i such that {vector: current_pos --> pt_i} 
+        # # and {vector: pt_i --> pt_i+1} form a <90 degree angle
+        # for i in range(len(traj) - 1):
+        #     pos_ref = np.vstack(traj[i].ravel())
+        #     next_pos_ref = np.vstack(traj[i+1].ravel())
+        #     angle = self._get_angle(pos, pos_ref[:self.state_dimension], next_pos_ref[:self.state_dimension])
+        #     if angle < 90:
         #         return pos_ref
 
+        # use arclength to find current progress thru traj
+        # find closest pt on traj to cur pos
+        closest_pt = -1
+        min_dist = np.Infinity
+        for i, pt in enumerate(traj):
+            pos_ref = np.vstack(pt.ravel())
+            dist = np.linalg.norm(pos_ref[:self.state_dimension] - pos)
+            # print(f'{i}: {dist}')
+            if dist < min_dist:
+                closest_pt = i
+                min_dist = dist
+        cur_len = self._arc_len(traj, closest_pt, len(traj))
+        # iterate thru all points in traj and return first point with more progress (less arc length) than current
+        for i, pt in enumerate(traj):
+            pos_ref = np.vstack(pt.ravel())
+            pt_len = self._arc_len(traj, i, len(traj))
+            if pt_len < 0:
+                return goal
+            if pt_len < cur_len:
+                return pos_ref
+
         return goal
+        # return np.vstack(traj[0].ravel())
 
     def _get_angle(self, p1, p2, p3):
         '''Find the angle between points p1, p2, p3 in [x, y] form, 
@@ -437,16 +444,13 @@ class CFSPlanner(IntegraterPlanner):
         angle = np.arccos(np.dot(ba.T, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc)))
         return np.degrees(angle)
 
-
     def _arc_len(self, f, start, end):
         '''Find the arc length of numerically defined function f over indeces start to end 
-            using (integral(a, b, sqrt(1 - f'(x)^2)))'''
+            using integral(a, b, sqrt(1 - f'(x)^2))'''
         segment = f[start : end]
         x = [pt[0][0] for pt in segment]
         y = [pt[0][1] for pt in segment]
         dydx = np.diff(y) / np.diff(x)
         vals = [math.sqrt(1 + d**2) for d in dydx]
-
-        # throws exception: a_len = scipy.integrate.simpson(vals)
         a_len = np.trapz(vals)
         return a_len
