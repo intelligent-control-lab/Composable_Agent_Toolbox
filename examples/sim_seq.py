@@ -48,7 +48,7 @@ if __name__ == '__main__':
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
-            actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
+            actions[agent.name] = agent.action(dt, measurement_groups[agent.name], debug_modes)
             #sensor data is grouped by agent
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
         record.append((env_info,measurement_groups))
