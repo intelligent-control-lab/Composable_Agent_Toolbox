@@ -1,4 +1,7 @@
 from distutils.log import debug
+import time
+
+from matplotlib import pyplot as plt
 from agent import sensor
 import numpy as np
 import importlib
@@ -10,6 +13,11 @@ class ModelBasedAgent(AgentBase):
         nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])
         self.replanning_timer = self.planner.replanning_cycle
         self.last_control     = np.zeros((nu,1))  
+        self.control_log = {}
+        self.control_log['x'] = []
+        self.control_log['y'] = []
+        self.control_log['t'] = []
+        self.start_time = time.time()
         # the size of last_control should be equal to the number of control inputs, 
         # for flat_world with discs, each robot has two inputs, for franka arm, we assume direct control over end-eff, so 
         # the control input is 3D
@@ -71,6 +79,20 @@ class ModelBasedAgent(AgentBase):
         
         self.last_control = control
 
+        # self.control_log.append((control, time.time() - self.start_time))
+        self.control_log['x'].append(control[0])
+        self.control_log['y'].append(control[1])
+        self.control_log['t'].append(time.time() - self.start_time)
+
+        if debug_modes['log_traj']: 
+            print(f'({self.name}) traj: {self.planned_traj}\n')
+        if debug_modes['log_next_traj_point']: 
+            print(f'({self.name}) next_traj_point: {next_traj_point}\n')
+        if debug_modes['log_control']: 
+            print(f'({self.name}) control: {control}\n')
+        if debug_modes['plot_control'] and self.name == "human":
+            self.plot_control()
+
         ret = {"control"  : control}
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
@@ -79,17 +101,18 @@ class ModelBasedAgent(AgentBase):
                 "state":est_param["ego_state_est"],
                 "next_point":next_traj_point
             }
-        
-        if debug_modes['log_traj']: 
-            print(f'({self.name}) traj: {self.planned_traj}\n')
-        if debug_modes['log_next_traj_point']: 
-            print(f'({self.name}) next_traj_point: {next_traj_point}\n')
-        if debug_modes['log_control']: 
-            print(f'({self.name}) control: {control}\n')
 
         return ret
 
-
+    def plot_control(self):
+        if len(self.control_log['x']) == 1:
+            plt.figure()
+            self.ax = plt.axes(projection='3d')
+        x = np.array(self.control_log['x']).flatten()
+        y = np.array(self.control_log['y']).flatten()
+        t = np.array(self.control_log['t']).flatten()
+        self.ax.plot(x, y, t, color='blue')
+        plt.pause(0.001)
 
 class UserControlAgent(AgentBase):
     def __init__(self, module_spec):

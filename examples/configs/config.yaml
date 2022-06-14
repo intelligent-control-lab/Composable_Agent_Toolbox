@@ -33,5 +33,6 @@ debug:
   render_next_traj_point: true
   log_traj: false
   log_next_traj_point: false
-  log_control: false
+  log_control: true
   log_agent_state: true
+  plot_control: true
