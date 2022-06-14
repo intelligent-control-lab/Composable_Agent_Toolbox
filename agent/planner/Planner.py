@@ -157,7 +157,7 @@ class IntegraterPlanner(Planner):
             xref = np.vstack([ state_goal[ j * xd + i, 0 ] for j in range(n_state_comp) ])
 
             ubar = np.linalg.lstsq(
-                a = Bbar[-xd:, :], b = xref - np.linalg.matrix_power(A, N) @ x)[0] # get solution
+                a = Bbar[-xd:, :], b = xref - np.linalg.matrix_power(A, N) @ x, rcond=None)[0] # get solution
 
             xbar = (Abar @ x + Bbar @ ubar).reshape(N, n_state_comp, 1)
 
