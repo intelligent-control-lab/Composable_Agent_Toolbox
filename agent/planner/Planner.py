@@ -412,29 +412,29 @@ class CFSPlanner(IntegraterPlanner):
         #     if angle < 90:
         #         return pos_ref
 
-        # use arclength to find current progress thru traj
         # find closest pt on traj to cur pos
         closest_pt = -1
         min_dist = np.Infinity
         for i, pt in enumerate(traj):
             pos_ref = np.vstack(pt.ravel())
             dist = np.linalg.norm(pos_ref[:self.state_dimension] - pos)
-            # print(f'{i}: {dist}')
             if dist < min_dist:
                 closest_pt = i
                 min_dist = dist
-        cur_len = self._arc_len(traj, closest_pt, len(traj))
-        # iterate thru all points in traj and return first point with more progress (less arc length) than current
-        for i, pt in enumerate(traj):
-            pos_ref = np.vstack(pt.ravel())
-            pt_len = self._arc_len(traj, i, len(traj))
-            if pt_len < 0:
-                return goal
-            if pt_len < cur_len:
-                return pos_ref
+        next_pt = min(closest_pt + 1, len(traj) - 1)
+        return np.vstack(traj[next_pt].ravel())
+
+        # cur_len = self._arc_len(traj, closest_pt, len(traj))
+        # # use arclength to find current progress thru traj
+        # for i, pt in enumerate(traj):
+        #     pos_ref = np.vstack(pt.ravel())
+        #     pt_len = self._arc_len(traj, i, len(traj))
+        #     if pt_len < 0:
+        #         return goal
+        #     if pt_len < cur_len:
+        #         return pos_ref
 
         return goal
-        # return np.vstack(traj[0].ravel())
 
     def _get_angle(self, p1, p2, p3):
         '''Find the angle between points p1, p2, p3 in [x, y] form, 
