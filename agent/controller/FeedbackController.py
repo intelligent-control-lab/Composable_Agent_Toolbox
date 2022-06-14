@@ -66,13 +66,10 @@ class NaiveFeedbackController(FeedbackController):
         n = error.shape[0]
         assert(n % 2 == 0)
 
-        # print(f'pos error:\n{error[:2]}')
-        # print(f'vel error:\n{error[2:]}')
-
         # compute u as desired state time derivative for control model
         u = self.kp*error[:n//2] + self.kv * error[n//2:]
         # print(f"u:{u}")
         for i in range(u.shape[0]):
             u[i] = np.clip(u[i], -self.u_max[i], self.u_max[i])
-        # print(f"control:\n{u}")
+
         return u
