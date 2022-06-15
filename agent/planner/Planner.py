@@ -4,10 +4,6 @@ from operator import concat
 import time
 from matplotlib.pyplot import axis
 import numpy as np
-import scipy.integrate
-import sympy
-from numpy.polynomial import polynomial as P
-from numpy.polynomial import Polynomial
 np.set_printoptions(suppress=True)
 from cvxopt import matrix, solvers
 
