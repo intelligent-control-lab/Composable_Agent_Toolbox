@@ -18,7 +18,7 @@ Wrapper class enabling seamless simulation of any agent object within its own pr
 
 Ex: ```agent = agent.ModelBasedAgent(agent_spec)``` -> ```agent = agent.MPWrapper(agent.ModelBasedAgent(agent_spec))```
 
-```agent/MPWrapper.py::action_loop()```
+```agent/mp_wrapper.py::action_loop()```
 
 Use in place of conventional ```action()``` to pass as process target method.
 - While env running:
@@ -33,7 +33,7 @@ Wrapper class enabling seamless simulation of any env object within its own proc
 
 Ex: ```env = env.FlatEvadeEnv(env_spec, agents)``` -> ```env = env.MPWrapper(env.FlatEvadeEnv(env_spec, agents))```
 
-```env/MPWrapper.py::step_loop()```
+```env/mp_wrapper.py::step_loop()```
 
 Use in place of conventional ```step()``` to pass as process target method.
 - For specified number of iterations:
