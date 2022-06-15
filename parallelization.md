@@ -12,7 +12,7 @@ Enables user to run any configured simulation in parallel using multiprocessing.
 - Pop values from record proxy and evaluate.
 
 ### Agent Multiprocessing Wrapper (Agent Process)
-```agent/MPWrapper.py```
+```agent/mp_wrapper.py```
 
 Wrapper class enabling seamless simulation of any agent object within its own process. Wrapper object maintains all functionality of agent object. 
 
@@ -27,7 +27,7 @@ Use in place of conventional ```action()``` to pass as process target method.
   - Update actions shared proxy with latest action.
 
 ### Env Multiprocessing Wrapper (Env Process)
-```env/MPWrapper.py```
+```env/mp_wrapper.py```
 
 Wrapper class enabling seamless simulation of any env object within its own process. Wrapper object maintains all functionality of env object.
 
@@ -55,5 +55,6 @@ Central configuration file for both sequential and parallel simulation. Specifie
 ```bash
 cd $REPO_PATH
 cd examples
-python sim_mp.py
+python sim_mp.py # parallel simulation w/ multiprocessing
+python sim_seq.py # sequential simulation
 ```
