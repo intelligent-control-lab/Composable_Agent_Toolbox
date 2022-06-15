@@ -49,7 +49,7 @@ Central configuration file for both sequential and parallel simulation.
 - Specifies number of ```iters``` to simulate and whether to ```render``` simulation.
 - Specifies ```debug``` configurations (```render_traj```, ```log_agent_state```, etc.).
 
-**Note:** All agent config files must contain a global ```cycle_time``` parameter to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent's process.
+**Note:** All agent config files must contain a global parameter ```cycle_time``` to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent's process.
 
 ### Usage
 ```bash
