@@ -44,10 +44,10 @@ Use in place of conventional ```step()``` to pass as process target method.
 ### Configuration 
 ```examples/config.yaml```
 
-Central configuration file for both sequential and parallel simulation. Specifies types and config filenames for env and agents.
-
-- ```debug```
-  - ```render_traj```: renders trajectory of primary agent if ```true```
+Central configuration file for both sequential and parallel simulation. 
+- Specifies types and config filenames for ```env``` and ```agents```.
+- Specifies number of ```iters``` to simulate and whether to ```render``` simulation.
+- Specifies ```debug``` configurations (```render_traj```, ```log_agent_state```, etc.).
 
 **Note:** All agent config files must contain a global ```cycle_time``` parameter to be compatible with multiprocessing. This parameter specifies the computation frequency of the agent's process.
 
@@ -55,6 +55,6 @@ Central configuration file for both sequential and parallel simulation. Specifie
 ```bash
 cd $REPO_PATH
 cd examples
-python sim_mp.py # parallel simulation w/ multiprocessing
+python sim_mp.py # parallel simulation
 python sim_seq.py # sequential simulation
 ```
