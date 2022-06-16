@@ -12,6 +12,9 @@ def class_by_name(module_name, class_name):
 
 if __name__ == '__main__':
 
+    if sys.platform == "linux" or sys.platform == "linux2":
+        multiprocessing.set_start_method("forkserver")
+
     # config.yaml would contain yaml filenames of user's desired agents/env
     with open('configs/config.yaml', 'r') as infile:
         config_spec = yaml.load(infile, Loader=yaml.SafeLoader)
