@@ -72,7 +72,7 @@ class Sphere:
 def compute_dv(s1, s2):
     mag = s1.rad + s2.rad - math.sqrt(
         (s1.pos[0] - s2.pos[0])**2 + (s1.pos[1] - s2.pos[1])**2 + (s1.pos[2] - s2.pos[2])**2)
-    uv = (s1.pos - s2.pos) / np.linalg.norm(s1.pos - s2.pos) # ??
+    uv = (s1.pos - s2.pos) / np.linalg.norm(s1.pos - s2.pos)
     return mag * uv
 
 def intersects(s1, s2):
@@ -97,11 +97,16 @@ def sweep(s_cur, v_cur):
     # OPTION 2: return entire set
     inter = set()
     s_trans = Sphere(s_cur.pos, s_cur.rad)
+
     # translate s_trans along v_cur
     while np.linalg.norm(s_trans.pos - s_cur.pos) < np.linalg.norm(v_cur):
-        query = tree.query_ball_point(s_trans.pos, r + r + 0.001) # do we need 0.001?
+        query = tree.query_ball_point(s_trans.pos, r + r)
         inter.update(set(spheres[i] for i in query))
         s_trans.pos = s_trans.pos + r * v_cur / np.linalg.norm(v_cur) # iterate by distance r
+
+    s_trans.pos = s_cur.pos + v_cur # iterate to end of vector
+    query = tree.query_ball_point(s_trans.pos, r + r)
+    inter.update(set(spheres[i] for i in query))
     inter.remove(s_cur)
     return inter
 
@@ -117,9 +122,10 @@ def simulate(s1, s2):
     q.put((s2, v2))
     while not q.empty():
         s_cur, v_cur = q.get()
-        print(spheres.index(s_cur)) # infinite looping between 3 and 5 rn
         outstanding.append((s_cur, v_cur))
         for s_new in sweep(s_cur, v_cur):
+            if (s_cur == s1 and s_new == s2) or (s_cur == s2 and s_new == s1): # prevent infinite loop
+                continue
             s_trans = Sphere(s_cur.pos + v_cur, s_cur.rad)
             v_new = compute_dv(s_new, s_trans)
             q.put((s_new, v_new))
@@ -128,7 +134,7 @@ def simulate(s1, s2):
 
 if __name__ == '__main__':
 
-    # https://www.geogebra.org/3d/pxurygbx
+    # https://www.geogebra.org/3d/ma7vpx3m
     points = [
         np.array([2.5, -0.5, 2.5]),
         np.array([0.0, 2.0, 1.0]),
@@ -142,13 +148,8 @@ if __name__ == '__main__':
     for p in points:
         spheres.append(Sphere(p, r))
 
-    # {(3, 5)} intersect
-    inter = tree.query_pairs(r + r)
-    print(inter)
-    for i, j in inter:
-        simulate(spheres[i], spheres[j])
+    inter = tree.query_pairs(r + r).pop()
+    outstanding = simulate(spheres[inter[0]], spheres[inter[1]])
+    for s, v in outstanding:
+        print(f'({spheres.index(s) + 1}) {s.pos} : {v}')
 
-    # print(f"s3: {spheres[3].pos}")
-    # print(f"s5: {spheres[5].pos}")
-    # print(f"dv3: {compute_dv(spheres[3], spheres[5])}")
-    # print(f"dv5: {compute_dv(spheres[5], spheres[3])}")
