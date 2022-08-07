@@ -72,7 +72,7 @@ class Sphere:
 def compute_dv(s1, s2):
     mag = s1.rad + s2.rad - math.sqrt(
         (s1.pos[0] - s2.pos[0])**2 + (s1.pos[1] - s2.pos[1])**2 + (s1.pos[2] - s2.pos[2])**2)
-    uv = s2.pos - s1.pos
+    uv = (s1.pos - s2.pos) / np.linalg.norm(s1.pos - s2.pos) # ??
     return mag * uv
 
 def intersects(s1, s2):
@@ -80,15 +80,30 @@ def intersects(s1, s2):
         (s1.pos[0] - s2.pos[0])**2 + (s1.pos[1] - s2.pos[1])**2 + (s1.pos[2] - s2.pos[2])**2
     ) < s1.rad + s2.rad
 
+# TODO: figure out: should sweep stop at first intersection or continue thru?
+# is it possible to iterate by distance 2r instead of r? (prove all intersections are detected)
 def sweep(s_cur, v_cur):
-    pass
+
+    # # OPTION 1: return "earliest" set
+    # s_trans = Sphere(s_cur.pos, s_cur.rad)
+    # # translate s_trans along v_cur
+    # while np.linalg.norm(s_trans.pos - s_cur.pos) < np.linalg.norm(v_cur):
+    #     inter = tree.query_ball_point(s_trans.pos, r + r)
+    #     if len(inter) > 0:
+    #         return set(spheres[i] for i in inter)
+    #     s_trans.pos += r * v_cur / np.linalg.norm(v_cur) # iterate by distance r
+    # return set()
+
+    # OPTION 2: return entire set
+    inter = set()
     s_trans = Sphere(s_cur.pos, s_cur.rad)
+    # translate s_trans along v_cur
     while np.linalg.norm(s_trans.pos - s_cur.pos) < np.linalg.norm(v_cur):
-        inter = tree.query_ball_point(s_trans, r + r)
-        if len(inter) > 0:
-            return inter
-        s_trans.pos += r * v_cur / np.linalg.norm(v_cur) # iterate pos by distance r in direction of v_cur
-    return set()
+        query = tree.query_ball_point(s_trans.pos, r + r + 0.001) # do we need 0.001?
+        inter.update(set(spheres[i] for i in query))
+        s_trans.pos = s_trans.pos + r * v_cur / np.linalg.norm(v_cur) # iterate by distance r
+    inter.remove(s_cur)
+    return inter
 
 # even if s_cur sweeps all the way past some sphere, 
 # that sphere still has to move "past" s_cur for its DV
@@ -102,9 +117,9 @@ def simulate(s1, s2):
     q.put((s2, v2))
     while not q.empty():
         s_cur, v_cur = q.get()
+        print(spheres.index(s_cur)) # infinite looping between 3 and 5 rn
         outstanding.append((s_cur, v_cur))
-        s_new = sweep(s_cur, v_cur)
-        if len(s_new) > 0:
+        for s_new in sweep(s_cur, v_cur):
             s_trans = Sphere(s_cur.pos + v_cur, s_cur.rad)
             v_new = compute_dv(s_new, s_trans)
             q.put((s_new, v_new))
@@ -116,11 +131,11 @@ if __name__ == '__main__':
     # https://www.geogebra.org/3d/pxurygbx
     points = [
         np.array([2.5, -0.5, 2.5]),
-        np.array([0, 2, 1]),
-        np.array([-1, 0, 4]),
-        np.array([1, -2, 2]),
-        np.array([1, -1, 0]),
-        np.array([0.5, -3, 1.5])
+        np.array([0.0, 2.0, 1.0]),
+        np.array([-1.0, 0.0, 4.0]),
+        np.array([1.0, -2.0, 2.0]),
+        np.array([1.0, -1.0, 0.0]),
+        np.array([0.5, -3.0, 1.5])
     ]
 
     tree = KDTree(points)
@@ -131,5 +146,9 @@ if __name__ == '__main__':
     inter = tree.query_pairs(r + r)
     print(inter)
     for i, j in inter:
-        print(compute_dv(spheres[i], spheres[j]))
-        print(compute_dv(spheres[j], spheres[i]))
+        simulate(spheres[i], spheres[j])
+
+    # print(f"s3: {spheres[3].pos}")
+    # print(f"s5: {spheres[5].pos}")
+    # print(f"dv3: {compute_dv(spheres[3], spheres[5])}")
+    # print(f"dv5: {compute_dv(spheres[5], spheres[3])}")
