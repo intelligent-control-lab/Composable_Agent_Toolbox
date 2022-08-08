@@ -7,7 +7,7 @@ from scipy.spatial import KDTree
 import cvxpy as cp
 
 
-S = [] # sphere centers
+spheres = [] # sphere centers
 tree = None # will need dynamic structure (insert/delete), perhaps ikd-tree (https://github.com/hku-mars/ikd-Tree)
 r = 1 # try making heterogeneous in future
 
@@ -34,13 +34,13 @@ def sweep(s_cur, v_cur):
     while np.linalg.norm(s_trans - s_cur) < np.linalg.norm(v_cur):
         query = tree.query_ball_point(s_trans, r + r)
         for i in query:
-            inter.append(S[i])
+            inter.append(spheres[i])
         s_trans = s_trans + r * v_cur / np.linalg.norm(v_cur) # iterate by distance r
 
     s_trans = s_cur + v_cur # iterate to end of vector
     query = tree.query_ball_point(s_trans, r + r)
     for i in query:
-        inter.append(S[i])
+        inter.append(spheres[i])
     return inter
 
 # even if s_cur sweeps all the way past some sphere, 
@@ -48,8 +48,8 @@ def sweep(s_cur, v_cur):
 
 def simulate(s1, s2):
 
-    S_out = [] # outstanding spheres
-    V_out = [] # DVs of S_out
+    S = [] # outstanding spheres
+    V = [] # DVs of S_out
     q = Queue()
     v1 = compute_dv(s1, s2)
     v2 = compute_dv(s2, s1)
@@ -58,8 +58,8 @@ def simulate(s1, s2):
 
     while not q.empty():
         s_cur, v_cur = q.get()
-        S_out.append(s_cur)
-        V_out.append(v_cur)
+        S.append(s_cur)
+        V.append(v_cur)
         for s_new in sweep(s_cur, v_cur):
             if (s_new==s_cur).all() or ((s_cur==s1).all() and (s_new==s2).all()) or ((s_cur==s2).all() and (s_new==s1).all()): # prevent infinite loop
                 continue
@@ -67,13 +67,13 @@ def simulate(s1, s2):
             v_new = compute_dv(s_new, s_trans)
             q.put((s_new, v_new))
 
-    return np.array(S_out), np.array(V_out)
+    return np.array(S), np.array(V)
 
 
 if __name__ == '__main__':
 
     # https://www.geogebra.org/3d/ma7vpx3m
-    S = [
+    spheres = [
         np.array([2.5, -0.5, 2.5]),
         np.array([0.0, 2.0, 1.0]),
         np.array([-1.0, 0.0, 4.0]),
@@ -83,19 +83,19 @@ if __name__ == '__main__':
         np.array([-1.0, -3.0, 0.0])
     ]
 
-    tree = KDTree(S)
+    tree = KDTree(spheres)
     inter = tree.query_pairs(r + r).pop() # get pair of intersecting spheres
-    s1, s2 = S[inter[0]], S[inter[1]]
+    s1, s2 = spheres[inter[0]], spheres[inter[1]]
 
-    S_out, V_out = simulate(s1, s2)
-    for s, v in zip(S_out, V_out):
-        print(f'{s} : {v}')
+    S, V = simulate(s1, s2)
+    for s_i, v_i in zip(S, V):
+        print(f'{s_i} : {v_i}')
 
-    x = cp.Variable(S_out.shape) # new coordinates of each sphere
+    x = cp.Variable(S.shape) # new coordinates of each sphere
 
     # objective function: minimize total displacement of all points
     # perhaps minimize displacement ALONG respective DVs instead?
-    obj = cp.Minimize(cp.sum(cp.norm(x - S_out, 2, axis=1)))
+    obj = cp.Minimize(cp.sum(cp.norm(x - S, axis=1)))
 
     constraints = [
         # # constraint 1
