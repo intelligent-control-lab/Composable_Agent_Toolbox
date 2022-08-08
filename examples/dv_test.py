@@ -4,60 +4,7 @@ from queue import Queue
 import numpy as np
 from scipy.spatial import KDTree
 
-# SP = [-3.5, -3, -0.5, 0.5, 3, 3.4] # must be sorted and unique, also need to figure out how to deal with overlaps
-# r = 1
-
-# def compute_dv(s1, s2, overlap=False):
-#     mag = r + r
-#     if overlap:
-#         mag += abs(s1 - s2)
-#         print(mag)
-#     else:
-#         mag -= abs(s1 - s2)
-#     if s1 < s2:
-#         return -mag
-#     return mag
-
-# def intersects(s1, s2):
-#     return abs(s1 - s2) < r + r
-
-# def sweep(s_cur, v_cur):
-#     # return the first sphere s_cur intersects when translating along v_cur, 
-#     # or None if no intersection
-#     # s_cur + v_cur is s_cur translated across v_cur
-#     i = SP.index(s_cur)
-#     if i == 0 or i == len(SP) - 1:
-#         return None
-#     if v_cur < 0 and intersects(s_cur + v_cur, SP[i - 1]):
-#         return SP[i - 1]
-#     if v_cur > 0 and intersects(s_cur + v_cur, SP[i + 1]):
-#         return SP[i + 1]
-#     return None
-
-# def simulate(s1, s2):
-#     outstanding = []
-#     q = Queue()
-#     v1 = compute_dv(s1, s2)
-#     v2 = compute_dv(s2, s1)
-#     q.put((s1, v1))
-#     q.put((s2, v2))
-#     while not q.empty():
-#         s_cur, v_cur = q.get()
-#         outstanding.append((s_cur, v_cur))
-#         s_new = sweep(s_cur, v_cur)
-#         if s_new is not None:
-#             ol = abs(s_new) < abs(s_cur) + abs(v_cur)
-#             v_new = compute_dv(s_new, s_cur + v_cur, overlap=ol)
-#             q.put((s_new, v_new))
-#     return outstanding
-
-# if __name__ == '__main__':
-#     outstanding = simulate(SP[2], SP[3]) # begin with two intersecting spheres
-#     print(outstanding)
-
-
-
-
+import cvxpy as cp
 
 
 spheres = []
@@ -135,7 +82,7 @@ def simulate(s1, s2):
 if __name__ == '__main__':
 
     # https://www.geogebra.org/3d/ma7vpx3m
-    points = [
+    points = np.array([
         np.array([2.5, -0.5, 2.5]),
         np.array([0.0, 2.0, 1.0]),
         np.array([-1.0, 0.0, 4.0]),
@@ -143,7 +90,7 @@ if __name__ == '__main__':
         np.array([1.0, -1.0, 0.0]),
         np.array([0.5, -3.0, 1.5]),
         np.array([-1.0, -3.0, 0.0])
-    ]
+    ])
 
     tree = KDTree(points)
     for p in points:
@@ -154,3 +101,19 @@ if __name__ == '__main__':
     for s, v in outstanding:
         print(f'({spheres.index(s) + 1}) {s.pos} : {v}')
 
+    n = len(points)
+    x = cp.Variable((n, 3)) # coordinates of each sphere
+
+    # objective function: minimize total displacement of all points
+    # perhaps minimize displacement ALONG respective DVs instead?
+    obj = cp.Minimize(cp.sum(cp.norm(x - points, 2, axis=1)))
+
+    constraints = [
+        # constraint 1
+        cp.norm(x - points) <=  # constraint 2
+        # constraint 3
+    ]
+
+    prob = cp.Problem(obj, constraints)
+    prob.solve()
+    print(x.value)
