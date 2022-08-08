@@ -70,6 +70,32 @@ def simulate(s1, s2):
     return np.array(S), np.array(V)
 
 
+def optimize(S, V):
+
+    n = S.shape[0]
+    X = cp.Variable(S.shape) # new coordinates of each sphere
+
+    # objective function: minimize total displacement of all points
+    # perhaps minimize displacement ALONG respective DVs instead?
+    obj = cp.Minimize(sum(cp.norm(s_i - x_i) for s_i, x_i in zip(S, X)))
+
+    # NOTE: convert list comprehensions to matrix operations later for performance
+
+    constraints = []
+    constraints += [cp.norm(x_i - x_j) >= r + r for x_i in X for x_j in X if x_i != x_j] # constraint 1
+    constraints += [cp.norm(s_i - x_i) <= cp.norm(v_i) for s_i, x_i, v_i in zip(S, X, V)] # constraint 2
+    constraints += [v_i.T @ cp.norm(s_i - x_i) for s_i, x_i, v_i in zip(S, X, V)] # constraint 3
+
+    prob = cp.Problem(obj, constraints)
+    prob.solve()
+    print('\n----------------------\n')
+    print(f'X:\n{X.value}')
+    print('\n')
+    print(f'obj:\n{prob.value}')
+
+    return X
+
+
 if __name__ == '__main__':
 
     # https://www.geogebra.org/3d/ma7vpx3m
@@ -91,18 +117,4 @@ if __name__ == '__main__':
     for s_i, v_i in zip(S, V):
         print(f'{s_i} : {v_i}')
 
-    x = cp.Variable(S.shape) # new coordinates of each sphere
-
-    # objective function: minimize total displacement of all points
-    # perhaps minimize displacement ALONG respective DVs instead?
-    obj = cp.Minimize(cp.sum(cp.norm(x - S, axis=1)))
-
-    constraints = [
-        # # constraint 1
-        # cp.norm(x - points) <=  # constraint 2
-        # # constraint 3
-    ]
-
-    prob = cp.Problem(obj, constraints)
-    prob.solve()
-    print(x.value)
+    X = optimize(S, V)
