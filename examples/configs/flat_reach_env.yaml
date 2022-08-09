@@ -4,43 +4,41 @@ world:
         friction: 0
         reaching_eps: 1
         agent_goal_lists:
-            # robot: [[70, 25], [10, 40]]
-            human: [[10, 15], [40, 70]]
+            human: [[10, 15]]
+            # Q 1.1, 2
             obs1: [[20.0, 20.0]]
-            obs2: [[40.0, 15.0]]
+            # Q 1.2
+            # obs2: [[40.0, 15.0]]
 dt: 0.02
 agent_comp_spec:
-    # robot: configs/flat_reach_agent_1.yaml
     human: configs/flat_reach_agent_2.yaml
+    # Q 1.1, 1.2, 2
     obs1:  configs/flat_reach_obs_1.yaml
-    obs2:  configs/flat_reach_obs_2.yaml
+    # Q 1.2
+    # obs2:  configs/flat_reach_obs_2.yaml
 agent_env_spec:
-    # robot:
-    #     type: BB8Agent
-    #     spec:
-    #         init_x: [30.0, 20.0, 0.0, 0.0]
-    
-    # robot:
-    #     type: UnicycleAgent
-    #     spec:
-    #         init_x: [30.0, 20.0, -1.0472, 0.0, 0.0, 0.0]
-    #         u_max: [40, 5]
-    
+
     human:
         type: BB8Agent
         spec:
             init_x: [50.0, 20.0, 0.0, 0.0]
             u_max: [1000, 1000]
-    
-    # human:
-    #     type: UnicycleAgent
-    #     spec:
-    #         init_x: [50.0, 20.0, 1.571]
+
+    # Q 1.1
     obs1:
         type: BB8Agent
         spec:
             init_x: [20.0, 20.0, 0.0, 0.0]
-    obs2:
-        type: BB8Agent
-        spec:
-            init_x: [40.0, 15.0, 0.0, 0.0]
+
+    # Q 1.2
+    # obs2:
+    #     type: BB8Agent
+    #     spec:
+            # init_x: [40.0, 15.0, 0.0, 0.0]
+
+    # Q 2
+    # obs1:
+    #     type: BlackBoxAgent
+    #     spec:
+    #         init_x: [20.0, 20.0, 0.0, 0.0]
+    #         dependent_agent: human

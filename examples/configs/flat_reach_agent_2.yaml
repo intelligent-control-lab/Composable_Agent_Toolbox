@@ -13,32 +13,22 @@ model:
       type: BallModel
       spec:
           control_input_dim: 2
-      # type: UnicycleModel
-      # spec:
-      #     control_input_dim: 2
 planner:
     type: CFSPlanner
     spec:
         horizon: 50
         replanning_cycle: 10
         state_dimension: 2
-    # type: NaivePlanner
-    # spec:
-    #     horizon: 20
-    #     replanning_cycle: 10
-    #     state_dimension: 2
-    #     n_ob: 1
-    #     obs_r: 5
+        # Q 1.1, 1.2
+        blackbox_prediction: False
+        # Q 2
+        # blackbox_prediction: True
 controller:
     type: Controller
     spec:
         feedback_controller: 
           type: NaiveFeedbackController
           spec:
-            # for naive planner
-            # kp: 200
-            # kv: 50
-            # for integrator planner
             kp: 1000
             kv: 100
             u_max: [1000, 1000]

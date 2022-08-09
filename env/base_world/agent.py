@@ -132,3 +132,46 @@ class GoalAgent(BB8Agent):
     def info(self):
         info = {"state": self.state, "pos":self.pos, "vel":self.vel, "count":self.goal_idx}
         return info
+
+class BlackBoxAgent(Agent):
+    '''
+        The agent would always flash to a position depending on another agent
+    '''
+
+    def __init__(self, name, spec, dependent_agent, collision=True):
+        super().__init__(name, spec, collision=collision)
+
+        self.has_heading = False
+        self.dependent_agent = dependent_agent
+
+    def control_saturation(self, u):
+        return np.clip(u, -self.u_max, self.u_max)
+    
+    def forward(self, action, dt):
+        
+        ax = self.dependent_agent.pos[0]
+        ay = self.dependent_agent.pos[1]
+        ak = np.exp(np.sqrt((ax-40)**2+(ay-20)**2) / 5)
+        ak = np.exp(ak)
+        ak = np.min([ak, 10])
+        self._x[:self.xdim//2] = [
+            ax + ak * np.cos(ax*0.1),
+            ay + ak * np.sin(ax*0.1)
+        ]
+        self._x[-self.xdim//2:] *= 0
+
+        print(ax*0.1)
+
+        self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
+
+    @property
+    def heading(self):
+        return None
+    
+    @property
+    def pos(self):
+        return self._x[[0,1]]
+
+    @property
+    def vel(self):
+        return self._x[[2,3]]

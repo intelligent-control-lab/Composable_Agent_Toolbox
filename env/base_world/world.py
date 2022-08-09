@@ -48,7 +48,16 @@ class World(object):
         # "getattr" is not a good practice, but I didn't find a better way to do it.
         # If the following line is called from other file, python still looks for agent.py in base_wolrd folder.
         AgentClass = getattr(importlib.import_module("..agent", __name__), agent_env_spec["type"])
-        agent = AgentClass(comp_agent.name, agent_env_spec["spec"])
+        if 'dependent_agent' in agent_env_spec['spec']:
+            dependent_agent = agent_env_spec['spec']['dependent_agent']
+            if dependent_agent in self.agents:
+                agent = AgentClass(comp_agent.name, agent_env_spec["spec"], self.agents[dependent_agent])
+            else:
+                print('Dependent target {} must be initialized before {}.'.format(
+                    dependent_agent, comp_agent.name))
+                assert(False)
+        else:
+            agent = AgentClass(comp_agent.name, agent_env_spec["spec"])
 
         self.agents[agent.name] = agent
         agent_sensors = []

@@ -7,12 +7,33 @@ from cvxopt import matrix, solvers
 
 solvers.options['show_progress'] = False
 
+def BlackBoxPrediction(traj):
+
+    obs_traj = []
+
+    for pos in traj:
+        ax = pos[0]
+        ay = pos[1]
+        ak = np.exp(np.sqrt((ax-40)**2+(ay-20)**2) / 5)
+        ak = np.exp(ak)
+        ak = np.min([ak, 10])
+        obs_traj.append([
+            ax + ak * np.cos(ax*0.1),
+            ay + ak * np.sin(ax*0.1)
+        ])
+        
+    obs_traj = np.array(obs_traj)
+
+    return obs_traj
+
 def vstack_wrapper(a, b):
     if a == []:
         return b
     else:
         x = np.vstack((a,b))
         return x
+
+# --------------------------------- solution --------------------------------- #
 
 def jac_num(ineq, x, obs_p, eps=1e-6):
     '''
@@ -46,6 +67,8 @@ def jac_num(ineq, x, obs_p, eps=1e-6):
     grad[:,0] = 0.5/dist*2*(x[0]-obs_p[0])
     grad[:,1] = 0.5/dist*2*(x[1]-obs_p[1])
     return grad
+
+# ------------------------------- solution ends ------------------------------ #
 
 class Planner(ABC):
     def __init__(self, spec, model) -> None:
@@ -143,11 +166,12 @@ class IntegraterPlanner(Planner):
 
         return traj
 
-
 class CFSPlanner(IntegraterPlanner):
 
     def __init__(self, spec, model) -> None:
         super().__init__(spec, model)
+
+        self.blackbox_prediction = spec['blackbox_prediction']
     
     def _ineq(self, x, obs):
         '''
@@ -242,7 +266,7 @@ class CFSPlanner(IntegraterPlanner):
         beq = matrix(beq,(len(beq),1),'d')
 
         # set the safety margin 
-        D = 3
+        D = 5
 
         # main CFS loop
         while dlt > stop_eps:
@@ -254,6 +278,7 @@ class CFSPlanner(IntegraterPlanner):
             A, b = [], []
             
             # TODO: construct A, b matrices
+            # return None
 
             # --------------------------------- solution --------------------------------- #
             for i in range(h):
@@ -323,7 +348,7 @@ class CFSPlanner(IntegraterPlanner):
         xd = self.state_dimension
         N = self.horizon
 
-        # get integrator interpolation
+        # get integrator interpolation as nominal path
         traj = super()._plan(dt, goal, est_data).squeeze()
 
         # get obs relative pos
@@ -332,16 +357,31 @@ class CFSPlanner(IntegraterPlanner):
             if 'obs' in name:
                 obs_pos_list.append(info['rel_pos'])
         
-        # get obs absolute pos
-        state = est_data["cartesian_sensor_est"]['pos'][:xd]
-        obs_traj = []
-        for obs_pos in obs_pos_list:
-            obs_traj.append(np.tile((state + obs_pos).reshape(1, -1), (N, 1))) # [N, xd]
+        # Get obstacle trajectory (either blackbox or static)
+        if self.blackbox_prediction:
+            # use blackbox function
+            assert(len(obs_pos_list) == 1) # for now only single object with blackbox pred
 
-        if len(obs_traj) > 1:
-            obs_traj = np.concatenate(obs_traj, axis=-1) # [N, xd * n_obs]
-        elif len(obs_traj) == 1:
-            obs_traj = obs_traj[0]
+            # TODO use blackbox prediction
+            obs_traj = []
+            
+            # --------------------------------- solution --------------------------------- #
+
+            obs_traj = BlackBoxPrediction(traj)
+
+            # ------------------------------- solution ends ------------------------------ #
+
+        else:
+            obs_traj = []
+            # get obs absolute pos
+            state = est_data["cartesian_sensor_est"]['pos'][:xd]
+            for obs_pos in obs_pos_list:
+                obs_traj.append(np.tile((state + obs_pos).reshape(1, -1), (N, 1))) # [N, xd]
+
+            if len(obs_traj) > 1:
+                obs_traj = np.concatenate(obs_traj, axis=-1) # [N, xd * n_obs]
+            elif len(obs_traj) == 1:
+                obs_traj = obs_traj[0]
         
         # CFS
         traj_pos_only = traj[:, :xd]

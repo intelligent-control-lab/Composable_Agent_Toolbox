@@ -49,7 +49,7 @@ class FlatEnv(object):
         # obs location
         c_obs = '#A2AEAF'
         for name, agent in self.world.agents.items():
-            if 'obs' in name:
+            if 'obs' in name and 'goal' not in name:
                 circ = plt.Circle(
                     agent.pos, 5.0, color='k', clip_on=False,
                     fill=False)
