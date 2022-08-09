@@ -33,43 +33,6 @@ def vstack_wrapper(a, b):
         x = np.vstack((a,b))
         return x
 
-# --------------------------------- solution --------------------------------- #
-
-def jac_num(ineq, x, obs_p, eps=1e-6):
-    '''
-    compoute the jaccobian for a given function 
-    used for computing first-order gradient of distance function 
-    '''
-    # y = ineq(x,obs_p)
-
-    # # change to unified n-d array format
-    # if type(y) == np.float64:
-    #     y = np.array([y])
-
-    # grad = np.zeros((y.shape[0], x.shape[0]))
-    # xp = x
-    # for i in range(x.shape[0]):
-    #     xp[i] = x[i] + eps/2
-    #     yhi = ineq(xp,obs_p)
-    #     xp[i] = x[i] - eps/2
-    #     ylo = ineq(xp,obs_p)
-    #     grad[:,i] = (yhi - ylo) / eps
-    #     xp[i] = x[i]
-    # return grad
-
-    # use the analytical solution 
-    obs_p = obs_p.flatten()
-    
-    # flatten the input x 
-    x = x.flatten()
-    dist = np.linalg.norm(x - obs_p)
-    grad = np.zeros((1, 2))
-    grad[:,0] = 0.5/dist*2*(x[0]-obs_p[0])
-    grad[:,1] = 0.5/dist*2*(x[1]-obs_p[1])
-    return grad
-
-# ------------------------------- solution ends ------------------------------ #
-
 class Planner(ABC):
     def __init__(self, spec, model) -> None:
         self.spec = spec
@@ -277,47 +240,12 @@ class CFSPlanner(IntegraterPlanner):
             # A * x <= b
             A, b = [], []
             
-            # TODO: construct A, b matrices
-            # return None
+            # TODO: remove this
+            return None
 
             # --------------------------------- solution --------------------------------- #
-            for i in range(h):
-                    
-                # first pos is enforced
-                if i == h-1 or i == 0:
-                    s = np.zeros((1,1))
-                    l = np.zeros((1,2))
-
-                    # update 
-                    b = vstack_wrapper(b, s)
-                    l_tmp = np.zeros((1, len(x_sol)))
-                    l_tmp[:,i*dimension:(i+1)*dimension] = l
-                    A = vstack_wrapper(A, l_tmp)
-
-                # other pos can be changed
-                elif i < h-1 and i > 0:
-                    x_t = x_sol[i * dimension : (i + 1) * dimension] 
-
-                    # get inequality value (distance)
-                    for obs_i in range(n_obs):
-                        # get obstacle at this time step 
-                        obs_p = obs_traj[i, obs_i * dimension : (obs_i+1) * dimension]  
-                        dist = self._ineq(x_t,obs_p)
-                        # print(dist)
-
-                        # get gradient 
-                        ref_grad = jac_num(self._ineq, x_t, obs_p)
-                        # print(ref_grad)
-
-                        # compute
-                        s = dist - D - np.dot(ref_grad, x_t)
-                        l = -1 * ref_grad
-
-                        # update 
-                        b = vstack_wrapper(b, s)
-                        l_tmp = np.zeros((1, len(x_sol)))
-                        l_tmp[:,i*dimension:(i+1)*dimension] = l
-                        A = vstack_wrapper(A, l_tmp)
+            
+            # TODO: construct A, b matrices
 
             # ------------------------------- solution ends ------------------------------ #
 
@@ -362,12 +290,11 @@ class CFSPlanner(IntegraterPlanner):
             # use blackbox function
             assert(len(obs_pos_list) == 1) # for now only single object with blackbox pred
 
-            # TODO use blackbox prediction
             obs_traj = []
             
             # --------------------------------- solution --------------------------------- #
 
-            obs_traj = BlackBoxPrediction(traj)
+            # TODO use blackbox prediction
 
             # ------------------------------- solution ends ------------------------------ #
 
