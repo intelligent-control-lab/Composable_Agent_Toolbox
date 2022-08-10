@@ -82,9 +82,9 @@ def optimize(S, V):
     # NOTE: convert list comprehensions to matrix operations later for performance
 
     constraints = []
-    constraints += [cp.norm(x_i - x_j) >= r + r for x_i in X for x_j in X if x_i != x_j] # constraint 1
+    constraints += [cp.norm(x_i - x_j) >= r + r for i, x_i in enumerate(X) for x_j in X[i+1:]] # constraint 1
     constraints += [cp.norm(s_i - x_i) <= cp.norm(v_i) for s_i, x_i, v_i in zip(S, X, V)] # constraint 2
-    constraints += [v_i.T @ cp.norm(s_i - x_i) for s_i, x_i, v_i in zip(S, X, V)] # constraint 3
+    constraints += [v_i.T @ cp.norm(s_i - x_i) == 1 for s_i, x_i, v_i in zip(S, X, V)] # constraint 3
 
     prob = cp.Problem(obj, constraints)
     prob.solve()
