@@ -48,6 +48,8 @@ def sweep(s_cur, v_cur):
 
 def simulate(s1, s2):
 
+    # difference between using bfs vs. dfs?
+
     S = [] # outstanding spheres
     V = [] # DVs of S_out
     q = Queue()
@@ -77,14 +79,14 @@ def optimize(S, V):
 
     # objective function: minimize total displacement of all points
     # perhaps minimize displacement ALONG respective DVs instead?
-    obj = cp.Minimize(sum(cp.norm(s_i - x_i) for s_i, x_i in zip(S, X)))
+    obj = cp.Minimize(sum(cp.norm(x_i - s_i) for x_i, s_i in zip(X, S)))
 
     # NOTE: convert list comprehensions to matrix operations later for performance
 
     constraints = []
     constraints += [cp.norm(x_i - x_j) >= r + r for i, x_i in enumerate(X) for x_j in X[i+1:]] # constraint 1
-    constraints += [cp.norm(s_i - x_i) <= cp.norm(v_i) for s_i, x_i, v_i in zip(S, X, V)] # constraint 2
-    constraints += [v_i.T @ cp.norm(s_i - x_i) == 1 for s_i, x_i, v_i in zip(S, X, V)] # constraint 3
+    constraints += [cp.norm(x_i - s_i) <= cp.norm(v_i) for x_i, s_i, v_i in zip(X, S, V)] # constraint 2
+    constraints += [v_i.T @ (x_i - s_i) == 1 for x_i, s_i, v_i in zip(X, S, V)] # constraint 3
 
     prob = cp.Problem(obj, constraints)
     prob.solve()
