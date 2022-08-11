@@ -46,9 +46,12 @@ class BB8Agent(Agent):
 
     def forward(self, action, dt):
         # x = [x y dx dy], u = [ax ay]
-        u = action['control']
-        dot_x   = self._f(self._x) + (self._g(self._x) @ np.vstack(u))
-        self._x = self._x + (dot_x * dt)
+        if "skip_control" not in action or not action["skip_control"]:
+            u = action['control']
+            dot_x   = self._f(self._x) + (self._g(self._x) @ np.vstack(u))
+            self._x = self._x + (dot_x * dt)
+        else:
+            self._x = action["next_traj_point"]
         
         self.broadcast = action["broadcast"] if "broadcast" in action.keys() else {}
 
@@ -151,12 +154,12 @@ class BlackBoxAgent(Agent):
         
         ax = self.dependent_agent.pos[0]
         ay = self.dependent_agent.pos[1]
-        ak = np.exp(np.sqrt((ax-40)**2+(ay-20)**2) / 5)
+        ak = np.exp(np.sqrt((ax-40)**2+(ay-20)**2) / 8)
         ak = np.exp(ak)
         ak = np.min([ak, 10])
         self._x[:self.xdim//2] = [
-            ax + ak * np.cos(ax*0.1),
-            ay + ak * np.sin(ax*0.1)
+            ax + ak * np.cos(ax*0.1+np.pi/6),
+            ay + ak * np.sin(ax*0.1+np.pi/6)
         ]
         self._x[-self.xdim//2:] *= 0
 

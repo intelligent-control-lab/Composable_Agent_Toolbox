@@ -16,13 +16,20 @@ model:
 planner:
     type: CFSPlanner
     spec:
-        horizon: 50
-        replanning_cycle: 10
+        horizon: 100
+        replanning_cycle: 10000 # no re-plan
         state_dimension: 2
         # Q 1.1, 1.2
+        viz_CFS_iter: True
+        viz_prediction_planning: False
         blackbox_prediction: False
         # Q 2
+        # viz_CFS_iter: False
+        # viz_prediction_planning: True
         # blackbox_prediction: True
+        
+        max_prediction_planning_iter: 10
+
 controller:
     type: Controller
     spec:

@@ -62,7 +62,12 @@ class ModelBasedAgent(AgentBase):
         
         self.last_control = control
 
-        ret = {"control"  : control}
+        ret = {
+            "control"  : control,
+            "next_traj_point": next_traj_point,
+            "skip_control": True
+        }
+        
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],

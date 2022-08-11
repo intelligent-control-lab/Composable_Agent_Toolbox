@@ -34,7 +34,7 @@ agent_env_spec:
     # obs2:
     #     type: BB8Agent
     #     spec:
-            # init_x: [40.0, 15.0, 0.0, 0.0]
+    #         init_x: [40.0, 15.0, 0.0, 0.0]
 
     # Q 2
     # obs1:

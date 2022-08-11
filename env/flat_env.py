@@ -1,3 +1,4 @@
+from signal import pause
 import numpy as np
 import env.flat_world
 import matplotlib.pyplot as plt
@@ -51,7 +52,7 @@ class FlatEnv(object):
         for name, agent in self.world.agents.items():
             if 'obs' in name and 'goal' not in name:
                 circ = plt.Circle(
-                    agent.pos, 5.0, color='k', clip_on=False,
+                    agent.pos, 3.0, color='k', clip_on=False,
                     fill=False)
                 self.ax.add_patch(circ)
                 # self.ax.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
@@ -93,3 +94,4 @@ class FlatEnv(object):
         # self.ax.draw(self.renderer)
         self.fig.canvas.draw()
         plt.pause(0.001)
+
