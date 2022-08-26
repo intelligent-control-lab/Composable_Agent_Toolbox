@@ -1,13 +1,15 @@
 import math
 from queue import Queue
+import time
 
 import numpy as np
 from scipy.spatial import KDTree
 
-import cvxpy as cp
-
+import matlab
+import matlab.engine
 
 spheres = [] # sphere centers
+vis = {}
 tree = None # will need dynamic structure (insert/delete), perhaps ikd-tree (https://github.com/hku-mars/ikd-Tree)
 r = 1 # try making heterogeneous in future
 
@@ -17,10 +19,10 @@ def compute_dv(s1, s2):
     uv = (s1 - s2) / np.linalg.norm(s1 - s2)
     return mag * uv
 
-def intersects(s1, s2):
+def intersects(s1, s2, epsilon=0):
     return math.sqrt(
         (s1[0] - s2[0])**2 + (s1[1] - s2[1])**2 + (s1[2] - s2[2])**2
-    ) < r + r
+    ) < r + r - epsilon
 
 # TODO: figure out: should sweep stop at first intersection or continue thru?
 # is it possible to iterate by distance 2r instead of r? (prove all intersections are detected)
@@ -60,6 +62,9 @@ def simulate(s1, s2):
 
     while not q.empty():
         s_cur, v_cur = q.get()
+        if vis[tuple(s_cur)]:
+            continue
+        vis[tuple(s_cur)] = True
         S.append(s_cur)
         V.append(v_cur)
         for s_new in sweep(s_cur, v_cur):
@@ -69,40 +74,49 @@ def simulate(s1, s2):
             v_new = compute_dv(s_new, s_trans)
             q.put((s_new, v_new))
 
-    return np.array(S), np.array(V)
+    return S, V
 
 
-def optimize(S, V):
+def optimize(S, V, rad):
+
+    print(f'Starting engine...')
+    eng = matlab.engine.start_matlab()
+    eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
 
     n = S.shape[0]
-    X = cp.Variable(S.shape) # new coordinates of each sphere
+    S = matlab.double(S.tolist())
+    V = matlab.double(V.tolist())
+    rad = matlab.double(rad.tolist())
 
-    # objective function: minimize total displacement of all points
-    # perhaps minimize displacement ALONG respective DVs instead?
-    obj = cp.Minimize(sum(cp.norm(x_i - s_i) for x_i, s_i in zip(X, S)))
+    print(f'Optimizing...')
+    X, w, fval = eng.optimize(S, V, rad, n, nargout=3)
 
-    # NOTE: convert list comprehensions to matrix operations later for performance
+    print(f'X:\n{X}\n')
+    print(f'w:\n{w}\n')
+    print(f'fval:\n{fval}\n')
 
-    constraints = []
-    constraints += [cp.norm(x_i - x_j) >= r + r for i, x_i in enumerate(X) for x_j in X[i+1:]] # constraint 1
-    constraints += [cp.norm(x_i - s_i) <= cp.norm(v_i) for x_i, s_i, v_i in zip(X, S, V)] # constraint 2
-    constraints += [v_i.T @ (x_i - s_i) == 1 for x_i, s_i, v_i in zip(X, S, V)] # constraint 3
-
-    prob = cp.Problem(obj, constraints)
-    prob.solve()
-    print('\n----------------------\n')
-    print(f'X:\n{X.value}')
-    print('\n')
-    print(f'obj:\n{prob.value}')
+    input("Click Enter to finish...")
+    eng.quit()
 
     return X
+
+def check_feasible(X):
+    print("Checking feasability...")
+    feasible = True
+    for i in range(len(X)):
+        for j in range(i + 1, len(X)):
+            s1, s2 = X[i], X[j]
+            if intersects(s1, s2, epsilon=1e-5):
+                feasible = False
+                print(f"{i} intersects {j} in X")
+    return feasible
 
 
 if __name__ == '__main__':
 
-    # https://www.geogebra.org/3d/ma7vpx3m
     spheres = [
         np.array([2.5, -0.5, 2.5]),
+        # np.array([2.0, -0.5, 2.0]), # infinite loop whenever a chain of 2+ spheres are initially intersecting
         np.array([0.0, 2.0, 1.0]),
         np.array([-1.0, 0.0, 4.0]),
         np.array([1.0, -2.0, 2.0]),
@@ -111,12 +125,52 @@ if __name__ == '__main__':
         np.array([-1.0, -3.0, 0.0])
     ]
 
+    # spheres = [
+    #     np.array([2.5, -0.5, 2.5]),
+    #     np.array([3.0, 1.5, 3.0]),
+    #     np.array([0.0, 2.0, 1.0]),
+    #     np.array([-1.0, 0.0, 4.0]),
+    #     np.array([1.0, -2.0, 2.0]),
+    #     np.array([1.0, -1.0, 0.0]),
+    #     np.array([0.5, -3.0, 1.5]),
+    #     np.array([-1.0, -3.0, 0.0]),
+    #     np.array([12.5, 9.5, 12.5]),
+    #     np.array([10.0, 12.0, 11.0]),
+    #     np.array([9.0, 10.0, 14.0]),
+    #     np.array([11.0, 8.0, 12.0]),
+    #     np.array([11.0, 9.0, 10.0]),
+    #     np.array([10.5, 7.0, 11.5]),
+    #     np.array([9.0, 7.0, 10.0])
+    # ]
+
+    # spheres = [
+    #     np.array([-0.5, 0., 0.]),
+    #     np.array([0.5, 0., 0.]),
+    #     np.array([-3, 0., 0.]),
+    #     np.array([3, 0., 0.])
+    # ]
+ 
+    S = []
+    V = []
     tree = KDTree(spheres)
-    inter = tree.query_pairs(r + r).pop() # get pair of intersecting spheres
-    s1, s2 = spheres[inter[0]], spheres[inter[1]]
 
-    S, V = simulate(s1, s2)
-    for s_i, v_i in zip(S, V):
-        print(f'{s_i} : {v_i}')
+    for s in spheres:
+        vis[tuple(s)] = False
 
-    X = optimize(S, V)
+    print("Computing DVs...")
+    for i, j in tree.query_pairs(r + r):
+        print(i, j)
+        s1, s2 = spheres[i], spheres[j]
+        os, dv = simulate(s1, s2)
+        S += os
+        V += dv
+        for s_i, v_i in zip(os, dv):
+            print(f'{s_i} : {v_i}')
+
+    S = np.array(S)
+    V = np.array(V)
+    rad = np.ones(S.shape[0])
+
+    X = optimize(S, V, rad)
+
+    print(f"Feasible: {check_feasible(X)}")
