@@ -9,7 +9,6 @@ import matlab
 import matlab.engine
 
 spheres = [] # sphere centers
-vis = {}
 tree = None # will need dynamic structure (insert/delete), perhaps ikd-tree (https://github.com/hku-mars/ikd-Tree)
 r = 1 # try making heterogeneous in future
 
@@ -48,21 +47,45 @@ def sweep(s_cur, v_cur):
 # even if s_cur sweeps all the way past some sphere, 
 # that sphere still has to move "past" s_cur for its DV
 
-def simulate(s1, s2):
+def simulate():
 
     # difference between using bfs vs. dfs?
+
+    # Currently for cases with multiple interdependent initial intersections,
+    # each sphere just keeps the first DV that is computed for it, and future
+    # ones are ignored. -> We need a better method of dealing with this, one
+    # which we can prove guarantees a feasible solution through some linear
+    # combination.
+
+        # one way is to allow multiple DVs for each sphere until you reach a
+        # "clone" DV, but this could become computationally expensive
+
+        # this problem can be avoided if we just check intersections at every
+        # new insertion
+
+        # perhaps combine the vectors somehow?
 
     S = [] # outstanding spheres
     V = [] # DVs of S_out
     q = Queue()
-    v1 = compute_dv(s1, s2)
-    v2 = compute_dv(s2, s1)
-    q.put((s1, v1))
-    q.put((s2, v2))
 
+    vis = {}
+    for s in spheres:
+        vis[tuple(s)] = False
+
+    # initially intersecting
+    for i, j in tree.query_pairs(r + r):
+        print(i, j)
+        s1, s2 = spheres[i], spheres[j]
+        v1 = compute_dv(s1, s2)
+        v2 = compute_dv(s2, s1)
+        q.put((s1, v1))
+        q.put((s2, v2))
+
+    # bfs sim
     while not q.empty():
         s_cur, v_cur = q.get()
-        if vis[tuple(s_cur)]:
+        if vis[tuple(s_cur)]: # prevent infinite loop
             continue
         vis[tuple(s_cur)] = True
         S.append(s_cur)
@@ -106,7 +129,7 @@ def check_feasible(X):
     for i in range(len(X)):
         for j in range(i + 1, len(X)):
             s1, s2 = X[i], X[j]
-            if intersects(s1, s2, epsilon=1e-5):
+            if intersects(s1, s2, epsilon=1e-7):
                 feasible = False
                 print(f"{i} intersects {j} in X")
     return feasible
@@ -116,7 +139,7 @@ if __name__ == '__main__':
 
     spheres = [
         np.array([2.5, -0.5, 2.5]),
-        # np.array([2.0, -0.5, 2.0]), # infinite loop whenever a chain of 2+ spheres are initially intersecting
+        np.array([2.0, -0.5, 2.0]), # infeasible whenever a chain of 2+ spheres are initially intersecting
         np.array([0.0, 2.0, 1.0]),
         np.array([-1.0, 0.0, 4.0]),
         np.array([1.0, -2.0, 2.0]),
@@ -150,22 +173,12 @@ if __name__ == '__main__':
     #     np.array([3, 0., 0.])
     # ]
  
-    S = []
-    V = []
     tree = KDTree(spheres)
 
-    for s in spheres:
-        vis[tuple(s)] = False
-
     print("Computing DVs...")
-    for i, j in tree.query_pairs(r + r):
-        print(i, j)
-        s1, s2 = spheres[i], spheres[j]
-        os, dv = simulate(s1, s2)
-        S += os
-        V += dv
-        for s_i, v_i in zip(os, dv):
-            print(f'{s_i} : {v_i}')
+    S, V = simulate()
+    for s_i, v_i in zip(S, V):
+        print(f'{s_i} : {v_i}')
 
     S = np.array(S)
     V = np.array(V)
