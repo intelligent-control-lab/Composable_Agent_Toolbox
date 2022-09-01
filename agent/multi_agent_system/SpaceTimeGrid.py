@@ -76,7 +76,7 @@ class SpaceTimeGrid:
         
     def _dt(self, s1, s2, p_i):
         d = np.linalg.norm(s2 - s1)
-        v = (self.vel[p_i].T @ (s2 - s1)) / d
+        v = (self.vel[p_i].T @ (s2 - s1)) / d # component of velocity in direction of path
         a = self.a_max[p_i]
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
