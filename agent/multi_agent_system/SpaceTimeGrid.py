@@ -10,16 +10,20 @@ import matlab.engine
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths, a_max):
+    def __init__(self, paths, a_max, gamma):
         self.paths = paths
         self.n_agents = len(paths)
         self.a_max = a_max
+        self.gamma = gamma
         self.tree = KDTree([s for p in paths for s in p])
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
         self.at_goal = [False for i in range(len(paths))]
         self.vel = [np.array([]) for i in range(len(paths))]
+
+    def __init__(self, paths):
+        self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)))
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
@@ -47,7 +51,7 @@ class SpaceTimeGrid:
             inter.append(self.spheres[i])
         return inter
 
-    def _path_shift(self, p_i, s0, dv, gamma=1):
+    def _path_shift(self, p_i, s0, dv):
 
         d_max = max([np.linalg.norm(s - s0) for s in self.paths[p_i]])
         mu0 = np.linalg.norm(dv)
@@ -58,7 +62,7 @@ class SpaceTimeGrid:
             if i == 0:
                 continue
             d = np.linalg.norm(s0 - s)
-            mu = mu0 * math.exp(-gamma * (d / d_max)**2)
+            mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
             vec = mu * uv
             if self.at_goal[p_i] and i == len(self.paths[p_i]):
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
@@ -71,9 +75,9 @@ class SpaceTimeGrid:
             self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(s_cur, s_next))
         
     def _dt(self, s1, s2, p_i):
-        v = np.linalg.norm(self.vel[p_i])
+        d = np.linalg.norm(s2 - s1)
+        v = (self.vel[p_i].T @ (s2 - s1)) / d
         a = self.a_max[p_i]
-        d = np.linalg.norm(s1 - s2)
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _simulate(self):
