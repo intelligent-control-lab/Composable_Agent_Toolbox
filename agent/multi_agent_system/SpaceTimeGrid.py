@@ -35,22 +35,21 @@ class SpaceTimeGrid:
     def _intersects(self, s1, s2, epsilon=0):
         return np.linalg.norm(s1 - s2) < self.r + self.r - epsilon
     
-    def _sweep(self, s_cur, v_cur):
+    def _sweep(self, s_i, v):
 
+        s = self.spheres[s_i]
         inter = []
-        s_trans = s_cur.copy()
+        s_trans = s.copy()
 
-        # translate s_trans along v_cur
-        while np.linalg.norm(s_trans - s_cur) < np.linalg.norm(v_cur):
+        # translate s_trans along v
+        while np.linalg.norm(s_trans - s) < np.linalg.norm(v):
             query = self.tree.query_ball_point(s_trans, self.r + self.r)
-            for i in query:
-                inter.append(self.spheres[i])
-            s_trans = s_trans + self.r * v_cur / np.linalg.norm(v_cur) # iterate by distance r
+            inter += query
+            s_trans = s_trans + self.r * v / np.linalg.norm(v) # iterate by distance r
 
-        s_trans = s_cur + v_cur # iterate to end of vector
+        s_trans = s + v # iterate to end of vector
         query = self.tree.query_ball_point(s_trans, self.r + self.r)
-        for i in query:
-            inter.append(self.spheres[i])
+        inter += query
         return inter
 
     def _simulate(self):
@@ -59,32 +58,29 @@ class SpaceTimeGrid:
         V = [] # DVs of S
         q = Queue()
 
-        vis = {}
-        for s in self.spheres:
-            vis[tuple(s)] = False
+        vis = [False for i in range(len(self.spheres))]
 
         # initially intersecting
-        for i, j in self.tree.query_pairs(self.r + self.r):
-            s1, s2 = self.spheres[i], self.spheres[j]
-            v1 = self._compute_dv(s1, s2)
-            v2 = self._compute_dv(s2, s1)
-            q.put((s1, v1))
-            q.put((s2, v2))
+        for s_i, s_j in self.tree.query_pairs(self.r + self.r):
+            v1 = self._compute_dv(s_i, s_j)
+            v2 = self._compute_dv(s_j, s_i)
+            q.put((s_i, v1))
+            q.put((s_j, v2))
 
         # bfs sim
         while not q.empty():
-            s_cur, v_cur = q.get()
-            if vis[tuple(s_cur)]: # prevent infinite loop
+            s_i, v1 = q.get()
+            if vis[s_i]: # prevent infinite loop
                 continue
-            vis[tuple(s_cur)] = True
-            S.append(s_cur)
-            V.append(v_cur)
-            for s_new in self._sweep(s_cur, v_cur):
-                if (s_new==s_cur).all() or ((s_cur==s1).all() and (s_new==s2).all()) or ((s_cur==s2).all() and (s_new==s1).all()): # prevent infinite loop
+            vis[s_i] = True
+            S.append(self.spheres[s_i])
+            V.append(v1)
+            for s_j in self._sweep(s_i, v1):
+                if s_i == s_j: # prevent infinite loop
                     continue
-                s_trans = s_cur + v_cur
-                v_new = self._compute_dv(s_new, s_trans)
-                q.put((s_new, v_new))
+                s_trans = self.spheres[s_i] + v1
+                v2 = self._compute_dv(self.spheres[s_j], s_trans)
+                q.put((s_j, v2))
 
         return S, V
 
