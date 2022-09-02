@@ -69,18 +69,28 @@ class SpaceTimeGrid:
 
         # bfs sim
         while not q.empty():
+
             s_i, v1 = q.get()
             if vis[s_i]: # prevent infinite loop
                 continue
             vis[s_i] = True
             S.append(self.spheres[s_i])
             V.append(v1)
+
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
                     continue
                 s_trans = self.spheres[s_i] + v1
                 v2 = self._compute_dv(self.spheres[s_j], s_trans)
                 q.put((s_j, v2))
+
+            p_i = self.s2p[s_i]
+            self._path_shift(p_i, s_i, v1)
+            for s3 in self.paths[p_i]:
+                query = self.tree.query_ball_point(s3, self.r + self.r)
+                for inter_i in query:
+                    v3 = self.compute_dv(s3, self.spheres[inter_i])
+                    q.put(self.spheres.index(s3), v3) # make more efficient later
 
         return S, V
 
