@@ -12,10 +12,12 @@ class SpaceTimeGrid:
 
     def __init__(self, paths, a_max, gamma):
         self.paths = paths
+        self.spheres = [s for p in paths for s in p]
+        self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
         self.n_agents = len(paths)
         self.a_max = a_max
         self.gamma = gamma
-        self.tree = KDTree([s for p in paths for s in p])
+        self.tree = KDTree(self.spheres)
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
@@ -32,7 +34,7 @@ class SpaceTimeGrid:
 
     def _intersects(self, s1, s2, epsilon=0):
         return np.linalg.norm(s1 - s2) < self.r + self.r - epsilon
-
+    
     def _sweep(self, s_cur, v_cur):
 
         inter = []
@@ -50,6 +52,41 @@ class SpaceTimeGrid:
         for i in query:
             inter.append(self.spheres[i])
         return inter
+
+    def _simulate(self):
+
+        S = [] # outstanding spheres
+        V = [] # DVs of S
+        q = Queue()
+
+        vis = {}
+        for s in self.spheres:
+            vis[tuple(s)] = False
+
+        # initially intersecting
+        for i, j in self.tree.query_pairs(self.r + self.r):
+            s1, s2 = self.spheres[i], self.spheres[j]
+            v1 = self._compute_dv(s1, s2)
+            v2 = self._compute_dv(s2, s1)
+            q.put((s1, v1))
+            q.put((s2, v2))
+
+        # bfs sim
+        while not q.empty():
+            s_cur, v_cur = q.get()
+            if vis[tuple(s_cur)]: # prevent infinite loop
+                continue
+            vis[tuple(s_cur)] = True
+            S.append(s_cur)
+            V.append(v_cur)
+            for s_new in self._sweep(s_cur, v_cur):
+                if (s_new==s_cur).all() or ((s_cur==s1).all() and (s_new==s2).all()) or ((s_cur==s2).all() and (s_new==s1).all()): # prevent infinite loop
+                    continue
+                s_trans = s_cur + v_cur
+                v_new = self._compute_dv(s_new, s_trans)
+                q.put((s_new, v_new))
+
+        return S, V
 
     def _path_shift(self, p_i, s0, dv):
 
@@ -80,42 +117,6 @@ class SpaceTimeGrid:
         a = self.a_max[p_i]
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
-    def _simulate(self):
-
-        S = [] # outstanding spheres
-        V = [] # DVs of S_out
-        q = Queue()
-
-        vis = {}
-        for s in self.spheres:
-            vis[tuple(s)] = False
-
-        # initially intersecting
-        for i, j in self.tree.query_pairs(self.r + self.r):
-            print(i, j)
-            s1, s2 = self.spheres[i], self.spheres[j]
-            v1 = self._compute_dv(s1, s2)
-            v2 = self._compute_dv(s2, s1)
-            q.put((s1, v1))
-            q.put((s2, v2))
-
-        # bfs sim
-        while not q.empty():
-            s_cur, v_cur = q.get()
-            if vis[tuple(s_cur)]: # prevent infinite loop
-                continue
-            vis[tuple(s_cur)] = True
-            S.append(s_cur)
-            V.append(v_cur)
-            for s_new in self._sweep(s_cur, v_cur):
-                if (s_new==s_cur).all() or ((s_cur==s1).all() and (s_new==s2).all()) or ((s_cur==s2).all() and (s_new==s1).all()): # prevent infinite loop
-                    continue
-                s_trans = s_cur + v_cur
-                v_new = self._compute_dv(s_new, s_trans)
-                q.put((s_new, v_new))
-
-        return S, V
-
     def _optimize(self, S, V, rad):
         n = S.shape[0]
         S = matlab.double(S.tolist())
@@ -128,8 +129,11 @@ class SpaceTimeGrid:
         self.at_goal[p_i] = val
 
     # TODO: find incremental querying structure
-    def update_path(self, p_i, s):
-        pass
+    def update_path(self, p_i, s_new):
+        self.paths[p_i].append(s_new)
+        self.spheres.append(s_new)
+        self.s2p.append(p_i)
+        self.tree = KDTree(self.spheres) # reinitialize tree
 
     def update_vel(self, p_i, val):
         self.vel[p_i] = val
