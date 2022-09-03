@@ -14,6 +14,7 @@ class SpaceTimeGrid:
         self.paths = paths
         self.spheres = [s for p in paths for s in p]
         self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
+        self.pseudo = [False for i in range(len(self.spheres))] # whether s_i is a pseudo-waypoint
         self.n_agents = len(paths)
         self.a_max = a_max
         self.gamma = gamma
@@ -34,6 +35,9 @@ class SpaceTimeGrid:
 
     def _intersects(self, s1, s2, epsilon=0):
         return np.linalg.norm(s1 - s2) < self.r + self.r - epsilon
+
+    def _tangent(self, s1, s2):
+        return np.linalg.norm(s1 - s2) == self.r + self.r
     
     def _sweep(self, s_i, v):
 
@@ -136,9 +140,24 @@ class SpaceTimeGrid:
 
     # TODO: find incremental querying structure
     def update_path(self, p_i, s_new):
+
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
         self.s2p.append(p_i)
+        self.pseudo.append(False)
+
+        # insert pseudowaypoints
+        p = self.paths[p_i]
+        while not self._tangent(p[-1], p[-2]) and not self._intersects(p[-1], p[-2]):
+            # insert tangent to second to last sphere in direction towards last sphere
+            mag = self.r + self.r
+            uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
+            pseu = p[-2] + mag * uv
+            self.paths[p_i].insert(-2, pseu)
+            self.spheres.append(pseu)
+            self.s2p.append(p_i)
+            self.pseudo.append(True)
+
         self.tree = KDTree(self.spheres) # reinitialize tree
 
     def update_vel(self, p_i, val):
