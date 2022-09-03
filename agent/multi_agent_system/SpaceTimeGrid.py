@@ -163,9 +163,11 @@ class SpaceTimeGrid:
     def update_vel(self, p_i, val):
         self.vel[p_i] = val
 
+    def get_path(self, p_i):
+        return self.paths[p_i]
+
     def resolve(self):
         S, V = self._simulate()
         S, V = np.array(S), np.array(V)
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, rad)
-        # return dict {agent_i : [path edits]}
