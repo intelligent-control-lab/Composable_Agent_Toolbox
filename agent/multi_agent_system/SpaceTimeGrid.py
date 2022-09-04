@@ -143,7 +143,7 @@ class SpaceTimeGrid:
     def set_at_goal(self, p_i, val):
         self.at_goal[p_i] = val
 
-    def add_waypoint(self, p_i, s_new):
+    def update_path(self, p_i, s_new):
 
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
