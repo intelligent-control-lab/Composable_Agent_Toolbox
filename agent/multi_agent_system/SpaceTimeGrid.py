@@ -14,7 +14,7 @@ class SpaceTimeGrid:
         self.paths = paths
         self.spheres = [s for p in paths for s in p]
         self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
-        self.pseudo = [False for i in range(len(self.spheres))] # whether s_i is a pseudo-waypoint
+        self.pseudo = [[False for _ in p] for p in paths] # whether path[p_i][s_i] is a pseudo-waypoint
         self.n_agents = len(paths)
         self.a_max = a_max
         self.gamma = gamma
@@ -22,8 +22,8 @@ class SpaceTimeGrid:
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
-        self.at_goal = [False for i in range(len(paths))]
-        self.vel = [np.array([]) for i in range(len(paths))]
+        self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
+        self.vel = [np.array([]) for i in range(len(paths))] # current velocity of each agent
 
     def __init__(self, paths):
         self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)))
@@ -144,9 +144,9 @@ class SpaceTimeGrid:
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
         self.s2p.append(p_i)
-        self.pseudo.append(False)
+        self.pseudo[p_i].append(False)
 
-        # insert pseudowaypoints
+        # insert pseudo-waypoints
         p = self.paths[p_i]
         while not self._tangent(p[-1], p[-2]) and not self._intersects(p[-1], p[-2]):
             # insert tangent to second to last sphere in direction towards last sphere
@@ -156,7 +156,7 @@ class SpaceTimeGrid:
             self.paths[p_i].insert(-2, pseu)
             self.spheres.append(pseu)
             self.s2p.append(p_i)
-            self.pseudo.append(True)
+            self.pseudo[p_i].append(True)
 
         self.tree = KDTree(self.spheres) # reinitialize tree
 
@@ -164,7 +164,9 @@ class SpaceTimeGrid:
         self.vel[p_i] = val
 
     def get_path(self, p_i):
-        return self.paths[p_i]
+        path = self.paths[p_i]
+        authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]]
+        return authentic
 
     def resolve(self):
         S, V = self._simulate()
