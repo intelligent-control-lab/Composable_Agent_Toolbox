@@ -23,6 +23,8 @@ class SpaceTimeGrid:
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
         self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
+
+        # TODO: maybe integrate this better, perhaps have each waypoint have its own projected velocity??
         self.vel = [np.array([]) for i in range(len(paths))] # current velocity of each agent
 
     def __init__(self, paths):
@@ -60,8 +62,9 @@ class SpaceTimeGrid:
 
         S = [] # outstanding spheres
         V = [] # DVs of S
+        log = [] # list of tuples (index of S[i] in its path, p_i)
+        
         q = Queue()
-
         vis = [False for i in range(len(self.spheres))]
 
         # initially intersecting
@@ -80,6 +83,7 @@ class SpaceTimeGrid:
             vis[s_i] = True
             S.append(self.spheres[s_i])
             V.append(v1)
+            log.append((self.s2p[s_i], s_i))
 
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
@@ -88,15 +92,16 @@ class SpaceTimeGrid:
                 v2 = self._compute_dv(self.spheres[s_j], s_trans)
                 q.put((s_j, v2))
 
+            # apply path shift and check for further intersections
             p_i = self.s2p[s_i]
             self._path_shift(p_i, s_i, v1)
             for s3 in self.paths[p_i]:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
                     v3 = self.compute_dv(s3, self.spheres[inter_i])
-                    q.put(self.spheres.index(s3), v3) # make more efficient later
+                    q.put(self.spheres.index(s3), v3) # TODO: make more efficient later
 
-        return S, V
+        return S, V, log
 
     def _path_shift(self, p_i, s0, dv):
 
@@ -134,12 +139,11 @@ class SpaceTimeGrid:
         rad = matlab.double(rad.tolist())
         X, w, fval = self.eng.optimize(S, V, rad, n, nargout=3)
         return X
-
+    
     def set_at_goal(self, p_i, val):
         self.at_goal[p_i] = val
 
-    # TODO: find incremental querying structure
-    def update_path(self, p_i, s_new):
+    def add_waypoint(self, p_i, s_new):
 
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
@@ -169,7 +173,9 @@ class SpaceTimeGrid:
         return authentic
 
     def resolve(self):
-        S, V = self._simulate()
+        S, V, log = self._simulate()
         S, V = np.array(S), np.array(V)
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, rad)
+        for p_i, s_i, x_i in zip(log, X):
+            self._path_shift(p_i, s_i, x_i - s_i)
