@@ -10,7 +10,7 @@ import matlab.engine
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths, a_max, gamma):
+    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float]) -> None:
         self.paths = paths
         self.spheres = [s for p in paths for s in p]
         self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
@@ -27,7 +27,7 @@ class SpaceTimeGrid:
         # TODO: maybe integrate this better, perhaps have each waypoint have its own projected velocity??
         self.vel = [np.array([]) for i in range(len(paths))] # current velocity of each agent
 
-    def __init__(self, paths):
+    def __init__(self, paths: list[np.array]) -> None:
         self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)))
 
     def _compute_dv(self, s1, s2):
@@ -140,10 +140,10 @@ class SpaceTimeGrid:
         X, w, fval = self.eng.optimize(S, V, rad, n, nargout=3)
         return X
     
-    def set_at_goal(self, p_i, val):
+    def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
 
-    def update_path(self, p_i, s_new):
+    def update_path(self, p_i: int, s_new: np.array) -> None:
 
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
@@ -164,15 +164,15 @@ class SpaceTimeGrid:
 
         self.tree = KDTree(self.spheres) # reinitialize tree
 
-    def update_vel(self, p_i, val):
+    def update_vel(self, p_i: int, val: np.array) -> None:
         self.vel[p_i] = val
 
-    def get_path(self, p_i):
+    def get_path(self, p_i: int) -> list[np.array]:
         path = self.paths[p_i]
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]]
         return authentic
 
-    def resolve(self):
+    def resolve(self) -> None:
         S, V, log = self._simulate()
         S, V = np.array(S), np.array(V)
         rad = np.ones(S.shape[0])
