@@ -26,7 +26,7 @@ class SpaceTimeGrid:
         self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
 
         # TODO: maybe integrate this better, perhaps have each waypoint have its own projected velocity??
-        self.vel = [np.array([]) for i in range(len(paths))] # current velocity of each agent
+        self.vel = [np.array([0, 0]) for i in range(len(paths))] # current velocity of each agent
 
     def __init__(self, paths: list[np.array]) -> None:
         self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)), np.ones(len(paths)))
@@ -70,6 +70,8 @@ class SpaceTimeGrid:
 
         # initially intersecting
         for s_i, s_j in self.tree.query_pairs(self.r + self.r):
+            if self.s2p[s_i] == self.s2p[s_j]:
+                continue
             v1 = self._compute_dv(s_i, s_j)
             v2 = self._compute_dv(s_j, s_i)
             q.put((s_i, v1))
@@ -88,6 +90,8 @@ class SpaceTimeGrid:
 
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
+                    continue
+                if self.s2p[s_i] == self.s2p[s_j]:
                     continue
                 s_trans = self.spheres[s_i] + v1
                 v2 = self._compute_dv(self.spheres[s_j], s_trans)
