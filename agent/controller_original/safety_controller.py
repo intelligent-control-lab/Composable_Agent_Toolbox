@@ -147,10 +147,10 @@ class SafeSetController(BaseSafeController):
         
         u = u0
 
-        if phi <= 0 or np.asscalar(L * u0) < np.asscalar(S):
+        if phi <= 0 or np.ndarray.item(L * u0) < np.ndarray.item(S):
             u = u0
         else:
-            u = u0 - (np.asscalar(L * u0 - S) * L.T / np.asscalar(L * L.T))
+            u = u0 - (np.ndarray.item(L * u0 - S) * L.T / np.ndarray.item(L * L.T))
         
         return phi, u
 
@@ -331,9 +331,9 @@ class SublevelSafeSetController(BaseSafeController):
         
         u = u0
 
-        if phi <= 0 or np.asscalar(L * u0) < np.asscalar(S):
+        if phi <= 0 or np.ndarray.item(L * u0) < np.ndarray.item(S):
             u = u0
         else:
-            u = u0 - (np.asscalar(L * u0 - S) * L.T / np.asscalar(L * L.T))
+            u = u0 - (np.ndarray.item(L * u0 - S) * L.T / np.ndarray.item(L * L.T))
         
         return phi, u
