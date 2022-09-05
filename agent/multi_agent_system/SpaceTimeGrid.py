@@ -10,7 +10,7 @@ import matlab.engine
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float]) -> None:
+    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float], priority: list[float]) -> None:
         self.paths = paths
         self.spheres = [s for p in paths for s in p]
         self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
@@ -18,6 +18,7 @@ class SpaceTimeGrid:
         self.n_agents = len(paths)
         self.a_max = a_max
         self.gamma = gamma
+        self.priority = priority # priority value of each path
         self.tree = KDTree(self.spheres)
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
@@ -28,7 +29,7 @@ class SpaceTimeGrid:
         self.vel = [np.array([]) for i in range(len(paths))] # current velocity of each agent
 
     def __init__(self, paths: list[np.array]) -> None:
-        self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)))
+        self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)), np.ones(len(paths)))
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
@@ -132,12 +133,13 @@ class SpaceTimeGrid:
         a = self.a_max[p_i]
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
-    def _optimize(self, S, V, rad):
+    def _optimize(self, S, V, rad, pri):
         n = S.shape[0]
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
         rad = matlab.double(rad.tolist())
-        X, w, fval = self.eng.optimize(S, V, rad, n, nargout=3)
+        pri = matlab.double(pri.tolist())
+        X, w, fval = self.eng.optimize(S, V, rad, pri, n, nargout=3)
         return X
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
@@ -176,6 +178,7 @@ class SpaceTimeGrid:
         S, V, log = self._simulate()
         S, V = np.array(S), np.array(V)
         rad = np.ones(S.shape[0])
-        X = self._optimize(S, V, rad)
+        pri = np.array([self.priority[p_i] for _, p_i in log])
+        X = self._optimize(S, V, rad, pri)
         for p_i, s_i, x_i in zip(log, X):
             self._path_shift(p_i, s_i, x_i - s_i)
