@@ -125,6 +125,8 @@ class SpaceTimeGrid:
 
         # resolve time inversions
         for i in range(len(self.paths[p_i]) - 1, 1, -1):
+            s_cur = self.paths[p_i][i]
+            s_next = self.paths[p_i][i + 1]
             self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(i, i + 1, p_i))
         
     def _dt(self, i, j, p_i):
@@ -157,7 +159,7 @@ class SpaceTimeGrid:
 
         # insert pseudo-waypoints
         p = self.paths[p_i]
-        num = np.linalg.norm(s2 - s1) / (self.r + self.r)
+        num = np.linalg.norm(self.paths[p_i][-1] - self.paths[p_i][-2]) / (self.r + self.r)
         v_last = self.vel[p_i][-2]
         v_end = self.vel[p_i][-1]
         while not self._tangent(p[-1], p[-2]) and not self._intersects(p[-1], p[-2]):
