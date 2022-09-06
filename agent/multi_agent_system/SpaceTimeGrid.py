@@ -24,9 +24,7 @@ class SpaceTimeGrid:
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
         self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
-
-        # TODO: maybe integrate this better, perhaps have each waypoint have its own projected velocity??
-        self.vel = [np.array([0, 0]) for i in range(len(paths))] # current velocity of each agent
+        self.vel = [[np.array([0, 0]) for _ in p] for p in paths] # velocity at each waypoint for each path
 
     def __init__(self, paths: list[np.array]) -> None:
         self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)), np.ones(len(paths)))
@@ -127,13 +125,13 @@ class SpaceTimeGrid:
 
         # resolve time inversions
         for i in range(len(self.paths[p_i]) - 1, 1, -1):
-            s_cur = self.paths[p_i][i]
-            s_next = self.paths[p_i][i + 1]
-            self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(s_cur, s_next))
+            self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(i, i + 1, p_i))
         
-    def _dt(self, s1, s2, p_i):
+    def _dt(self, i, j, p_i):
+        s1 = self.paths[p_i][i]
+        s2 = self.paths[p_i][j]
         d = np.linalg.norm(s2 - s1)
-        v = (self.vel[p_i].T @ (s2 - s1)) / d # component of velocity in direction of path
+        v = (self.vel[p_i][i].T @ (s2 - s1)) / d # component of velocity in direction of path
         a = self.a_max[p_i]
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
@@ -149,29 +147,32 @@ class SpaceTimeGrid:
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
 
-    def update_path(self, p_i: int, s_new: np.array) -> None:
+    def update_path(self, p_i: int, s_new: np.array, v: np.array) -> None:
 
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
         self.s2p.append(p_i)
         self.pseudo[p_i].append(False)
+        self.vel[p_i].append(v)
 
         # insert pseudo-waypoints
         p = self.paths[p_i]
+        num = np.linalg.norm(s2 - s1) / (self.r + self.r)
+        v_last = self.vel[p_i][-2]
+        v_end = self.vel[p_i][-1]
         while not self._tangent(p[-1], p[-2]) and not self._intersects(p[-1], p[-2]):
             # insert tangent to second to last sphere in direction towards last sphere
             mag = self.r + self.r
             uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
             pseu = p[-2] + mag * uv
             self.paths[p_i].insert(-2, pseu)
+            self.pseudo[p_i].insert(-2, True)
             self.spheres.append(pseu)
             self.s2p.append(p_i)
-            self.pseudo[p_i].append(True)
+            self.vel[p_i].insert(-2, v_last + (1 / num) * v_end)
+            v_last = self.vel[p_i][-2]
 
         self.tree = KDTree(self.spheres) # reinitialize tree
-
-    def update_vel(self, p_i: int, val: np.array) -> None:
-        self.vel[p_i] = val
 
     def get_path(self, p_i: int) -> list[np.array]:
         path = self.paths[p_i]
