@@ -10,22 +10,34 @@
 #     type: ModelBasedAgent
 #     spec: configs/flat_evade_agent_2.yaml
 
+# env:
+#   type: FlatEnv
+#   spec: configs/flat_reach_env.yaml
+
+# agents:
+#   human: 
+#     type: ModelBasedAgent
+#     spec: configs/flat_reach_agent_2.yaml
+#   obs1:
+#     type: ModelBasedAgent
+#     spec: configs/flat_reach_obs_1.yaml
+#   obs2:
+#     type: ModelBasedAgent
+#     spec: configs/flat_reach_obs_2.yaml
+
 env:
-  type: FlatEnv
-  spec: configs/flat_reach_env.yaml
+  type: MASEnv
+  spec: configs/mas_env.yaml
 
 agents:
-  human: 
-    type: ModelBasedAgent
-    spec: configs/flat_reach_agent_2.yaml
-  obs1:
-    type: ModelBasedAgent
-    spec: configs/flat_reach_obs_1.yaml
-  obs2:
-    type: ModelBasedAgent
-    spec: configs/flat_reach_obs_2.yaml
+  a1:
+    type: MASAgent
+    spec: configs/mas_sim_a1.yaml
+  a2:
+    type: MASAgent
+    spec: configs/mas_sim_a2.yaml
 
-iters: 200
+iters: 1000
 render: true
 
 debug:
@@ -33,6 +45,6 @@ debug:
   render_next_traj_point: true
   log_traj: false
   log_next_traj_point: false
-  log_control: true
-  log_agent_state: true
-  plot_control: true
+  log_control: false
+  log_agent_state: false
+  plot_control: false
