@@ -26,7 +26,7 @@
 #     spec: configs/flat_reach_obs_2.yaml
 
 env:
-  type: MASEnv
+  type: FlatEvadeEnv
   spec: configs/mas_env.yaml
 
 agents:
