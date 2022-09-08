@@ -1,13 +1,13 @@
 import importlib
 import sys
 from os.path import abspath, join, dirname
-
-import progressbar
-from agent.multi_agent_system.SpaceTimeGrid import SpaceTimeGrid
-
 sys.path.insert(0, join(abspath(dirname(__file__)), '../'))
 import evaluator, agent, env
 import yaml
+import progressbar
+from agent.multi_agent_system.SpaceTimeGrid import SpaceTimeGrid
+
+import numpy as np
 
 def class_by_name(module_name, class_name):
     return getattr(importlib.import_module(module_name), class_name)
@@ -35,31 +35,31 @@ if __name__ == '__main__':
     agents = []
     for type, spec in zip(agent_types, agent_specs):
         agents.append(class_by_name('agent', type)(spec))
-    env = class_by_name('env', env_type)(env_spec, agents)
-    evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
+    # env = class_by_name('env', env_type)(env_spec, agents)
+    # evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
 
     iters = config_spec['iters']
     debug_modes = {mode: val for mode, val in config_spec['debug'].items()}
     render = config_spec['render']
 
-    dt, env_info, measurement_groups = env.reset()
-    record = []
-    stg = SpaceTimeGrid([[] for _ in agents])
+    # dt, env_info, measurement_groups = env.reset()
+    # record = []
+    stg = SpaceTimeGrid([[np.array(ag.path[0][:2])] for ag in agents], np.ones(len(agents)), np.ones(len(agents)), np.ones(len(agents)))
+    stg.vel = [[np.array(ag.path[0][2:])] for ag in agents]
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
         
-        actions = {}
         for i, agent in enumerate(agents):
             # an action is dictionary which must contain a key "control"
-            actions[agent.name] = agent.action(dt, measurement_groups[agent.name], debug_modes)
-            waypoint = actions[agent.name]["broadcast"]["next_point"]
-            stg.update_path(i, waypoint)
+            waypoint = agent.next_point()
+            print(waypoint)
+            stg.update_path(i, waypoint[0], waypoint[1])
             stg.resolve()
             path = stg.get_path(i)
             agent.set_path(path)
             #sensor data is grouped by agent
-        dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
-        record.append((env_info,measurement_groups))
+        # dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
+        # record.append((env_info,measurement_groups))
 
-    evaluator.evaluate(record)
+    # evaluator.evaluate(record)

@@ -1,16 +1,14 @@
 import importlib
-from agent.model_based_agent import ModelBasedAgent
 from agent import sensor
 
-
 import numpy as np
-
 
 class MASAgent():
 
     def __init__(self, module_spec: dict) -> None:
         self._instantiate_by_spec(module_spec)
-        self.path = []
+        self.path = [self.module_spec["task"]["init_x"]]
+        self.goal = {"goal": np.array(self.module_spec["task"]["goal"]).reshape(2, 2)}
 
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
@@ -36,10 +34,14 @@ class MASAgent():
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def next_point(self) -> np.array:
-        pass
+        dt = 0.02
+        data = {"cartesian_sensor_est": {"pos": self.path[-1][:2], "vel": self.path[-1][2:]}}
+        plan = self.planner(dt, self.goal, data)
+        return plan[1]
 
-    def update_path(self, path: list[np.array]) -> None:
+    def set_path(self, path: list[np.array]) -> None:
         self.path = path
+        print(f"PATH {self.name}:\n {path}")
 
     def control(self) -> None:
         pass
