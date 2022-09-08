@@ -26,9 +26,6 @@ class SpaceTimeGrid:
         self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
         self.vel = [[np.array([0, 0]) for _ in p] for p in paths] # velocity at each waypoint for each path
 
-    def __init__(self, paths: list[np.array]) -> None:
-        self.__init__(paths, np.ones(len(paths)), np.ones(len(paths)), np.ones(len(paths)))
-
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
         uv = (s1 - s2) / np.linalg.norm(s1 - s2)
@@ -124,7 +121,7 @@ class SpaceTimeGrid:
             self.paths[p_i][i] += vec
 
         # resolve time inversions
-        for i in range(len(self.paths[p_i]) - 1, 1, -1):
+        for i in range(len(self.paths[p_i]) - 2, 1, -1):
             s_cur = self.paths[p_i][i]
             s_next = self.paths[p_i][i + 1]
             self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(i, i + 1, p_i))
@@ -138,6 +135,8 @@ class SpaceTimeGrid:
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _optimize(self, S, V, rad, pri):
+        if S.shape[0] == 0:
+            return S
         n = S.shape[0]
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
@@ -159,27 +158,28 @@ class SpaceTimeGrid:
 
         # insert pseudo-waypoints
         p = self.paths[p_i]
-        num = np.linalg.norm(self.paths[p_i][-1] - self.paths[p_i][-2]) / (self.r + self.r)
+        num = math.ceil(np.linalg.norm(self.paths[p_i][-1] - self.paths[p_i][-2]) / (self.r + self.r)) - 1
         v_last = self.vel[p_i][-2]
         v_end = self.vel[p_i][-1]
-        while not self._tangent(p[-1], p[-2]) and not self._intersects(p[-1], p[-2]):
+        for i in range(num):
             # insert tangent to second to last sphere in direction towards last sphere
             mag = self.r + self.r
             uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
             pseu = p[-2] + mag * uv
-            self.paths[p_i].insert(-2, pseu)
-            self.pseudo[p_i].insert(-2, True)
+            self.paths[p_i].insert(-1, pseu)
+            self.pseudo[p_i].insert(-1, True)
             self.spheres.append(pseu)
             self.s2p.append(p_i)
-            self.vel[p_i].insert(-2, v_last + (1 / num) * v_end)
-            v_last = self.vel[p_i][-2]
+            self.vel[p_i].insert(-1, v_last + (1 / num) * v_end)
+            v_last = self.vel[p_i][-1]
 
         self.tree = KDTree(self.spheres) # reinitialize tree
 
     def get_path(self, p_i: int) -> list[np.array]:
         path = self.paths[p_i]
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]]
-        return authentic
+        pos_vel = [np.vstack([s, v]) for s, v in zip(authentic, self.vel[p_i])]
+        return pos_vel
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
