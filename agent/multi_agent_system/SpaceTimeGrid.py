@@ -187,18 +187,20 @@ class SpaceTimeGrid:
 
         path = self.paths[p_i]
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
-        pos_vel = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) 
-            for s, v in zip(authentic, self.vel[p_i])] # [x1, x2, v1, v2, t]
+        pos_vel = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
+            for s, v in zip(authentic, self.vel[p_i])] 
         
         # "normalize" dt between waypoints thru interpolation
         t = 0
         s_i = 0
         normalized = []
         while s_i < len(pos_vel) - 1:
-            if t < pos_vel[s_i][4]:
+            print("running")
+            s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
+            print(t, s_i, s1[4], s2[4])
+            if not (t >= s1[4] and t < s2[4]):
                 s_i += 1
                 continue
-            s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
             m = 1 / (s2[4] - s1[4]) * (s2[:4] - s1[:4])
             waypoint = s1[:4] + (t - s1[4]) * m
             normalized.append(waypoint)
