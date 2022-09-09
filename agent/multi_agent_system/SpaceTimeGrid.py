@@ -179,8 +179,6 @@ class SpaceTimeGrid:
             self.vel[p_i].insert(-1, v_last + (1 / num) * v_end)
             v_last = self.vel[p_i][-1]
 
-        print(self.spheres)
-        print(self.paths)
         self.tree = KDTree(self.spheres) # reinitialize tree
 
     def get_path(self, p_i: int) -> list[np.array]:
@@ -196,7 +194,6 @@ class SpaceTimeGrid:
         normalized = []
         while s_i < len(pos_vel) - 1:
             s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
-            print(t, s_i, s1[4], s2[4])
             if not (t >= s1[4] and t < s2[4]):
                 s_i += 1
                 continue
