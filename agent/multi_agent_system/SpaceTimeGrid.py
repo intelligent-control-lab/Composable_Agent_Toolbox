@@ -195,7 +195,6 @@ class SpaceTimeGrid:
         s_i = 0
         normalized = []
         while s_i < len(pos_vel) - 1:
-            print("running")
             s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
             print(t, s_i, s1[4], s2[4])
             if not (t >= s1[4] and t < s2[4]):
