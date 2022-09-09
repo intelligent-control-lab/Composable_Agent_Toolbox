@@ -10,21 +10,24 @@ import matlab.engine
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float], priority: list[float]) -> None:
-        self.paths = paths
-        self.spheres = [s for p in paths for s in p]
-        self.s2p = [p_i for p_i, p in enumerate(paths) for _ in p] # get path index from sphere index
-        self.pseudo = [[False for _ in p] for p in paths] # whether path[p_i][s_i] is a pseudo-waypoint
-        self.n_agents = len(paths)
+    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float], priority: list[float], dt: list[float]) -> None:
+        self.paths = [
+            [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
+        for p_i, p in enumerate(paths)] 
+        self.spheres = [s for p in self.paths for s in p]
+        self.s2p = [p_i for p_i, p in enumerate(self.paths) for _ in p] # get path index from sphere index
+        self.pseudo = [[False for _ in p] for p in self.paths] # whether path[p_i][s_i] is a pseudo-waypoint
+        self.n_agents = len(self.paths)
         self.a_max = a_max
         self.gamma = gamma
         self.priority = priority # priority value of each path
+        self.dt = dt
         self.tree = KDTree(self.spheres)
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = 1
-        self.at_goal = [False for i in range(len(paths))] # whether path has reached goal
-        self.vel = [[np.array([0, 0]) for _ in p] for p in paths] # velocity at each waypoint for each path
+        self.at_goal = [False for i in range(len(self.paths))] # whether path has reached goal
+        self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for each path
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
@@ -124,9 +127,9 @@ class SpaceTimeGrid:
         for i in range(len(self.paths[p_i]) - 2, 1, -1):
             s_cur = self.paths[p_i][i]
             s_next = self.paths[p_i][i + 1]
-            self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._dt(i, i + 1, p_i))
+            self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._deltat(i, i + 1, p_i))
         
-    def _dt(self, i, j, p_i):
+    def _deltat(self, i, j, p_i):
         s1 = self.paths[p_i][i]
         s2 = self.paths[p_i][j]
         d = np.linalg.norm(s2 - s1)
@@ -148,7 +151,10 @@ class SpaceTimeGrid:
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
 
-    def update_path(self, p_i: int, s_new: np.array, v: np.array) -> None:
+    def update_path(self, p_i: int, s: np.array, v: np.array) -> None:
+
+        t = self.paths[p_i][-1][2] + self.dt[p_i]
+        s_new = np.append(s, t)
 
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
@@ -173,13 +179,32 @@ class SpaceTimeGrid:
             self.vel[p_i].insert(-1, v_last + (1 / num) * v_end)
             v_last = self.vel[p_i][-1]
 
+        print(self.spheres)
+        print(self.paths)
         self.tree = KDTree(self.spheres) # reinitialize tree
 
     def get_path(self, p_i: int) -> list[np.array]:
+
         path = self.paths[p_i]
-        authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]]
-        pos_vel = [np.vstack([s, v]) for s, v in zip(authentic, self.vel[p_i])]
-        return pos_vel
+        authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
+        pos_vel = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) 
+            for s, v in zip(authentic, self.vel[p_i])] # [x1, x2, v1, v2, t]
+        
+        # "normalize" dt between waypoints thru interpolation
+        t = 0
+        s_i = 0
+        normalized = []
+        while s_i < len(pos_vel) - 1:
+            if t < pos_vel[s_i][4]:
+                s_i += 1
+                continue
+            s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
+            m = 1 / (s2[4] - s1[4]) * (s2[:4] - s1[:4])
+            waypoint = s1[:4] + (t - s1[4]) * m
+            normalized.append(waypoint)
+            t += self.dt[p_i]
+
+        return normalized
 
     def resolve(self) -> None:
         S, V, log = self._simulate()

@@ -44,7 +44,8 @@ if __name__ == '__main__':
 
     # dt, env_info, measurement_groups = env.reset()
     # record = []
-    stg = SpaceTimeGrid([[np.array(ag.path[0][:2])] for ag in agents], np.ones(len(agents)), np.ones(len(agents)), np.ones(len(agents)))
+    dt = np.array([ag.dt for ag in agents])
+    stg = SpaceTimeGrid([[np.array(ag.path[0][:2])] for ag in agents], np.ones(len(agents)), np.ones(len(agents)), np.ones(len(agents)), dt)
     stg.vel = [[np.array(ag.path[0][2:])] for ag in agents]
 
     print("Simulation progress:")
