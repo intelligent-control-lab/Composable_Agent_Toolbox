@@ -31,7 +31,9 @@ class SpaceTimeGrid:
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
-        uv = (s1 - s2) / np.linalg.norm(s1 - s2)
+        # print(np.linalg.norm(s1 - s2))
+        uv = (s1 - s2) / (np.linalg.norm(s1 - s2) + 0.001) # why is norm ever 0?
+        # print(s1, s2, mag, uv)
         return mag * uv
 
     def _intersects(self, s1, s2, epsilon=0):
@@ -70,8 +72,9 @@ class SpaceTimeGrid:
         for s_i, s_j in self.tree.query_pairs(self.r + self.r):
             if self.s2p[s_i] == self.s2p[s_j]:
                 continue
-            v1 = self._compute_dv(s_i, s_j)
-            v2 = self._compute_dv(s_j, s_i)
+            s1, s2 = self.spheres[s_i], self.spheres[s_j]
+            v1 = self._compute_dv(s1, s2)
+            v2 = self._compute_dv(s2, s1)
             q.put((s_i, v1))
             q.put((s_j, v2))
 
@@ -98,11 +101,12 @@ class SpaceTimeGrid:
             # apply path shift and check for further intersections
             p_i = self.s2p[s_i]
             self._path_shift(p_i, s_i, v1)
+            # print(f"p_i: {p_i}\n{self.paths[p_i]}")
             for s3 in self.paths[p_i]:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
                     v3 = self._compute_dv(s3, self.spheres[inter_i])
-                    q.put(np.where((self.spheres == s3).all())[0][0], v3) # TODO: make more efficient later
+                    q.put((int(np.where(self.spheres == s3)[0][0]), v3)) # TODO: make more efficient later
 
         return S, V, log
 
@@ -110,7 +114,7 @@ class SpaceTimeGrid:
 
         d_max = max([np.linalg.norm(s - s0) for s in self.paths[p_i]])
         mu0 = np.linalg.norm(dv)
-        uv = dv / np.linalg.norm(dv)
+        uv = dv / (np.linalg.norm(dv) + 0.001) # shouldn't have to do this
 
         # apply path shift
         for i, s in enumerate(self.paths[p_i]):
@@ -148,7 +152,7 @@ class SpaceTimeGrid:
         rad = matlab.double(rad.tolist())
         pri = matlab.double(pri.tolist())
         X, w, fval = self.eng.optimize(S, V, rad, pri, n, nargout=3)
-        return X
+        return np.array(X)
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
@@ -208,9 +212,10 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
+        # print(V)
         S, V = np.array(S), np.array(V)
         rad = np.ones(S.shape[0])
-        pri = np.array([self.priority[p_i] for _, p_i in log])
+        pri = np.array([self.priority[p_i] for p_i, _ in log])
         X = self._optimize(S, V, rad, pri)
-        for p_i, s_i, x_i in zip(log, X):
+        for (p_i, s_i), x_i in zip(log, X):
             self._path_shift(p_i, s_i, x_i - s_i)
