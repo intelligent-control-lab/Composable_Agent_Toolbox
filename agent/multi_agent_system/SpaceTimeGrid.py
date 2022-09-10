@@ -101,8 +101,8 @@ class SpaceTimeGrid:
             for s3 in self.paths[p_i]:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
-                    v3 = self.compute_dv(s3, self.spheres[inter_i])
-                    q.put(self.spheres.index(s3), v3) # TODO: make more efficient later
+                    v3 = self._compute_dv(s3, self.spheres[inter_i])
+                    q.put(np.where((self.spheres == s3).all())[0][0], v3) # TODO: make more efficient later
 
         return S, V, log
 
@@ -130,16 +130,18 @@ class SpaceTimeGrid:
             self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._deltat(i, i + 1, p_i))
         
     def _deltat(self, i, j, p_i):
-        s1 = self.paths[p_i][i]
-        s2 = self.paths[p_i][j]
-        d = np.linalg.norm(s2 - s1)
-        v = (self.vel[p_i][i].T @ (s2 - s1)) / d # component of velocity in direction of path
-        a = self.a_max[p_i]
-        return (-v + math.sqrt(v**2 + 2 * a * d)) / a
+        return 0
+        # s1 = self.paths[p_i][i]
+        # s2 = self.paths[p_i][j]
+        # d = np.linalg.norm(s2 - s1)
+        # v = (self.vel[p_i][i].T @ (s2 - s1)) / d # component of velocity in direction of path
+        # a = self.a_max[p_i]
+        # return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _optimize(self, S, V, rad, pri):
         if S.shape[0] == 0:
             return S
+        print("optimizing...")
         n = S.shape[0]
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
