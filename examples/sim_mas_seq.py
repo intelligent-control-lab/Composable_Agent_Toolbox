@@ -9,8 +9,22 @@ from agent.multi_agent_system.SpaceTimeGrid import SpaceTimeGrid
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
 def class_by_name(module_name, class_name):
     return getattr(importlib.import_module(module_name), class_name)
+
+def visualize(stg):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    colors = 'rgbcmk'
+    for i, p in enumerate(stg.paths):
+        x = [s[0] for s in p]
+        y = [s[1] for s in p]
+        t = [s[2] for s in p]
+        ax.scatter(x, y, t, color=colors[i])
+    plt.show()
 
 if __name__ == '__main__':
 
@@ -50,11 +64,13 @@ if __name__ == '__main__':
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
+
+        print("Iterating...")
         
         for i, agent in enumerate(agents):
             # an action is dictionary which must contain a key "control"
             waypoint = agent.next_point()
-            print(waypoint)
+            # print(waypoint)
             stg.update_path(i, waypoint[0], waypoint[1])
             stg.resolve()
             path = stg.get_path(i)
@@ -62,5 +78,7 @@ if __name__ == '__main__':
             #sensor data is grouped by agent
         # dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
         # record.append((env_info,measurement_groups))
+
+    visualize(stg)
 
     # evaluator.evaluate(record)
