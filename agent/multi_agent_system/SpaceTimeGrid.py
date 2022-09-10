@@ -8,6 +8,8 @@ from scipy.spatial import KDTree
 import matlab
 import matlab.engine
 
+import matplotlib.pyplot as plt
+
 class SpaceTimeGrid:
 
     def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float], priority: list[float], dt: list[float]) -> None:
@@ -101,7 +103,6 @@ class SpaceTimeGrid:
             # apply path shift and check for further intersections
             p_i = self.s2p[s_i]
             self._path_shift(p_i, s_i, v1)
-            # print(f"p_i: {p_i}\n{self.paths[p_i]}")
             for s3 in self.paths[p_i]:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
@@ -142,16 +143,15 @@ class SpaceTimeGrid:
         # a = self.a_max[p_i]
         # return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
-    def _optimize(self, S, V, rad, pri):
-        if S.shape[0] == 0:
-            return S
-        print("optimizing...")
+    def _optimize(self, S, V, P, pri, rad):
+        print("Optimizing...")
         n = S.shape[0]
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
-        rad = matlab.double(rad.tolist())
+        P = matlab.double(P.tolist())
         pri = matlab.double(pri.tolist())
-        X, w, fval = self.eng.optimize(S, V, rad, pri, n, nargout=3)
+        rad = matlab.double(rad.tolist())
+        X, w, fval = self.eng.optimize(S, V, P, pri, rad, n, nargout=3)
         return np.array(X)
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
@@ -191,31 +191,49 @@ class SpaceTimeGrid:
 
         path = self.paths[p_i]
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
-        pos_vel = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
+        pos_vel_t = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
             for s, v in zip(authentic, self.vel[p_i])] 
         
-        # "normalize" dt between waypoints thru interpolation
-        t = 0
-        s_i = 0
+        # normalize dt between waypoints using interpolation
         normalized = []
-        while s_i < len(pos_vel) - 1:
-            s1, s2 = pos_vel[s_i], pos_vel[s_i + 1]
-            if not (t >= s1[4] and t < s2[4]):
-                s_i += 1
-                continue
-            m = 1 / (s2[4] - s1[4]) * (s2[:4] - s1[:4])
-            waypoint = s1[:4] + (t - s1[4]) * m
-            normalized.append(waypoint)
-            t += self.dt[p_i]
+        components = [[s[i] for s in pos_vel_t] for i in range(4)]
+        t = [s[4] for s in pos_vel_t]
+        t_i = 0
+        t_max = t[-1]
+        while t_i <= t_max:
+            x1, x2, v1, v2 = [np.interp(t_i, t, c) for c in components]
+            normalized.append(np.array([x1, x2, v1, v2]))
+            t_i += self.dt[p_i]
 
         return normalized
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        # print(V)
+        if len(S) == 0:
+            return
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S])
+        plt.show()
+
         S, V = np.array(S), np.array(V)
-        rad = np.ones(S.shape[0])
+        P = self._get_P(S, log)
         pri = np.array([self.priority[p_i] for p_i, _ in log])
-        X = self._optimize(S, V, rad, pri)
+        rad = np.ones(S.shape[0])
+        X = self._optimize(S, V, P, pri, rad)
         for (p_i, s_i), x_i in zip(log, X):
             self._path_shift(p_i, s_i, x_i - s_i)
+
+    def _get_P(self, S, log):
+        # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
+        # that don't belong to the same path
+        P = []
+        n = S.shape[0]
+        for i in range(n):
+            for j in range(i + 1, n):
+                if log[i][0] == log[j][0]: # belong to same path
+                    continue
+                P.append((i + 1, j + 1))
+        print(np.asarray(P))
+        return np.asarray(P)
