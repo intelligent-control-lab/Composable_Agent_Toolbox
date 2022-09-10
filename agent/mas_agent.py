@@ -37,6 +37,7 @@ class MASAgent():
     def next_point(self) -> np.array:
         data = {"cartesian_sensor_est": {"pos": self.path[-1][:2], "vel": self.path[-1][2:]}}
         plan = self.planner(self.dt, self.goal, data)
+        # print(f"{self.name} : {plan}")
         return plan[1]
 
     def set_path(self, path: list[np.array]) -> None:
