@@ -41,7 +41,6 @@ class MASAgent():
 
     def set_path(self, path: list[np.array]) -> None:
         self.path = path
-        print(f"PATH {self.name}:\n {path}")
 
     def control(self) -> None:
         pass
