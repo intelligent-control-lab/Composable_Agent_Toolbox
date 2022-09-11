@@ -70,11 +70,11 @@ if __name__ == '__main__':
         for i, agent in enumerate(agents):
             # an action is dictionary which must contain a key "control"
             waypoint = agent.next_point()
-            # print(waypoint)
             stg.update_path(i, waypoint[0], waypoint[1])
             stg.resolve()
-            path = stg.get_path(i)
-            agent.set_path(path)
+            for j, a in enumerate(agents):
+                path = stg.get_path(j)
+                a.set_path(path)
             #sensor data is grouped by agent
         # dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
         # record.append((env_info,measurement_groups))
