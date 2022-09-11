@@ -34,7 +34,7 @@ class SpaceTimeGrid:
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
         # print(np.linalg.norm(s1 - s2))
-        uv = (s1 - s2) / (np.linalg.norm(s1 - s2) + 0.001) # why is norm ever 0?
+        uv = (s1 - s2) / (np.linalg.norm(s1 - s2) + 0.001) # TODO: why is norm ever 0?
         # print(s1, s2, mag, uv)
         return mag * uv
 
@@ -89,7 +89,9 @@ class SpaceTimeGrid:
             vis[s_i] = True
             S.append(self.spheres[s_i])
             V.append(v1)
-            log.append((self.s2p[s_i], s_i))
+            p_i = self.s2p[s_i]
+            s_i_path = int(np.where(self.paths[p_i] == self.spheres[s_i])[0][0]) # TODO: make more efficient
+            log.append((self.s2p[s_i], s_i_path))
 
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
@@ -101,21 +103,21 @@ class SpaceTimeGrid:
                 q.put((s_j, v2))
 
             # apply path shift and check for further intersections
-            p_i = self.s2p[s_i]
-            self._path_shift(p_i, s_i, v1)
+            self._path_shift(p_i, s_i_path, v1)
             for s3 in self.paths[p_i]:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
                     v3 = self._compute_dv(s3, self.spheres[inter_i])
-                    q.put((int(np.where(self.spheres == s3)[0][0]), v3)) # TODO: make more efficient later
+                    q.put((int(np.where(self.spheres == s3)[0][0]), v3)) # TODO: make more efficient
 
         return S, V, log
 
-    def _path_shift(self, p_i, s0, dv):
+    def _path_shift(self, p_i, s_i, dv):
 
+        s0 = self.paths[p_i][s_i]
         d_max = max([np.linalg.norm(s - s0) for s in self.paths[p_i]])
         mu0 = np.linalg.norm(dv)
-        uv = dv / (np.linalg.norm(dv) + 0.001) # shouldn't have to do this
+        uv = dv / (np.linalg.norm(dv) + 0.001) # TODO: shouldn't have to do this
 
         # apply path shift
         for i, s in enumerate(self.paths[p_i]):
@@ -190,10 +192,13 @@ class SpaceTimeGrid:
     def get_path(self, p_i: int) -> list[np.array]:
 
         path = self.paths[p_i]
+        print(f"ORIGINAL:\n{path}\n")
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
         pos_vel_t = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
             for s, v in zip(authentic, self.vel[p_i])] 
         
+        print(f"POSVELT: {pos_vel_t}")
+
         # normalize dt between waypoints using interpolation
         normalized = []
         components = [[s[i] for s in pos_vel_t] for i in range(4)]
@@ -205,6 +210,7 @@ class SpaceTimeGrid:
             normalized.append(np.array([x1, x2, v1, v2]))
             t_i += self.dt[p_i]
 
+        print(f"NORMALIZED:\n{normalized}\n")
         return normalized
 
     def resolve(self) -> None:
@@ -222,8 +228,11 @@ class SpaceTimeGrid:
         pri = np.array([self.priority[p_i] for p_i, _ in log])
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, P, pri, rad)
-        for (p_i, s_i), x_i in zip(log, X):
-            self._path_shift(p_i, s_i, x_i - s_i)
+        print("Optimization finished!")
+        for i in range(len(S)):
+            print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
+        for (p_i, s_i), x in zip(log, X):
+            self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
@@ -235,5 +244,4 @@ class SpaceTimeGrid:
                 if log[i][0] == log[j][0]: # belong to same path
                     continue
                 P.append((i + 1, j + 1))
-        print(np.asarray(P))
         return np.asarray(P)
