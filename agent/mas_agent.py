@@ -10,6 +10,7 @@ class MASAgent():
         self.path = [self.module_spec["task"]["init_x"]]
         self.goal = {"goal": np.array(self.module_spec["task"]["goal"]).reshape(2, 2)}
         self.dt = 0.02
+        self.at_goal = False
 
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
@@ -35,6 +36,7 @@ class MASAgent():
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def next_point(self) -> np.array:
+        print(f"{self.name} USING: {self.path}")
         data = {"cartesian_sensor_est": {"pos": self.path[-1][:2], "vel": self.path[-1][2:]}}
         plan = self.planner(self.dt, self.goal, data)
         # print(f"{self.name} : {plan}")
@@ -42,6 +44,9 @@ class MASAgent():
 
     def set_path(self, path: list[np.array]) -> None:
         self.path = path
+        print(f"{self.name} RECEIVED: {self.path}")
+        if np.linalg.norm(self.path[-1][:2] - self.goal['goal'][0]) < 0.1:
+            self.at_goal = True
 
     def control(self) -> None:
         pass
