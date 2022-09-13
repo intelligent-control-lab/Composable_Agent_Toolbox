@@ -93,6 +93,11 @@ class SpaceTimeGrid:
             s_i_path = int(np.where(self.paths[p_i] == self.spheres[s_i])[0][0]) # TODO: make more efficient
             log.append((self.s2p[s_i], s_i_path))
 
+            if s_i_path == 0:
+                v1 = np.zeros(3) # locked in place if first sphere in path
+            if s_i_path == len(self.paths[p_i]) and self.at_goal[p_i]:
+                v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
+
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
                     continue
@@ -104,11 +109,14 @@ class SpaceTimeGrid:
 
             # apply path shift and check for further intersections
             self._path_shift(p_i, s_i_path, v1)
-            for s3 in self.paths[p_i]:
+            for i, s3 in enumerate(self.paths[p_i]):
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
                     v3 = self._compute_dv(s3, self.spheres[inter_i])
-                    q.put((int(np.where(self.spheres == s3)[0][0]), v3)) # TODO: make more efficient
+                    v_inter = self._compute_dv(self.spheres[inter_i], s3)
+                    s_i = int(np.where(self.spheres == s3)[0][0]) # TODO: make more efficient
+                    q.put((s_i, v3)) 
+                    q.put((inter_i, v_inter))
 
         return S, V, log
 
@@ -124,20 +132,23 @@ class SpaceTimeGrid:
             if i == 0:
                 continue
             d = np.linalg.norm(s0 - s)
-            mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
+            if i == s_i:
+                mu = mu0
+            else:
+                mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
             vec = mu * uv
             if self.at_goal[p_i] and i == len(self.paths[p_i]):
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
             self.paths[p_i][i] += vec
 
         # resolve time inversions
-        for i in range(len(self.paths[p_i]) - 2, 1, -1):
+        for i in range(1, len(self.paths[p_i])):
             s_cur = self.paths[p_i][i]
-            s_next = self.paths[p_i][i + 1]
-            self.paths[p_i][i][2] = min(s_cur[2], s_next[2] - self._deltat(i, i + 1, p_i))
+            s_last = self.paths[p_i][i - 1]
+            self.paths[p_i][i][2] = min(s_cur[2], s_last[2] + self._deltat(i - 1, i, p_i))
         
     def _deltat(self, i, j, p_i):
-        return 0
+        return 0.02
         # s1 = self.paths[p_i][i]
         # s2 = self.paths[p_i][j]
         # d = np.linalg.norm(s2 - s1)
@@ -155,6 +166,63 @@ class SpaceTimeGrid:
         rad = matlab.double(rad.tolist())
         X, w, fval = self.eng.optimize(S, V, P, pri, rad, n, nargout=3)
         return np.array(X)
+
+    def _pseudo_connect(self, p_i, end=False):
+        
+        if end:
+            # insert pseudo-waypoints between p[-2] and p[-1]
+            p = self.paths[p_i]
+            num = math.ceil(np.linalg.norm(p[-1] - p[-2]) / (self.r + self.r)) - 1
+            v_last = self.vel[p_i][-2]
+            v_end = self.vel[p_i][-1]
+            for i in range(num):
+                # insert tangent to second to last sphere in direction towards last sphere
+                mag = self.r + self.r
+                uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
+                pseu = p[-2] + mag * uv
+                self.paths[p_i].insert(-1, pseu)
+                self.pseudo[p_i].insert(-1, True)
+                self.spheres.append(pseu)
+                self.s2p.append(p_i)
+                self.vel[p_i].insert(-1, v_last + v_end / num)
+                v_last = self.vel[p_i][-1]
+
+        else:
+            # insert pseudo-waypoints anywhere necessary
+            p = self.paths[p_i]
+            p_new = []
+            vel_new = []
+            is_pseudo = []
+            for i in range(len(p)):
+                p_new.append(p[i])
+                vel_new.append(self.vel[p_i][i])
+                is_pseudo.append(self.pseudo[p_i][i])
+                if i == len(p) - 1:
+                    continue
+                num = math.ceil(np.linalg.norm(p[i + 1] - p[i]) / (self.r + self.r)) - 1
+                s1 = p[i]
+                s2 = p[i + 1]
+                v1 = self.vel[p_i][i]
+                v2 = self.vel[p_i][i + 1]
+                for j in range(num):
+                    mag = self.r + self.r
+                    uv = (s2 - s1) / np.linalg.norm(s2 - s1)
+                    pseu = s1 + mag * uv
+                    p_new.append(pseu)
+                    is_pseudo.append(True)
+                    self.spheres.append(pseu)
+                    self.s2p.append(p_i)
+                    vel_new.append(v1 + v2 / num)
+                    s1 = pseu
+                    v1 = vel_new[-1]
+            self.paths[p_i] = p_new
+            self.vel[p_i] = vel_new
+            self.pseudo[p_i] = is_pseudo
+
+        # TODO: remove unnecessary pseudo-waypoints
+        # you can do this by iterating through path, and if 
+        # p[i] and p[i + 2] intersect, you can delete p[i + 1]
+        
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
@@ -170,22 +238,7 @@ class SpaceTimeGrid:
         self.pseudo[p_i].append(False)
         self.vel[p_i].append(v)
 
-        # insert pseudo-waypoints
-        p = self.paths[p_i]
-        num = math.ceil(np.linalg.norm(self.paths[p_i][-1] - self.paths[p_i][-2]) / (self.r + self.r)) - 1
-        v_last = self.vel[p_i][-2]
-        v_end = self.vel[p_i][-1]
-        for i in range(num):
-            # insert tangent to second to last sphere in direction towards last sphere
-            mag = self.r + self.r
-            uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
-            pseu = p[-2] + mag * uv
-            self.paths[p_i].insert(-1, pseu)
-            self.pseudo[p_i].insert(-1, True)
-            self.spheres.append(pseu)
-            self.s2p.append(p_i)
-            self.vel[p_i].insert(-1, v_last + (1 / num) * v_end)
-            v_last = self.vel[p_i][-1]
+        self._pseudo_connect(p_i, end=True)
 
         self.tree = KDTree(self.spheres) # reinitialize tree
 
@@ -231,8 +284,17 @@ class SpaceTimeGrid:
         print("Optimization finished!")
         for i in range(len(S)):
             print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
+
         for (p_i, s_i), x in zip(log, X):
             self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
+        
+        for p_i in range(len(self.paths)):
+            self._pseudo_connect(p_i)
+
+        for p in self.paths:
+            print(p[0], p[1])
+            if not self._intersects(p[0], p[1]):
+                print("NOT CONNECTED!!!!!!!!!!")
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
