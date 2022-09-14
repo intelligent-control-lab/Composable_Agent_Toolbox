@@ -36,7 +36,7 @@ class MASAgent():
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def next_point(self) -> np.array:
-        print(f"{self.name} USING: {self.path}")
+        # print(f"{self.name} USING: {self.path}")
         data = {"cartesian_sensor_est": {"pos": self.path[-1][:2], "vel": self.path[-1][2:]}}
         plan = self.planner(self.dt, self.goal, data)
         # print(f"{self.name} : {plan}")
@@ -44,7 +44,7 @@ class MASAgent():
 
     def set_path(self, path: list[np.array]) -> None:
         self.path = path
-        print(f"{self.name} RECEIVED: {self.path}")
+        # print(f"{self.name} RECEIVED: {self.path}")
         if np.linalg.norm(self.path[-1][:2] - self.goal['goal'][0]) < 0.1:
             self.at_goal = True
 
