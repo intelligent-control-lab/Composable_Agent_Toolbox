@@ -38,8 +38,8 @@ class SpaceTimeGrid:
         # print(s1, s2, mag, uv)
         return mag * uv
 
-    def _intersects(self, s1, s2, epsilon=0):
-        return np.linalg.norm(s1 - s2) < self.r + self.r - epsilon
+    def _intersects(self, s1, s2, eps=0):
+        return np.linalg.norm(s1 - s2) <= self.r + self.r + eps
 
     def _tangent(self, s1, s2):
         return np.linalg.norm(s1 - s2) == self.r + self.r
@@ -167,7 +167,7 @@ class SpaceTimeGrid:
         X, w, fval = self.eng.optimize(S, V, P, pri, rad, n, nargout=3)
         return np.array(X)
 
-    def _pseudo_connect(self, p_i, end=False):
+    def _pseudo_connect(self, p_i, end=False, clean=True):
         
         if end:
             # insert pseudo-waypoints between p[-2] and p[-1]
@@ -219,10 +219,39 @@ class SpaceTimeGrid:
             self.vel[p_i] = vel_new
             self.pseudo[p_i] = is_pseudo
 
-        # TODO: remove unnecessary pseudo-waypoints
-        # you can do this by iterating through path, and if 
-        # p[i] and p[i + 2] intersect, you can delete p[i + 1]
-        
+        # TODO: remove unnecessary pseudo-waypoints:
+        # iterate thru path, for each p[i] find the 
+        # farthest p[j] that intersects it where j > i,
+        # then delete everything between i and j
+        if clean:
+            print(f"Cleaning {p_i}")
+            p = self.paths[p_i]
+            print(f"BEFORE CLEAN:\n{p}\n")
+            p_new = []
+            vel_new = []
+            is_pseudo = []
+            i = 0
+            while i < len(p):
+                print(i, p[i], len(p))
+                p_new.append(p[i])
+                vel_new.append(self.vel[p_i][i])
+                is_pseudo.append(self.pseudo[p_i][i])
+                if i == len(p) - 1:
+                    break
+                j = i + 1
+                while j < len(p) and self._intersects(p[i], p[j], eps=1e-5): # j is first non-intersecting sphere, or len(p) if none
+                    j += 1
+                for k in range(i + 1, j - 1):
+                    s_i = np.where(self.spheres == p[k])[0][0] # TODO: make more efficient
+                    self.spheres.pop(s_i)
+                    self.s2p.pop(s_i)
+                i = j - 1
+            self.paths[p_i] = p_new
+            self.vel[p_i] = vel_new
+            self.pseudo[p_i] = is_pseudo
+            print("done cleaning")
+            print(f"AFTER CLEAN:\n{self.paths[p_i]}\n")
+
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
@@ -238,19 +267,19 @@ class SpaceTimeGrid:
         self.pseudo[p_i].append(False)
         self.vel[p_i].append(v)
 
-        self._pseudo_connect(p_i, end=True)
+        self._pseudo_connect(p_i, end=True, clean=False)
 
         self.tree = KDTree(self.spheres) # reinitialize tree
 
     def get_path(self, p_i: int) -> list[np.array]:
 
         path = self.paths[p_i]
-        print(f"ORIGINAL:\n{path}\n")
+        # print(f"ORIGINAL:\n{path}\n")
         authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
         pos_vel_t = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
             for s, v in zip(authentic, self.vel[p_i])] 
         
-        print(f"POSVELT: {pos_vel_t}")
+        # print(f"POSVELT: {pos_vel_t}")
 
         # normalize dt between waypoints using interpolation
         normalized = []
@@ -263,7 +292,7 @@ class SpaceTimeGrid:
             normalized.append(np.array([x1, x2, v1, v2]))
             t_i += self.dt[p_i]
 
-        print(f"NORMALIZED:\n{normalized}\n")
+        # print(f"NORMALIZED:\n{normalized}\n")
         return normalized
 
     def resolve(self) -> None:
@@ -282,8 +311,8 @@ class SpaceTimeGrid:
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, P, pri, rad)
         print("Optimization finished!")
-        for i in range(len(S)):
-            print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
+        # for i in range(len(S)):
+            # print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
 
         for (p_i, s_i), x in zip(log, X):
             self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
