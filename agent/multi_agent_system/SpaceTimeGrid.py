@@ -43,6 +43,11 @@ class SpaceTimeGrid:
 
     def _tangent(self, s1, s2):
         return np.linalg.norm(s1 - s2) == self.r + self.r
+
+    def _get_index(self, arr, s):
+        for i in range(len(arr)):
+            if np.allclose(s, arr[i]):
+                return i
     
     def _sweep(self, s_i, v):
 
@@ -70,6 +75,9 @@ class SpaceTimeGrid:
         q = Queue()
         vis = [False for i in range(len(self.spheres))]
 
+        for i, p in enumerate(self.paths):
+            print(f"PRE-SIM PATH {i}:\n{p}\n")
+
         # initially intersecting
         for s_i, s_j in self.tree.query_pairs(self.r + self.r):
             if self.s2p[s_i] == self.s2p[s_j]:
@@ -90,7 +98,9 @@ class SpaceTimeGrid:
             S.append(self.spheres[s_i])
             V.append(v1)
             p_i = self.s2p[s_i]
-            s_i_path = int(np.where(self.paths[p_i] == self.spheres[s_i])[0][0]) # TODO: make more efficient
+            print(self.paths[p_i], "\n", self.spheres[s_i])
+            s_i_path = self._get_index(self.paths[p_i], self.spheres[s_i]) # TODO: make more efficient
+            print(self.spheres[s_i], self.s2p[s_i], s_i_path)
             log.append((self.s2p[s_i], s_i_path))
 
             if s_i_path == 0:
@@ -107,30 +117,35 @@ class SpaceTimeGrid:
                 v2 = self._compute_dv(self.spheres[s_j], s_trans)
                 q.put((s_j, v2))
 
-            # apply path shift and check for further intersections
-            self._path_shift(p_i, s_i_path, v1)
-            for i, s3 in enumerate(self.paths[p_i]):
+            # simulate path shift and check for further intersections
+            sim_shift = self._path_shift(p_i, s_i_path, v1)
+            for i, s3 in enumerate(sim_shift):
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
                     if self.s2p[inter_i] == p_i:
                         continue
                     v3 = self._compute_dv(s3, self.spheres[inter_i])
                     v_inter = self._compute_dv(self.spheres[inter_i], s3)
-                    s_i = int(np.where(self.spheres == s3)[0][0]) # TODO: make more efficient
+                    s_i = self._get_index(self.spheres, s3) # TODO: make more efficient
                     q.put((s_i, v3)) 
                     q.put((inter_i, v_inter))
 
+        print(f"S FROM SIMULATION\n{S}\n")
+        print(f"LOG FROM SIM:\n{log}\n")
         return S, V, log
 
     def _path_shift(self, p_i, s_i, dv):
 
-        s0 = self.paths[p_i][s_i]
-        d_max = max([np.linalg.norm(s - s0) for s in self.paths[p_i]])
+        p = self.paths[p_i].copy()
+        # print(f"PRE PATH SHIFT {p_i}:\n{p}\n(sphere {s_i}, dv = {dv})")
+
+        s0 = p[s_i]
+        d_max = max([np.linalg.norm(s - s0) for s in p])
         mu0 = np.linalg.norm(dv)
         uv = dv / (np.linalg.norm(dv) + 0.001) # TODO: shouldn't have to do this
 
         # apply path shift
-        for i, s in enumerate(self.paths[p_i]):
+        for i, s in enumerate(p):
             if i == 0:
                 continue
             d = np.linalg.norm(s0 - s)
@@ -139,15 +154,20 @@ class SpaceTimeGrid:
             else:
                 mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
             vec = mu * uv
-            if self.at_goal[p_i] and i == len(self.paths[p_i]):
+            if self.at_goal[p_i] and i == len(p):
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
-            self.paths[p_i][i] += vec
+            p[i] += vec
 
         # resolve time inversions
-        for i in range(1, len(self.paths[p_i])):
-            s_cur = self.paths[p_i][i]
-            s_last = self.paths[p_i][i - 1]
-            self.paths[p_i][i][2] = min(s_cur[2], s_last[2] + self._deltat(i - 1, i, p_i))
+        for i in range(1, len(p)):
+            s_cur = p[i]
+            s_last = p[i - 1]
+            p[i][2] = min(s_cur[2], s_last[2] + self._deltat(i - 1, i, p_i))
+
+
+        # print(f"POST PATH SHIFT {p_i}:\n{p}\n")
+
+        return p
         
     def _deltat(self, i, j, p_i):
         return 0.02
@@ -161,6 +181,7 @@ class SpaceTimeGrid:
     def _optimize(self, S, V, P, pri, rad):
         print("Optimizing...")
         n = S.shape[0]
+        # print(f"OPTIMIZATION INPUT:\n{S}\n")
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
         P = matlab.double(P.tolist())
@@ -226,15 +247,14 @@ class SpaceTimeGrid:
         # farthest p[j] that intersects it where j > i,
         # then delete everything between i and j
         if clean:
-            print(f"Cleaning {p_i}")
+            # print(f"Cleaning {p_i}")
             p = self.paths[p_i]
-            print(f"BEFORE CLEAN:\n{p}\n")
+            # print(f"BEFORE CLEAN:\n{p}\n")
             p_new = []
             vel_new = []
             is_pseudo = []
             i = 0
             while i < len(p):
-                print(i, p[i], len(p))
                 p_new.append(p[i])
                 vel_new.append(self.vel[p_i][i])
                 is_pseudo.append(self.pseudo[p_i][i])
@@ -244,15 +264,15 @@ class SpaceTimeGrid:
                 while j < len(p) and self._intersects(p[i], p[j], eps=1e-5): # j is first non-intersecting sphere, or len(p) if none
                     j += 1
                 for k in range(i + 1, j - 1):
-                    s_i = np.where(self.spheres == p[k])[0][0] # TODO: make more efficient
+                    s_i = self._get_index(self.spheres, p[k]) # TODO: make more efficient
                     self.spheres.pop(s_i)
                     self.s2p.pop(s_i)
                 i = j - 1
             self.paths[p_i] = p_new
             self.vel[p_i] = vel_new
             self.pseudo[p_i] = is_pseudo
-            print("done cleaning")
-            print(f"AFTER CLEAN:\n{self.paths[p_i]}\n")
+            # print("done cleaning")
+            # print(f"AFTER CLEAN:\n{self.paths[p_i]}\n")
 
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
@@ -313,18 +333,21 @@ class SpaceTimeGrid:
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, P, pri, rad)
         print("Optimization finished!")
-        # for i in range(len(S)):
-            # print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
+        for i in range(len(S)):
+            print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
 
+        # print(f"LOG:\n{log}\n")
         for (p_i, s_i), x in zip(log, X):
-            self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
+            # print(p_i, s_i, x)
+            # print(self.paths[p_i][s_i])
+            self.paths[p_i] = self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
         
         for p_i in range(len(self.paths)):
             self._pseudo_connect(p_i)
 
         for p in self.paths:
             print(p[0], p[1])
-            if not self._intersects(p[0], p[1]):
+            if not self._intersects(p[0], p[1], eps=1e-5):
                 print("NOT CONNECTED!!!!!!!!!!")
 
     def _get_P(self, S, log):
