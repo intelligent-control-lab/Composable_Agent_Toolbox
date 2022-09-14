@@ -112,6 +112,8 @@ class SpaceTimeGrid:
             for i, s3 in enumerate(self.paths[p_i]):
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 for inter_i in query:
+                    if self.s2p[inter_i] == p_i:
+                        continue
                     v3 = self._compute_dv(s3, self.spheres[inter_i])
                     v_inter = self._compute_dv(self.spheres[inter_i], s3)
                     s_i = int(np.where(self.spheres == s3)[0][0]) # TODO: make more efficient
