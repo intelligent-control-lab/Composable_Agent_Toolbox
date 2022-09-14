@@ -321,10 +321,14 @@ class SpaceTimeGrid:
         S, V, log = self._simulate()
         if len(S) == 0:
             return
-        
+    
+        # plot paths and outstanding spheres
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-        ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S])
+        c = ["blue", "red"]
+        for i, p in enumerate(self.paths):
+            ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
         plt.show()
 
         S, V = np.array(S), np.array(V)
