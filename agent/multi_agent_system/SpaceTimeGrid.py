@@ -18,7 +18,6 @@ class SpaceTimeGrid:
         for p_i, p in enumerate(paths)] 
         self.spheres = [s for p in self.paths for s in p]
         self.s2p = [p_i for p_i, p in enumerate(self.paths) for _ in p] # get path index from sphere index
-        self.pseudo = [[False for _ in p] for p in self.paths] # whether path[p_i][s_i] is a pseudo-waypoint
         self.n_agents = len(self.paths)
         self.a_max = a_max
         self.gamma = gamma
@@ -190,7 +189,6 @@ class SpaceTimeGrid:
                 uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
                 pseu = p[-2] + mag * uv
                 self.paths[p_i].insert(-1, pseu)
-                self.pseudo[p_i].insert(-1, True)
                 self.spheres.append(pseu)
                 self.s2p.append(p_i)
                 self.vel[p_i].insert(-1, v_last + v_end / num)
@@ -201,11 +199,9 @@ class SpaceTimeGrid:
             p = self.paths[p_i]
             p_new = []
             vel_new = []
-            is_pseudo = []
             for i in range(len(p)):
                 p_new.append(p[i])
                 vel_new.append(self.vel[p_i][i])
-                is_pseudo.append(self.pseudo[p_i][i])
                 if i == len(p) - 1:
                     continue
                 num = math.ceil(np.linalg.norm(p[i + 1] - p[i]) / (self.r + self.r)) - 1
@@ -218,7 +214,6 @@ class SpaceTimeGrid:
                     uv = (s2 - s1) / np.linalg.norm(s2 - s1)
                     pseu = s1 + mag * uv
                     p_new.append(pseu)
-                    is_pseudo.append(True)
                     self.spheres.append(pseu)
                     self.s2p.append(p_i)
                     vel_new.append(v1 + v2 / num)
@@ -226,7 +221,6 @@ class SpaceTimeGrid:
                     v1 = vel_new[-1]
             self.paths[p_i] = p_new
             self.vel[p_i] = vel_new
-            self.pseudo[p_i] = is_pseudo
 
         # Remove unnecessary pseudo-waypoints:
         # iterate thru path, for each p[i] find the 
@@ -236,12 +230,10 @@ class SpaceTimeGrid:
             p = self.paths[p_i]
             p_new = []
             vel_new = []
-            is_pseudo = []
             i = 0
             while i < len(p):
                 p_new.append(p[i])
                 vel_new.append(self.vel[p_i][i])
-                is_pseudo.append(self.pseudo[p_i][i])
                 if i == len(p) - 1:
                     break
                 j = i + 1
@@ -256,7 +248,6 @@ class SpaceTimeGrid:
                 i = j - 1
             self.paths[p_i] = p_new
             self.vel[p_i] = vel_new
-            self.pseudo[p_i] = is_pseudo
 
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
@@ -270,7 +261,6 @@ class SpaceTimeGrid:
         self.paths[p_i].append(s_new)
         self.spheres.append(s_new)
         self.s2p.append(p_i)
-        self.pseudo[p_i].append(False)
         self.vel[p_i].append(v)
 
         self._pseudo_connect(p_i, end=True, clean=False)
@@ -279,10 +269,8 @@ class SpaceTimeGrid:
 
     def get_path(self, p_i: int) -> list[np.array]:
 
-        path = self.paths[p_i]
-        authentic = [s for s_i, s in enumerate(path) if not self.pseudo[p_i][s_i]] # remove pseudo-waypoints
         pos_vel_t = [np.append(np.concatenate((s[:2], v), axis=None), s[2]) # [x1, x2, v1, v2, t]
-            for s, v in zip(authentic, self.vel[p_i])] 
+            for s, v in zip(self.paths[p_i], self.vel[p_i])] 
         
         # normalize dt between waypoints using interpolation
         normalized = []
@@ -299,6 +287,8 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
+        if len(S) == 0:
+            return
 
         for i, p in enumerate(self.paths):
             print(f"ORIGINAL PATH {i}:\n{p}\n")
