@@ -224,8 +224,8 @@ class SpaceTimeGrid:
 
         # Remove unnecessary pseudo-waypoints:
         # iterate thru path, for each p[i] find the 
-        # farthest p[j] that intersects it where j > i,
-        # then delete everything between i and j
+        # first p[j] that doesn't intersect p[i] where 
+        # j > i, then delete everything between i and j - 1
         if clean:
             p = self.paths[p_i]
             p_new = []
@@ -287,8 +287,8 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        if len(S) == 0:
-            return
+        # if len(S) == 0:
+        #     return
 
         for i, p in enumerate(self.paths):
             print(f"ORIGINAL PATH {i}:\n{p}\n")
