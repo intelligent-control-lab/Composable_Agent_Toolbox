@@ -18,7 +18,7 @@ def class_by_name(module_name, class_name):
 def visualize(stg):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    colors = 'rgbcmk'
+    colors = 'brgcmk'
     for i, p in enumerate(stg.paths):
         x = [s[0] for s in p]
         y = [s[1] for s in p]
