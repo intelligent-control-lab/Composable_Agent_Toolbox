@@ -33,7 +33,7 @@ class SpaceTimeGrid:
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
-        uv = (s1 - s2) / (np.linalg.norm(s1 - s2) + 0.001) # TODO: why is norm ever 0?
+        uv = (s1 - s2) / np.linalg.norm(s1 - s2)
         return mag * uv
 
     def _intersects(self, s1, s2, eps=0):
@@ -131,7 +131,7 @@ class SpaceTimeGrid:
         s0 = p[s_i]
         d_max = max([np.linalg.norm(s - s0) for s in p])
         mu0 = np.linalg.norm(dv)
-        uv = dv / (np.linalg.norm(dv) + 0.001) # TODO: shouldn't have to do this
+        uv = dv / np.linalg.norm(dv)
 
         # apply path shift
         for i, s in enumerate(p):
@@ -149,9 +149,7 @@ class SpaceTimeGrid:
 
         # resolve time inversions
         for i in range(1, len(p)):
-            s_cur = p[i]
-            s_last = p[i - 1]
-            p[i][2] = min(s_cur[2], s_last[2] + self._deltat(i - 1, i, p_i))
+            p[i][2] = max(p[i][2], p[i - 1][2] + self._deltat(i - 1, i, p_i))
 
         return p
         
@@ -167,6 +165,9 @@ class SpaceTimeGrid:
     def _optimize(self, S, V, P, pri, rad):
         print("Optimizing...")
         n = S.shape[0]
+        if n == 0:
+            return np.array([])
+        print(f"OPTIMIZATION INPUT:\nS:\n{S}\nV:\n{V}\n")
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
         P = matlab.double(P.tolist())
@@ -248,6 +249,8 @@ class SpaceTimeGrid:
                     j += 1
                 for k in range(i + 1, j - 1):
                     s_i = self._get_index(self.spheres, p[k]) # TODO: make more efficient
+                    print(self.spheres)
+                    print(p[k], s_i)
                     self.spheres.pop(s_i)
                     self.s2p.pop(s_i)
                 i = j - 1
@@ -296,17 +299,9 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        if len(S) == 0:
-            return
-    
-        # plot paths and outstanding spheres
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        c = ["blue", "red"]
+
         for i, p in enumerate(self.paths):
-            ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-        ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
-        plt.show()
+            print(f"ORIGINAL PATH {i}:\n{p}\n")
 
         S, V = np.array(S), np.array(V)
         P = self._get_P(S, log)
@@ -317,11 +312,23 @@ class SpaceTimeGrid:
         for i in range(len(S)):
             print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
 
+        # # plot paths and outstanding spheres
+        # fig = plt.figure()
+        # ax = fig.add_subplot(projection='3d')
+        # c = ["blue", "red"]
+        # for i, p in enumerate(self.paths):
+        #     ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        # ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
+        # plt.show()
+
         for (p_i, s_i), x in zip(log, X):
             self.paths[p_i] = self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
         
         for p_i in range(len(self.paths)):
             self._pseudo_connect(p_i)
+
+        for i, p in enumerate(self.paths):
+            print(f"FINAL PATH {i}:\n{p}\n")
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
