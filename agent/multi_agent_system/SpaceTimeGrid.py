@@ -17,14 +17,14 @@ class SpaceTimeGrid:
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(paths)] 
         self.n_agents = len(self.paths)
-        self.a_max = a_max
-        self.gamma = gamma
+        self.a_max = a_max # max acceleration value of each path
+        self.gamma = gamma # flexibility constant of each path
         self.priority = priority # priority value of each path
-        self.dt = dt
+        self.dt = dt # dt of each planner
         self.tree = KDTree([s for p in self.paths for s in p])
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
-        self.r = r
+        self.r = r # radius of waypoints on paths
         self.at_goal = [False for i in range(len(self.paths))] # whether path has reached goal
         self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for each path
 
@@ -158,13 +158,13 @@ class SpaceTimeGrid:
         return p
         
     def _deltat(self, i, j, p_i):
-        return 0.02
-        # s1 = self.paths[p_i][i]
-        # s2 = self.paths[p_i][j]
-        # d = np.linalg.norm(s2 - s1)
-        # v = (self.vel[p_i][i].T @ (s2 - s1)) / d # component of velocity in direction of path
-        # a = self.a_max[p_i]
-        # return (-v + math.sqrt(v**2 + 2 * a * d)) / a
+        # return 0.02
+        s1 = self.paths[p_i][i]
+        s2 = self.paths[p_i][j]
+        d = np.linalg.norm(s2 - s1)
+        v = (self.vel[p_i][i].T @ (s2[:2] - s1[:2])) / d # component of velocity in direction of path
+        a = self.a_max[p_i]
+        return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _optimize(self, S, V, P, pri, rad):
         n = S.shape[0]
@@ -279,7 +279,7 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        
+
         for i, p in enumerate(self.paths):
             print(f"ORIGINAL PATH {i}:\n{p}\n")
 
