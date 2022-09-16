@@ -16,14 +16,12 @@ class SpaceTimeGrid:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(paths)] 
-        self.spheres = [s for p in self.paths for s in p]
-        self.s2p = [p_i for p_i, p in enumerate(self.paths) for _ in p] # get path index from sphere index
         self.n_agents = len(self.paths)
         self.a_max = a_max
         self.gamma = gamma
         self.priority = priority # priority value of each path
         self.dt = dt
-        self.tree = KDTree(self.spheres)
+        self.tree = KDTree([s for p in self.paths for s in p])
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
         self.r = r
@@ -45,22 +43,29 @@ class SpaceTimeGrid:
         for i in range(len(arr)):
             if np.allclose(s, arr[i]):
                 return i
-    
-    def _sweep(self, s_i, v):
 
-        s = self.spheres[s_i]
+    def _idx2sp(self, idx):
+        # convert index value receieved by self.tree to p_i, s_i
+        arr = [(p_i, s_i)
+            for p_i in range(len(self.paths)) 
+                for s_i in range(len(self.paths[p_i]))]
+        return arr[idx][0], arr[idx][1]
+    
+    def _sweep(self, p_i, s_i, v):
+
+        s = self.paths[p_i][s_i]
         inter = []
         s_trans = s.copy()
 
         # translate s_trans along v
         while np.linalg.norm(s_trans - s) < np.linalg.norm(v):
             query = self.tree.query_ball_point(s_trans, self.r + self.r)
-            inter += query
+            inter += [tuple(self._idx2sp(idx)) for idx in query]
             s_trans = s_trans + self.r * v / np.linalg.norm(v) # iterate by distance r
 
         s_trans = s + v # iterate to end of vector
         query = self.tree.query_ball_point(s_trans, self.r + self.r)
-        inter += query
+        inter += [tuple(self._idx2sp(idx)) for idx in query]
         return inter
 
     def _simulate(self):
@@ -70,60 +75,57 @@ class SpaceTimeGrid:
         log = [] # list of tuples (index of S[i] in its path, p_i)
         
         q = Queue()
-        vis = [False for i in range(len(self.spheres))]
+        vis = [[False for _ in p] for p in self.paths]
 
         # initially intersecting
-        for s_i, s_j in self.tree.query_pairs(self.r + self.r):
-            if self.s2p[s_i] == self.s2p[s_j]:
+        for idx1, idx2 in self.tree.query_pairs(self.r + self.r):
+            p_i, s_i = self._idx2sp(idx1)
+            p_j, s_j = self._idx2sp(idx2)
+            if p_i == p_j:
                 continue
-            s1, s2 = self.spheres[s_i], self.spheres[s_j]
+            s1 = self.paths[p_i][s_i]
+            s2 = self.paths[p_j][s_j]
             v1 = self._compute_dv(s1, s2)
             v2 = self._compute_dv(s2, s1)
-            q.put((s_i, v1))
-            q.put((s_j, v2))
+            q.put((p_i, s_i, v1))
+            q.put((p_j, s_j, v2))
 
         # bfs sim
         while not q.empty():
 
-            s_i, v1 = q.get()
-            if vis[s_i]: # prevent infinite loop
+            p_i, s_i, v1 = q.get()
+            if vis[p_i][s_i]: # prevent infinite loop
                 continue
-            vis[s_i] = True
-            p_i = self.s2p[s_i]
-            s_i_path = self._get_index(self.paths[p_i], self.spheres[s_i]) # TODO: make more efficient
-            print(self.paths[p_i])
-            print(self.spheres[s_i])
+            vis[p_i][s_i] = True
 
-            if s_i_path == 0:
+            if s_i == 0:
                 continue # locked in place if first sphere in path
-            if s_i_path == len(self.paths[p_i]) and self.at_goal[p_i]:
+            if s_i == len(self.paths[p_i]) and self.at_goal[p_i]:
                 v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
 
-            S.append(self.spheres[s_i])
+            S.append(self.paths[p_i][s_i])
             V.append(v1)
-            log.append((self.s2p[s_i], s_i_path))
+            log.append((p_i, s_i))
 
-            for s_j in self._sweep(s_i, v1):
-                if s_i == s_j: # prevent infinite loop
+            for p_j, s_j in self._sweep(p_i, s_i, v1):
+                if p_i == p_j:
                     continue
-                if self.s2p[s_i] == self.s2p[s_j]:
-                    continue
-                s_trans = self.spheres[s_i] + v1
-                v2 = self._compute_dv(self.spheres[s_j], s_trans)
-                q.put((s_j, v2))
+                s_trans = self.paths[p_i][s_i] + v1
+                v2 = self._compute_dv(self.paths[p_j][s_j], s_trans)
+                q.put((p_j, s_j, v2))
 
             # simulate path shift and check for further intersections
-            sim_shift = self._path_shift(p_i, s_i_path, v1)
-            for i, s3 in enumerate(sim_shift):
+            sim_shift = self._path_shift(p_i, s_i, v1)
+            for s3 in sim_shift:
                 query = self.tree.query_ball_point(s3, self.r + self.r)
-                for inter_i in query:
-                    if self.s2p[inter_i] == p_i:
+                inter = [tuple(self._idx2sp(idx)) for idx in query]
+                for p_k, s_k in inter:
+                    if p_i == p_k:
                         continue
-                    v3 = self._compute_dv(s3, self.spheres[inter_i])
-                    v_inter = self._compute_dv(self.spheres[inter_i], s3)
-                    s_i = self._get_index(self.spheres, s3) # TODO: make more efficient
-                    q.put((s_i, v3)) 
-                    q.put((inter_i, v_inter))
+                    v3 = self._compute_dv(s3, self.paths[p_k][s_k])
+                    v_inter = self._compute_dv(self.paths[p_k][s_k], s3)
+                    # q.put((s_i, v3)) # TODO: is this needed?
+                    q.put((p_k, s_k, v_inter))
 
         return S, V, log
 
@@ -192,8 +194,6 @@ class SpaceTimeGrid:
                 uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
                 pseu = p[-2] + mag * uv
                 self.paths[p_i].insert(-1, pseu)
-                self.spheres.append(pseu)
-                self.s2p.append(p_i)
                 self.vel[p_i].insert(-1, v_last + v_end / num)
                 v_last = self.vel[p_i][-1]
 
@@ -217,8 +217,6 @@ class SpaceTimeGrid:
                     uv = (s2 - s1) / np.linalg.norm(s2 - s1)
                     pseu = s1 + mag * uv
                     p_new.append(pseu)
-                    self.spheres.append(pseu)
-                    self.s2p.append(p_i)
                     vel_new.append(v1 + v2 / num)
                     s1 = pseu
                     v1 = vel_new[-1]
@@ -242,14 +240,9 @@ class SpaceTimeGrid:
                 j = i + 1
                 while j < len(p) and self._intersects(p[i], p[j], eps=1e-5):
                     j += 1
-                for k in range(i + 1, j - 1):
-                    s_i = self._get_index(self.spheres, p[k]) # TODO: make more efficient
-                    self.spheres.pop(s_i)
-                    self.s2p.pop(s_i)
                 i = j - 1
             self.paths[p_i] = p_new
             self.vel[p_i] = vel_new
-
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
@@ -260,13 +253,11 @@ class SpaceTimeGrid:
         s_new = np.append(s, t)
 
         self.paths[p_i].append(s_new)
-        self.spheres.append(s_new)
-        self.s2p.append(p_i)
         self.vel[p_i].append(v)
 
         self._pseudo_connect(p_i, end=True, clean=False)
 
-        self.tree = KDTree(self.spheres) # reinitialize tree
+        self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
 
     def get_path(self, p_i: int) -> list[np.array]:
 
@@ -288,9 +279,7 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        if len(S) == 0:
-            return
-
+        
         for i, p in enumerate(self.paths):
             print(f"ORIGINAL PATH {i}:\n{p}\n")
 
@@ -314,9 +303,11 @@ class SpaceTimeGrid:
 
         for (p_i, s_i), x in zip(log, X):
             self.paths[p_i] = self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
-        
+
         for p_i in range(len(self.paths)):
             self._pseudo_connect(p_i)
+
+        self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
 
         for i, p in enumerate(self.paths):
             print(f"FINAL PATH {i}:\n{p}\n")
