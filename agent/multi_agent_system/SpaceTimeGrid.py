@@ -89,16 +89,20 @@ class SpaceTimeGrid:
             if vis[s_i]: # prevent infinite loop
                 continue
             vis[s_i] = True
-            S.append(self.spheres[s_i])
-            V.append(v1)
             p_i = self.s2p[s_i]
             s_i_path = self._get_index(self.paths[p_i], self.spheres[s_i]) # TODO: make more efficient
-            log.append((self.s2p[s_i], s_i_path))
+            print(self.paths[p_i])
+            print(self.spheres[s_i])
 
             if s_i_path == 0:
-                v1 = np.zeros(3) # locked in place if first sphere in path
+                # v1 = np.zeros(3) # locked in place if first sphere in path
+                continue # locked in place if first sphere in path
             if s_i_path == len(self.paths[p_i]) and self.at_goal[p_i]:
                 v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
+
+            S.append(self.spheres[s_i])
+            V.append(v1)
+            log.append((self.s2p[s_i], s_i_path))
 
             for s_j in self._sweep(s_i, v1):
                 if s_i == s_j: # prevent infinite loop
