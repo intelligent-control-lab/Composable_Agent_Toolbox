@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths: list[list[np.array]], a_max: list[float], gamma: list[float], priority: list[float], dt: list[float]) -> None:
+    def __init__(self, paths: list[list[np.array]], r: float, a_max: list[float], gamma: list[float], priority: list[float], dt: list[float]) -> None:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(paths)] 
@@ -26,7 +26,7 @@ class SpaceTimeGrid:
         self.tree = KDTree(self.spheres)
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
-        self.r = 1
+        self.r = r
         self.at_goal = [False for i in range(len(self.paths))] # whether path has reached goal
         self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for each path
 
@@ -162,10 +162,10 @@ class SpaceTimeGrid:
         # return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _optimize(self, S, V, P, pri, rad):
-        print("Optimizing...")
         n = S.shape[0]
         if n == 0:
             return np.array([])
+        print("Optimizing...")
         print(f"OPTIMIZATION INPUT:\nS:\n{S}\nV:\n{V}\n")
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
@@ -237,12 +237,10 @@ class SpaceTimeGrid:
                 if i == len(p) - 1:
                     break
                 j = i + 1
-                while j < len(p) and self._intersects(p[i], p[j], eps=1e-5): # j is first non-intersecting sphere, or len(p) if none
+                while j < len(p) and self._intersects(p[i], p[j], eps=1e-5):
                     j += 1
                 for k in range(i + 1, j - 1):
                     s_i = self._get_index(self.spheres, p[k]) # TODO: make more efficient
-                    print(self.spheres)
-                    print(p[k], s_i)
                     self.spheres.pop(s_i)
                     self.s2p.pop(s_i)
                 i = j - 1
@@ -287,8 +285,8 @@ class SpaceTimeGrid:
 
     def resolve(self) -> None:
         S, V, log = self._simulate()
-        # if len(S) == 0:
-        #     return
+        if len(S) == 0:
+            return
 
         for i, p in enumerate(self.paths):
             print(f"ORIGINAL PATH {i}:\n{p}\n")
