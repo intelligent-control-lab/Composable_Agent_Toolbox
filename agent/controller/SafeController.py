@@ -74,7 +74,7 @@ class EnergyFunctionController(SafeController):
         p_d_p_ce = np.vstack([dp / d, np.zeros((n,1))])
         p_d_p_co = -p_d_p_ce
 
-        p_dot_d_p_dp = dv / d - np.ndarray.item(dp.T @ dv) * dp / (d**3)
+        p_dot_d_p_dp = dv / d - np.asscalar(dp.T @ dv) * dp / (d**3)
         p_dot_d_p_dv = dp / d
 
         p_dp_p_ce = np.hstack([np.eye(n), np.zeros((n,n))])
@@ -159,10 +159,10 @@ class SafeSetController(EnergyFunctionController):
         
         u = u_ref
 
-        if phi <= 0 or np.ndarray.item(L @ u_ref) < np.ndarray.item(S):
+        if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref
         else:
-            u = u_ref - (np.ndarray.item(L @ u_ref - S) * L.T / np.ndarray.item(L @ L.T))
+            u = u_ref - (np.asscalar(L @ u_ref - S) * L.T / np.asscalar(L @ L.T))
 
         return phi, u
 
@@ -358,9 +358,9 @@ class SublevelSafeSetController(EnergyFunctionController):
         
         u = u_ref
 
-        if phi <= 0 or np.ndarray.item(L @ u_ref) < np.ndarray.item(S):
+        if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref
         else:
-            u = u_ref - (np.ndarray.item(L @ u_ref - S) * L.T / np.ndarray.item(L @ L.T))
+            u = u_ref - (np.asscalar(L @ u_ref - S) * L.T / np.asscalar(L @ L.T))
         
         return phi, u
