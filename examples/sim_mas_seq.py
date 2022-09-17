@@ -46,11 +46,24 @@ if __name__ == '__main__':
             agent_spec = yaml.load(infile, Loader=yaml.SafeLoader)
         agent_specs.append(agent_spec)
 
+    obs_types = []
+    obs_specs = []
+    for obs_name in config_spec['obs']:
+        obs_types.append(config_spec['obs'][obs_name]['type'])
+        spec_file = config_spec['obs'][obs_name]['spec']
+        with open(spec_file, 'r') as infile:
+            obs_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+        obs_specs.append(obs_spec)
+
     agents = []
     for type, spec in zip(agent_types, agent_specs):
         agents.append(class_by_name('agent', type)(spec))
     # env = class_by_name('env', env_type)(env_spec, agents)
     # evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
+
+    obs = []
+    for type, spec in zip(obs_types, obs_specs):
+        obs.append(class_by_name('obs', type)(spec))
 
     iters = config_spec['iters']
     debug_modes = {mode: val for mode, val in config_spec['debug'].items()}

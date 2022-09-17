@@ -37,6 +37,11 @@ agents:
     type: MASAgent
     spec: configs/mas_sim_a2.yaml
 
+obs:
+  ob1:
+    type: MASAgent
+    spec: configs/mas_sim_ob1.yaml
+
 iters: 1000
 render: true
 
