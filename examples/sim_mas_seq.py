@@ -46,14 +46,14 @@ if __name__ == '__main__':
             agent_spec = yaml.load(infile, Loader=yaml.SafeLoader)
         agent_specs.append(agent_spec)
 
-    obs_types = []
-    obs_specs = []
-    for obs_name in config_spec['obs']:
-        obs_types.append(config_spec['obs'][obs_name]['type'])
-        spec_file = config_spec['obs'][obs_name]['spec']
-        with open(spec_file, 'r') as infile:
-            obs_spec = yaml.load(infile, Loader=yaml.SafeLoader)
-        obs_specs.append(obs_spec)
+    # obs_types = []
+    # obs_specs = []
+    # for obs_name in config_spec['obs']:
+    #     obs_types.append(config_spec['obs'][obs_name]['type'])
+    #     spec_file = config_spec['obs'][obs_name]['spec']
+    #     with open(spec_file, 'r') as infile:
+    #         obs_spec = yaml.load(infile, Loader=yaml.SafeLoader)
+    #     obs_specs.append(obs_spec)
 
     agents = []
     for type, spec in zip(agent_types, agent_specs):
@@ -61,9 +61,9 @@ if __name__ == '__main__':
     # env = class_by_name('env', env_type)(env_spec, agents)
     # evaluator = evaluator.Evaluator(agent_specs[0], env_spec)
 
-    obs = []
-    for type, spec in zip(obs_types, obs_specs):
-        obs.append(class_by_name('obs', type)(spec))
+    # obs = []
+    # for type, spec in zip(obs_types, obs_specs):
+    #     obs.append(class_by_name('obs', type)(spec))
 
     iters = config_spec['iters']
     debug_modes = {mode: val for mode, val in config_spec['debug'].items()}
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     # dt, env_info, measurement_groups = env.reset()
     # record = []
     paths = [[np.array(ag.path[0][:2])] for ag in agents]
-    # r = 1 # TODO: perhaps allow for different paths to have different r?
-    r = 0.5
+    r = 1 # TODO: perhaps allow for different paths to have different r?
+    # r = 0.5
     # r = 10
     # a_max = np.ones(len(agents))
     a_max = [10, 10]
@@ -110,5 +110,9 @@ if __name__ == '__main__':
     print(stg.paths[0])
     print('\n')
     print(stg.paths[1])
+
+    print(f"OPT NUM: {stg.opt_num}")
+    print(f"OPT TIME: {stg.opt_time}")
+    print(f"TREE TIME: {stg.tree_time}")
 
     # evaluator.evaluate(record)

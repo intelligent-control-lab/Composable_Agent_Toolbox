@@ -28,6 +28,11 @@ class SpaceTimeGrid:
         self.at_goal = [False for i in range(len(self.paths))] # whether path has reached goal
         self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for each path
 
+        # performance
+        self.opt_num = 0
+        self.opt_time = 0
+        self.tree_time = 0
+
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
         uv = (s1 - s2) / np.linalg.norm(s1 - s2)
@@ -170,14 +175,18 @@ class SpaceTimeGrid:
         n = S.shape[0]
         if n == 0:
             return np.array([])
+        self.opt_num += 1
         print("Optimizing...")
-        print(f"OPTIMIZATION INPUT:\nS:\n{S}\nV:\n{V}\n")
         S = matlab.double(S.tolist())
         V = matlab.double(V.tolist())
         P = matlab.double(P.tolist())
         pri = matlab.double(pri.tolist())
         rad = matlab.double(rad.tolist())
+        start = time.time()
         X, w, fval = self.eng.optimize(S, V, P, pri, rad, n, nargout=3)
+        end = time.time()
+        self.opt_time += end - start
+        print("Optimization finished!")
         return np.array(X)
 
     def _pseudo_connect(self, p_i, end=False, clean=True):
@@ -257,7 +266,10 @@ class SpaceTimeGrid:
 
         self._pseudo_connect(p_i, end=True, clean=False)
 
+        start = time.time()
         self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
+        end = time.time()
+        self.tree_time += end - start
 
     def get_path(self, p_i: int) -> list[np.array]:
 
@@ -280,17 +292,11 @@ class SpaceTimeGrid:
     def resolve(self) -> None:
         S, V, log = self._simulate()
 
-        for i, p in enumerate(self.paths):
-            print(f"ORIGINAL PATH {i}:\n{p}\n")
-
         S, V = np.array(S), np.array(V)
         P = self._get_P(S, log)
         pri = np.array([self.priority[p_i] for p_i, _ in log])
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, P, pri, rad)
-        print("Optimization finished!")
-        for i in range(len(S)):
-            print(f"s: {S[i]} ### x: {X[i]} ### p_i: {log[i][0]} ### s_i: {log[i][1]}")
 
         # # plot paths and outstanding spheres
         # fig = plt.figure()
@@ -307,10 +313,10 @@ class SpaceTimeGrid:
         for p_i in range(len(self.paths)):
             self._pseudo_connect(p_i)
 
+        start = time.time()
         self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
-
-        for i, p in enumerate(self.paths):
-            print(f"FINAL PATH {i}:\n{p}\n")
+        end = time.time()
+        self.tree_time += end - start
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
