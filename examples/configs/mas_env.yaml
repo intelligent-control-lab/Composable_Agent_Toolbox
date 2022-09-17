@@ -4,8 +4,8 @@ world:
         friction: 0
         reaching_eps: 0.1
         agent_goal:
-            a1: [120.0, 50.0, 0.0, 0.0]
-            a2: [70.0, 20.0, 0.0, 0.0]
+            a1: [20.0, 10.0, 0.0, 0.0]
+            a2: [15.0, 15.0, 0.0, 0.0]
     # # todo change spec to:
     # agent_tasks:
     #     robot:
@@ -26,11 +26,11 @@ agent_env_spec:
     a1:
         type: BB8Agent
         spec:
-            init_x: [30.0, 30.0, 0.0, 0.0]
+            init_x: [10.0, 10.0, 0.0, 0.0]
     a2:
         type: BB8Agent
         spec:
-            init_x: [80.0, 80.0, 0.0, 0.0]
+            init_x: [15.0, 5.0, 0.0, 0.0]
 
 # ? it seems that the control (dynamics) model in model-based agent might not be
 # ? consistent with the actual simulation agent?
