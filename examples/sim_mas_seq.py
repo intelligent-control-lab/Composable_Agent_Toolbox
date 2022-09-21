@@ -16,15 +16,16 @@ def class_by_name(module_name, class_name):
     return getattr(importlib.import_module(module_name), class_name)
 
 def visualize(stg):
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    colors = 'brgcmk'
-    for i, p in enumerate(stg.paths + stg.obs_paths):
-        x = [s[0] for s in p]
-        y = [s[1] for s in p]
-        t = [s[2] for s in p]
-        ax.scatter(x, y, t, color=colors[i])
-    plt.show()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    # colors = 'brgcmk'
+    # for i, p in enumerate(stg.paths + stg.obs_paths):
+    #     x = [s[0] for s in p]
+    #     y = [s[1] for s in p]
+    #     t = [s[2] for s in p]
+    #     ax.scatter(x, y, t, color=colors[i])
+    # plt.show()
+    return
 
 if __name__ == '__main__':
 
@@ -58,26 +59,27 @@ if __name__ == '__main__':
     agents = []
     for type, spec in zip(agent_types, agent_specs):
         agents.append(class_by_name('agent', type)(spec))
-    env = class_by_name('env', env_type)(env_spec, agents)
 
     obs = []
     for type, spec in zip(obs_types, obs_specs):
         obs.append(class_by_name('agent', type)(spec))
 
+    env = class_by_name('env', env_type)(env_spec, agents + obs)
+
     iters = config_spec['iters']
     debug_modes = {mode: val for mode, val in config_spec['debug'].items()}
     render = config_spec['render']
 
-    dt, env_info, measurement_groups = env.reset()
+    ag_dt, env_info, measurement_groups = env.reset()
     paths = [[np.array(ag.path[0][:2])] for ag in agents]
     r = 0.5 # TODO: perhaps allow for different paths to have different r?
-    dt = np.array([ag.dt for ag in agents])
+    ag_dt = np.array([ag.dt for ag in agents])
     a_max = [10, 10]
     gamma = [2, 2]
     priority = [1, 1]
     obs_paths = [[np.array(ob.path[0][:2])] for ob in obs]
     obs_dt = np.array([ob.dt for ob in obs])
-    stg = SpaceTimeGrid(paths, r, dt, a_max, gamma, priority, obs_paths, obs_dt)
+    stg = SpaceTimeGrid(paths, r, ag_dt, a_max, gamma, priority, obs_paths, obs_dt)
 
     for i, ob in enumerate(obs):
         while not ob.at_goal:
@@ -87,15 +89,15 @@ if __name__ == '__main__':
             path.append(waypoint)
             ob.set_path(path)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    colors = 'brgcmk'
-    for i, p in enumerate(stg.obs_paths):
-        x = [s[0] for s in p]
-        y = [s[1] for s in p]
-        t = [s[2] for s in p]
-        ax.scatter(x, y, t, color=colors[i])
-    plt.show()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    # colors = 'brgcmk'
+    # for i, p in enumerate(stg.obs_paths):
+    #     x = [s[0] for s in p]
+    #     y = [s[1] for s in p]
+    #     t = [s[2] for s in p]
+    #     ax.scatter(x, y, t, color=colors[i])
+    # plt.show()
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
@@ -127,9 +129,9 @@ if __name__ == '__main__':
     for i in range(iters):
         print("Sim iter...")
         actions = {}
-        for agent in agents:
+        for ag in agents + obs:
             # an action is dictionary which must contain a key "control"
-            actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
+            actions[ag.name] = ag.action(dt, measurement_groups[ag.name])
             #sensor data is grouped by agent
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
 
