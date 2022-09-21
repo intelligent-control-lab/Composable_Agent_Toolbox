@@ -12,26 +12,36 @@ import matplotlib.pyplot as plt
 
 class SpaceTimeGrid:
 
-    def __init__(self, paths: list[list[np.array]], r: float, a_max: list[float], gamma: list[float], priority: list[float], dt: list[float]) -> None:
+    def __init__(self, 
+        paths: list[list[np.array]], r: float, dt: list[float],
+        a_max: list[float], gamma: list[float], priority: list[float], 
+        obs_paths: list[list[np.array]]=[], obs_dt: list[float]=[]
+    ) -> None:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(paths)] 
-        self.n_agents = len(self.paths)
-        self.a_max = a_max # max acceleration value of each path
-        self.gamma = gamma # flexibility constant of each path
-        self.priority = priority # priority value of each path
-        self.dt = dt # dt of each planner
+        self.r = r # radius of waypoints on paths
+        self.dt = dt # dt of each agent planner
+        self.a_max = a_max # max acceleration of agent paths
+        self.gamma = gamma # flexibility constant of agent paths
+        self.priority = priority # priority of agent paths
+        self.obs_paths = [
+            [np.append(s, obs_dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
+        for p_i, p in enumerate(obs_paths)] 
+        self.obs_dt = obs_dt # dt of each obs planner
+        self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for agent paths
+        self.at_goal = [False for i in range(len(self.paths))] # whether agent has reached goal
         self.tree = KDTree([s for p in self.paths for s in p])
+        self.obs_tree = KDTree([s for p in self.obs_paths for s in p])
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
-        self.r = r # radius of waypoints on paths
-        self.at_goal = [False for i in range(len(self.paths))] # whether path has reached goal
-        self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for each path
 
         # performance
         self.opt_num = 0
         self.opt_time = 0
         self.tree_time = 0
+
+        print("STG initialized...")
 
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
@@ -49,29 +59,35 @@ class SpaceTimeGrid:
             if np.allclose(s, arr[i]):
                 return i
 
-    def _idx2sp(self, idx):
+    def _idx2sp(self, paths, idx):
         # convert index value receieved by self.tree to p_i, s_i
-        arr = [(p_i, s_i)
-            for p_i in range(len(self.paths)) 
-                for s_i in range(len(self.paths[p_i]))]
-        return arr[idx][0], arr[idx][1]
-    
+        map = [(p_i, s_i)
+            for p_i in range(len(paths)) 
+                for s_i in range(len(paths[p_i]))]
+        return map[idx][0], map[idx][1]
+
     def _sweep(self, p_i, s_i, v):
 
         s = self.paths[p_i][s_i]
         inter = []
+        inter_obs = []
         s_trans = s.copy()
 
         # translate s_trans along v
         while np.linalg.norm(s_trans - s) < np.linalg.norm(v):
             query = self.tree.query_ball_point(s_trans, self.r + self.r)
-            inter += [tuple(self._idx2sp(idx)) for idx in query]
+            inter += [tuple(self._idx2sp(self.paths, idx)) for idx in query]
+            query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r)
+            inter_obs += [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
             s_trans = s_trans + self.r * v / np.linalg.norm(v) # iterate by distance r
 
         s_trans = s + v # iterate to end of vector
         query = self.tree.query_ball_point(s_trans, self.r + self.r)
-        inter += [tuple(self._idx2sp(idx)) for idx in query]
-        return inter
+        inter += [tuple(self._idx2sp(self.paths, idx)) for idx in query]
+        query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r)
+        inter_obs += [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
+        
+        return inter, inter_obs
 
     def _simulate(self):
 
@@ -81,60 +97,107 @@ class SpaceTimeGrid:
         
         q = Queue()
         vis = [[False for _ in p] for p in self.paths]
+        vis_obs = [[False for _ in p] for p in self.obs_paths]
 
         # initially intersecting
+        query = self.tree.query_pairs(self.r + self.r)
         for idx1, idx2 in self.tree.query_pairs(self.r + self.r):
-            p_i, s_i = self._idx2sp(idx1)
-            p_j, s_j = self._idx2sp(idx2)
+            p_i, s_i = self._idx2sp(self.paths, idx1)
+            p_j, s_j = self._idx2sp(self.paths, idx2)
             if p_i == p_j:
                 continue
             s1 = self.paths[p_i][s_i]
             s2 = self.paths[p_j][s_j]
             v1 = self._compute_dv(s1, s2)
             v2 = self._compute_dv(s2, s1)
-            q.put((p_i, s_i, v1))
-            q.put((p_j, s_j, v2))
+            q.put((p_i, s_i, v1, False))
+            q.put((p_j, s_j, v2, False))
+
+        # initially intersecting w/ obs
+        query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r)
+        for i in range(len(query_obs)):
+            for j in range(len(query_obs[i])):
+                p_i, s_i = self._idx2sp(self.paths, i)
+                p_j, s_j = self._idx2sp(self.obs_paths, j)
+                s_ag = self.paths[p_i][s_i]
+                s_ob = self.obs_paths[p_j][s_j]
+                v1 = self._compute_dv(s_ag, s_ob)
+                v2 = np.zeros(3)
+                q.put((p_i, s_i, v1, False))
+                q.put((p_j, s_j, v2, True))
 
         # bfs sim
         while not q.empty():
 
-            p_i, s_i, v1 = q.get()
-            if vis[p_i][s_i]: # prevent infinite loop
-                continue
-            vis[p_i][s_i] = True
+            p_i, s_i, v1, is_ob = q.get()
+            
 
-            if s_i == 0:
-                continue # locked in place if first sphere in path
-            if s_i == len(self.paths[p_i]) and self.at_goal[p_i]:
-                v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
+            if is_ob:
+                if vis_obs[p_i][s_i]: # prevent infinite loop
+                    continue
+                vis_obs[p_i][s_i] = True
+            else:
+                if vis[p_i][s_i]: # prevent infinite loop
+                    continue
+                vis[p_i][s_i] = True
+            
+            if not is_ob:
+                if s_i == 0:
+                    v1 = np.zeros(3) # locked in place
+                if s_i == len(self.paths[p_i]) and self.at_goal[p_i]:
+                    v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
 
-            S.append(self.paths[p_i][s_i])
+            if is_ob:
+                continue # TODO TODO TODO: shouldn't need this
+                S.append(self.obs_paths[p_i][s_i])
+            else:
+                S.append(self.paths[p_i][s_i])
             V.append(v1)
-            log.append((p_i, s_i))
+            log.append((p_i, s_i, is_ob))
 
-            for p_j, s_j in self._sweep(p_i, s_i, v1):
+            if np.all(v1 == 0): # anything after this is guaranteed not to be an obs sphere
+                continue
+
+            sw, sw_obs = self._sweep(p_i, s_i, v1)
+            for p_j, s_j in sw:
                 if p_i == p_j:
                     continue
                 s_trans = self.paths[p_i][s_i] + v1
                 v2 = self._compute_dv(self.paths[p_j][s_j], s_trans)
-                q.put((p_j, s_j, v2))
+                q.put((p_j, s_j, v2, False))
+            for p_j, s_j in sw_obs:
+                v2 = np.zeros(3)
+                q.put((p_j, s_j, v2, True))
+
+            # simulate path shift and check for further intersections
+            # TODO: why don't we just add all path shift vectors to queue and check them there?
+            # sim_shift = self._path_shift(p_i, s_i, v1)
+            # for s3 in sim_shift:
+            #     query = self.tree.query_ball_point(s3, self.r + self.r)
+            #     inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
+            #     for p_k, s_k in inter:
+            #         if p_i == p_k:
+            #             continue
+            #         v3 = self._compute_dv(s3, self.paths[p_k][s_k])
+            #         v_inter = self._compute_dv(self.paths[p_k][s_k], s3)
+            #         # q.put((s_i, v3)) # TODO: is this needed?
+            #         q.put((p_k, s_k, v_inter, False))
+            #     query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r)
+            #     inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
+            #     for p_k, s_k in inter_obs:
+            #         v3 = 
 
             # simulate path shift and check for further intersections
             sim_shift = self._path_shift(p_i, s_i, v1)
-            for s3 in sim_shift:
-                query = self.tree.query_ball_point(s3, self.r + self.r)
-                inter = [tuple(self._idx2sp(idx)) for idx in query]
-                for p_k, s_k in inter:
-                    if p_i == p_k:
-                        continue
-                    v3 = self._compute_dv(s3, self.paths[p_k][s_k])
-                    v_inter = self._compute_dv(self.paths[p_k][s_k], s3)
-                    # q.put((s_i, v3)) # TODO: is this needed?
-                    q.put((p_k, s_k, v_inter))
+            for i, s3 in enumerate(sim_shift):
+                q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
         return S, V, log
 
     def _path_shift(self, p_i, s_i, dv):
+
+        if np.all(dv == 0):
+            return self.paths[p_i]
 
         p = self.paths[p_i].copy()
         s0 = p[s_i]
@@ -252,6 +315,31 @@ class SpaceTimeGrid:
                 i = j - 1
             self.paths[p_i] = p_new
             self.vel[p_i] = vel_new
+
+    def _pseudo_connect_obs(self, p_i):
+
+        p = self.obs_paths[p_i]
+        # print(p)
+
+        num = math.ceil(np.linalg.norm(p[-1] - p[-2]) / (self.r + self.r)) - 1
+        for i in range(num):
+            # insert tangent to second to last sphere in direction towards last sphere
+            mag = self.r + self.r
+            uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
+            pseu = p[-2] + mag * uv
+            self.obs_paths[p_i].insert(-1, pseu)
+
+        p_new = []
+        i = 0
+        while i < len(p):
+            p_new.append(p[i])
+            if i == len(p) - 1:
+                break
+            j = i + 1
+            while j < len(p) and self._intersects(p[i], p[j], eps=1e-5):
+                j += 1
+            i = j - 1
+        self.obs_paths[p_i] = p_new
     
     def set_at_goal(self, p_i: int, val: bool) -> None:
         self.at_goal[p_i] = val
@@ -268,6 +356,20 @@ class SpaceTimeGrid:
 
         start = time.time()
         self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
+        end = time.time()
+        self.tree_time += end - start
+
+    def update_obs_path(self, p_i: int, s: np.array) -> None:
+
+        t = self.obs_paths[p_i][-1][2] + self.obs_dt[p_i]
+        s_new = np.append(s, t)
+
+        self.obs_paths[p_i].append(s_new)
+
+        self._pseudo_connect_obs(p_i)
+
+        start = time.time()
+        self.obs_tree = KDTree([s for p in self.obs_paths for s in p]) # reinitialize tree
         end = time.time()
         self.tree_time += end - start
 
@@ -290,11 +392,15 @@ class SpaceTimeGrid:
         return normalized
 
     def resolve(self) -> None:
+
         S, V, log = self._simulate()
+
+        for i in range(len(S)):
+            print(f"S[i]: {S[i]} ##### V[i]: {V[i]} ##### log[i]: {log[i]}")
 
         S, V = np.array(S), np.array(V)
         P = self._get_P(S, log)
-        pri = np.array([self.priority[p_i] for p_i, _ in log])
+        pri = np.array([self.priority[p_i] if is_ob else 1 for p_i, _, is_ob in log])
         rad = np.ones(S.shape[0])
         X = self._optimize(S, V, P, pri, rad)
 
@@ -307,7 +413,9 @@ class SpaceTimeGrid:
         # ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
         # plt.show()
 
-        for (p_i, s_i), x in zip(log, X):
+        for (p_i, s_i, is_ob), x in zip(log, X):
+            if is_ob:
+                continue
             self.paths[p_i] = self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
 
         for p_i in range(len(self.paths)):
@@ -325,7 +433,9 @@ class SpaceTimeGrid:
         n = S.shape[0]
         for i in range(n):
             for j in range(i + 1, n):
-                if log[i][0] == log[j][0]: # belong to same path
+                if log[i][0] == log[j][0] and not log[i][2] and not log[j][2]: # belong to same agent path
+                    continue
+                if log[i][2] and log[j][2]: # both obstacle paths
                     continue
                 P.append((i + 1, j + 1))
         return np.asarray(P)

@@ -1,6 +1,6 @@
 name: ob1
 task:
-  type: FlatEvadeTask
+  type: FlatReachingTask
   spec: {}
   init_x: [10.0, 15.0, 0.0, 0.0]
   goal: [20.0, 5.0, 0.0, 0.0]

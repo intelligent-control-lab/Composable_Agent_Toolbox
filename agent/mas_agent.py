@@ -36,19 +36,28 @@ class MASAgent():
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     def next_point(self) -> np.array:
-        # print(f"{self.name} USING: {self.path}")
         data = {"cartesian_sensor_est": {"pos": self.path[-1][:2], "vel": self.path[-1][2:]}}
         plan = self.planner(self.dt, self.goal, data)
-        # print(f"{self.name} : {plan}")
         return plan[1]
 
     def set_path(self, path: list[np.array]) -> None:
         self.path = path
-        # print(f"{self.name} RECEIVED: {self.path}")
+        # print(f'\n{self.name} {self.path[-1][:2]} {self.goal["goal"]}')
+        # TODO: clean this up later
+        if np.linalg.norm(self.path[-1][:2] - self.goal['goal']) < 0.1:
+            self.at_goal = True
         if np.linalg.norm(self.path[-1][:2] - self.goal['goal'][0]) < 0.1:
             self.at_goal = True
 
-    def control(self) -> None:
-        pass
+    def action(self, i) -> None:
+        if i >= len(self.path) - 1:
+            control = np.vstack([np.zeros(2), np.zeros(2)])
+        else:
+            data = {"cartesian_sensor_est": {"pos": self.path[i][:2], "vel": self.path[i][2:]}}
+            next_traj_point = self.path[i + 1].reshape(2, 2)
+            control = self.controller(
+                self.dt, data, next_traj_point, self.task.goal_type(data),
+                self.planner.state_dimension)
+        return {'control': control[:2]}
 
 

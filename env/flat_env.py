@@ -33,6 +33,7 @@ class FlatEnv(object):
         return self.dt, env_info, sensor_data
 
     def step(self, actions, debug_modes, render=True):
+        print("stepping...")
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
         if render:

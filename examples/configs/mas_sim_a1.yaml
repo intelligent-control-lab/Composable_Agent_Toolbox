@@ -1,6 +1,6 @@
 name: a1
 task:
-  type: FlatEvadeTask
+  type: FlatReachingTask
   spec: {}
   init_x: [10.0, 10.0, 0.0, 0.0]
   goal: [20.0, 10.0, 0.0, 0.0]
@@ -31,8 +31,8 @@ controller:
             kv: 50
             u_max: [200, 200]
         safe_controller: 
-        #   type: UnsafeController
-          type: SafeSetController
+          type: UnsafeController
+          # type: SafeSetController
           # type: ZeroingBarrierFunctionController
           # type: SublevelSafeSetController
           # type: UnsafeController
@@ -58,23 +58,23 @@ estimator:
         time_sample: 0.01
         kp: 40
         kv: 40
-sensors:
--   type: PVSensor
-    spec:
-        alias: cartesian_sensor
-        noise_var: 0.0
--   type: StateSensor
-    spec:
-        alias: state_sensor
-        noise_var: 0.1
--   type: RadarSensor
-    spec:
-        alias: obstacle_sensor
-        noise_var: 0.1
--   type: GoalSensor
-    spec:
-        alias: goal_sensor
-        noise_var: 0.1
--   type: RadioSensor
-    spec:
-        alias: communication_sensor
+sensors: []
+# -   type: PVSensor
+#     spec:
+#         alias: cartesian_sensor
+#         noise_var: 0.0
+# -   type: StateSensor
+#     spec:
+#         alias: state_sensor
+#         noise_var: 0.1
+# -   type: RadarSensor
+#     spec:
+#         alias: obstacle_sensor
+#         noise_var: 0.1
+# -   type: GoalSensor
+#     spec:
+#         alias: goal_sensor
+#         noise_var: 0.1
+# -   type: RadioSensor
+#     spec:
+#         alias: communication_sensor

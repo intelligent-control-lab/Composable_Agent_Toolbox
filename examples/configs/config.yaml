@@ -26,7 +26,7 @@
 #     spec: configs/flat_reach_obs_2.yaml
 
 env:
-  type: FlatEvadeEnv
+  type: FlatEnv
   spec: configs/mas_env.yaml
 
 agents:
@@ -46,8 +46,8 @@ iters: 1000
 render: true
 
 debug:
-  render_traj: true
-  render_next_traj_point: true
+  render_traj: false
+  render_next_traj_point: false
   log_traj: false
   log_next_traj_point: false
   log_control: false
