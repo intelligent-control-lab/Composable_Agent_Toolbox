@@ -7,7 +7,7 @@ class MASAgent():
 
     def __init__(self, module_spec: dict) -> None:
         self._instantiate_by_spec(module_spec)
-        self.path = [self.module_spec["task"]["init_x"]]
+        self.path = [np.array(self.module_spec["task"]["init_x"])]
         self.goal = {"goal": np.array(self.module_spec["task"]["goal"]).reshape(2, 2)}
         self.dt = 0.02
         self.at_goal = False
@@ -55,6 +55,7 @@ class MASAgent():
 
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data)
+        print(self.path)
         next_traj_point = self.planner.next_point(self.path, est_data)
 
         control = self.controller(

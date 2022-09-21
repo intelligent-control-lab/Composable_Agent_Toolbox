@@ -2,26 +2,16 @@ world:
     type: FlatReachingWorld
     spec:
         friction: 0
-        reaching_eps: 0.1
+        reaching_eps: 1
         agent_goal_lists:
             a1: [[20.0, 10.0]]
             a2: [[15.0, 15.0]]
-    # # todo change spec to:
-    # agent_tasks:
-    #     robot:
-    #         task: FlatEvadeTask
-    #         spec:
-    #             reaching_eps: 0.1
-    #             goal: null
-    #     human:
-    #         task: FlatEvadeTask
-    #         spec:
-    #             reaching_eps: 0.1
-    #             goal: "robot"
-dt: 0.01
+            ob1: [[20.0, 5.0]]
+dt: 0.02
 agent_comp_spec:
-    robot: configs/mas_sim_a1.yaml
-    human: configs/mas_sim_a2.yaml
+    a1: configs/mas_sim_a1.yaml
+    a2: configs/mas_sim_a2.yaml
+    ob1: configs/mas_sim/ob1.yaml
 agent_env_spec:
     a1:
         type: BB8Agent
@@ -31,6 +21,7 @@ agent_env_spec:
         type: BB8Agent
         spec:
             init_x: [15.0, 5.0, 0.0, 0.0]
-
-# ? it seems that the control (dynamics) model in model-based agent might not be
-# ? consistent with the actual simulation agent?
+    ob1:
+        type: BB8Agent
+        spec:
+            init_x: [10.0, 15.0, 0.0, 0.0]

@@ -53,7 +53,7 @@ class FlatEnv(object):
         self.ax.cla()
 
         self.ax.axis('equal')
-        self.ax.set(xlim=(0, 101), ylim=(0, 101))
+        self.ax.set(xlim=(0, 25), ylim=(0, 25))
 
         # obs location
         c_obs = '#A2AEAF'
@@ -66,7 +66,7 @@ class FlatEnv(object):
                 # self.ax.scatter(agent.pos[0],agent.pos[1],s=100, color='k')
 
         # agents location
-        cs_agent = ['#ff0000', '#0000ff']
+        cs_agent = ['#ff0000', '#0000ff', '#00ff00']
         x_agent = []
         y_agent = []
         for name, agent in self.world.agents.items():
@@ -77,7 +77,7 @@ class FlatEnv(object):
         self.ax.scatter(x_agent,y_agent,s=100, color=cs_agent[:len(x_agent)])
 
         # goal location
-        cs_goal = ['#ff5500', '#3399ff']
+        cs_goal = ['#ff5500', '#3399ff', '#228b22']
         x_goal = []
         y_goal = []
         for name, agent in self.world.agents.items():
@@ -88,7 +88,7 @@ class FlatEnv(object):
         self.ax.scatter(x_goal,y_goal,s=100, color=cs_goal[:len(x_goal)])
         
         # agent heading    return args[0]._bind(args[1:], kwargs)    return args[0]._bind(args[1:], kwargs)
-        r = 3.0
+        r = 0.5
         for name, agent in self.world.agents.items():
             if 'goal' not in name and agent.has_heading:
                 xc, yc = agent.pos.reshape(-1)
@@ -111,5 +111,7 @@ class FlatEnv(object):
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
 
         # self.ax.draw(self.renderer)
+        print("got to draw")
         self.fig.canvas.draw()
+        print("finished draw")
         plt.pause(0.001)
