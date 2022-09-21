@@ -18,7 +18,7 @@ world:
     #         spec:
     #             reaching_eps: 0.1
     #             goal: "robot"
-dt: 0.02
+dt: 0.01
 agent_comp_spec:
     robot: configs/mas_sim_a1.yaml
     human: configs/mas_sim_a2.yaml

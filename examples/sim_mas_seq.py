@@ -70,18 +70,17 @@ if __name__ == '__main__':
 
     dt, env_info, measurement_groups = env.reset()
     paths = [[np.array(ag.path[0][:2])] for ag in agents]
-    r = 1 # TODO: perhaps allow for different paths to have different r?
+    r = 0.5 # TODO: perhaps allow for different paths to have different r?
     dt = np.array([ag.dt for ag in agents])
     a_max = [10, 10]
-    gamma = [10, 1]
-    priority = [1, 0.1]
+    gamma = [2, 2]
+    priority = [1, 1]
     obs_paths = [[np.array(ob.path[0][:2])] for ob in obs]
     obs_dt = np.array([ob.dt for ob in obs])
     stg = SpaceTimeGrid(paths, r, dt, a_max, gamma, priority, obs_paths, obs_dt)
 
     for i, ob in enumerate(obs):
         while not ob.at_goal:
-            # print(ob.path)
             waypoint = ob.next_point()
             stg.update_obs_path(i, waypoint[0])
             path = ob.path.copy()
@@ -130,9 +129,8 @@ if __name__ == '__main__':
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
-            actions[agent.name] = agent.action(i)
+            actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
-        print(f"ACTIONS:\n{actions}\n")
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
 
     # evaluator.evaluate(record)

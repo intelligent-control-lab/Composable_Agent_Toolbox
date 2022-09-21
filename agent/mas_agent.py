@@ -11,6 +11,8 @@ class MASAgent():
         self.goal = {"goal": np.array(self.module_spec["task"]["goal"]).reshape(2, 2)}
         self.dt = 0.02
         self.at_goal = False
+        nu = (module_spec["model"]["control"]["spec"]["control_input_dim"])
+        self.last_control = np.zeros((nu,1))  
 
     def _class_by_name(self, module_name, class_name):
         """Return the class handle by name of the class
@@ -49,15 +51,24 @@ class MASAgent():
         if np.linalg.norm(self.path[-1][:2] - self.goal['goal'][0]) < 0.1:
             self.at_goal = True
 
-    def action(self, i) -> None:
-        if i >= len(self.path) - 1:
-            control = np.vstack([np.zeros(2), np.zeros(2)])
-        else:
-            data = {"cartesian_sensor_est": {"pos": self.path[i][:2], "vel": self.path[i][2:]}}
-            next_traj_point = self.path[i + 1].reshape(2, 2)
-            control = self.controller(
-                self.dt, data, next_traj_point, self.task.goal_type(data),
-                self.planner.state_dimension)
-        return {'control': control[:2]}
+    def action(self, dt, sensor_data) -> None:
+
+        u = self.last_control
+        est_data, est_param = self.estimator.estimate(u, sensor_data)
+        next_traj_point = self.planner.next_point(self.path, est_data)
+
+        control = self.controller(
+            dt, est_data, next_traj_point, self.task.goal_type(est_data),
+            self.planner.state_dimension)
+        self.last_control = control
+
+        ret = {"control"  : control}
+        if "communication_sensor" in self.sensors.keys():
+            ret["broadcast"] = {
+                "planned_traj": self.path,
+                "state":est_param["ego_state_est"],
+                "next_point":next_traj_point
+            }
+        return ret
 
 

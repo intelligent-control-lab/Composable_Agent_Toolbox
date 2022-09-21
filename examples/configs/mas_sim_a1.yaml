@@ -58,23 +58,23 @@ estimator:
         time_sample: 0.01
         kp: 40
         kv: 40
-sensors: []
-# -   type: PVSensor
-#     spec:
-#         alias: cartesian_sensor
-#         noise_var: 0.0
-# -   type: StateSensor
-#     spec:
-#         alias: state_sensor
-#         noise_var: 0.1
-# -   type: RadarSensor
-#     spec:
-#         alias: obstacle_sensor
-#         noise_var: 0.1
-# -   type: GoalSensor
-#     spec:
-#         alias: goal_sensor
-#         noise_var: 0.1
-# -   type: RadioSensor
-#     spec:
-#         alias: communication_sensor
+sensors:
+-   type: PVSensor
+    spec:
+        alias: cartesian_sensor
+        noise_var: 0.0
+-   type: StateSensor
+    spec:
+        alias: state_sensor
+        noise_var: 0.1
+-   type: RadarSensor
+    spec:
+        alias: obstacle_sensor
+        noise_var: 0.1
+-   type: GoalSensor
+    spec:
+        alias: goal_sensor
+        noise_var: 0.1
+-   type: RadioSensor
+    spec:
+        alias: communication_sensor
