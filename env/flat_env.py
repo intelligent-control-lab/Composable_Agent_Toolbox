@@ -111,7 +111,5 @@ class FlatEnv(object):
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
 
         # self.ax.draw(self.renderer)
-        print("got to draw")
         self.fig.canvas.draw()
-        print("finished draw")
         plt.pause(0.001)

@@ -55,7 +55,6 @@ class MASAgent():
 
         u = self.last_control
         est_data, est_param = self.estimator.estimate(u, sensor_data)
-        print(self.path)
         next_traj_point = self.planner.next_point(self.path, est_data)
 
         control = self.controller(
