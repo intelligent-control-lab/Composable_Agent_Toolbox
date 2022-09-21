@@ -127,7 +127,6 @@ if __name__ == '__main__':
 
     dt, env_info, measurement_groups = env.reset()
     for i in range(iters):
-        print("Sim iter...")
         actions = {}
         for ag in agents + obs:
             # an action is dictionary which must contain a key "control"
