@@ -16,15 +16,15 @@ def class_by_name(module_name, class_name):
     return getattr(importlib.import_module(module_name), class_name)
 
 def visualize(stg):
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
-    # colors = 'brgcmk'
-    # for i, p in enumerate(stg.paths + stg.obs_paths):
-    #     x = [s[0] for s in p]
-    #     y = [s[1] for s in p]
-    #     t = [s[2] for s in p]
-    #     ax.scatter(x, y, t, color=colors[i])
-    # plt.show()
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    colors = 'brgcmk'
+    for i, p in enumerate(stg.paths + stg.obs_paths):
+        x = [s[0] for s in p]
+        y = [s[1] for s in p]
+        t = [s[2] for s in p]
+        ax.scatter(x, y, t, color=colors[i])
+    plt.show()
     return
 
 if __name__ == '__main__':
@@ -83,8 +83,8 @@ if __name__ == '__main__':
 
     for i, ob in enumerate(obs):
         while not ob.at_goal:
-            waypoint = ob.next_point()
-            stg.update_obs_path(i, waypoint[0])
+            waypoint = ob.get_waypoint().flatten()
+            stg.update_obs_path(i, waypoint[:2])
             path = ob.path.copy()
             path.append(waypoint)
             ob.set_path(path)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
             if agent.at_goal:
                 stg.set_at_goal(i, True)
                 continue
-            waypoint = agent.next_point()
+            waypoint = agent.get_waypoint()
             stg.update_path(i, waypoint[0], waypoint[1])
             stg.resolve()
             for j, a in enumerate(agents):
@@ -132,6 +132,7 @@ if __name__ == '__main__':
             # an action is dictionary which must contain a key "control"
             actions[ag.name] = ag.action(dt, measurement_groups[ag.name])
             #sensor data is grouped by agent
+            print(f"{ag.name} : {actions[ag.name]['control']} : {actions[ag.name]['broadcast']['next_point']}")
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
 
     # evaluator.evaluate(record)
