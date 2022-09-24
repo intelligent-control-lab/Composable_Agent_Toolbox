@@ -131,7 +131,6 @@ class SpaceTimeGrid:
 
             p_i, s_i, v1, is_ob = q.get()
             
-
             if is_ob:
                 if vis_obs[p_i][s_i]: # prevent infinite loop
                     continue
@@ -144,11 +143,10 @@ class SpaceTimeGrid:
             if not is_ob:
                 if s_i == 0:
                     v1 = np.zeros(3) # locked in place
-                if s_i == len(self.paths[p_i]) and self.at_goal[p_i]:
+                if self.at_goal[p_i] and s_i == len(self.paths[p_i]) - 1:
                     v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
 
             if is_ob:
-                continue # TODO TODO TODO: shouldn't need this
                 S.append(self.obs_paths[p_i][s_i])
             else:
                 S.append(self.paths[p_i][s_i])
@@ -169,37 +167,36 @@ class SpaceTimeGrid:
                 v2 = np.zeros(3)
                 q.put((p_j, s_j, v2, True))
 
-            # simulate path shift and check for further intersections
-            # TODO: why don't we just add all path shift vectors to queue and check them there?
-            # sim_shift = self._path_shift(p_i, s_i, v1)
-            # for s3 in sim_shift:
-            #     query = self.tree.query_ball_point(s3, self.r + self.r)
-            #     inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
-            #     for p_k, s_k in inter:
-            #         if p_i == p_k:
-            #             continue
-            #         v3 = self._compute_dv(s3, self.paths[p_k][s_k])
-            #         v_inter = self._compute_dv(self.paths[p_k][s_k], s3)
-            #         # q.put((s_i, v3)) # TODO: is this needed?
-            #         q.put((p_k, s_k, v_inter, False))
-            #     query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r)
-            #     inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
-            #     for p_k, s_k in inter_obs:
-            #         v3 = 
+            # TODO: when a path shift is applied, does every sphere in the path then need to be added to S?
 
             # simulate path shift and check for further intersections
-            sim_shift = self._path_shift(p_i, s_i, v1)
+            # add a path-shifted sphere only if it has a conflict
+            sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
             for i, s3 in enumerate(sim_shift):
-                q.put((p_i, i, s3 - self.paths[p_i][i], False))
+                if i == p_i:
+                    continue
+                query = self.tree.query_ball_point(s3, self.r + self.r)
+                inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
+                conflict = False
+                for p_k, _ in inter:
+                    if p_i != p_k:
+                        conflict = True
+                if conflict:
+                    q.put((p_i, i, s3 - self.paths[p_i][i], False))
+
+            # # add all path-shifted spheres
+            # sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
+            # for i, s3 in enumerate(sim_shift):
+            #     q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
         return S, V, log
 
     def _path_shift(self, p_i, s_i, dv):
 
         if np.all(dv == 0):
-            return self.paths[p_i]
+            return self.paths[p_i], self.vel[p_i]
 
-        p = self.paths[p_i].copy()
+        p = np.array(self.paths[p_i]).copy() # deep copy
         s0 = p[s_i]
         d_max = max([np.linalg.norm(s - s0) for s in p])
         mu0 = np.linalg.norm(dv)
@@ -207,31 +204,30 @@ class SpaceTimeGrid:
 
         # apply path shift
         for i, s in enumerate(p):
-            if i == 0:
-                continue
             d = np.linalg.norm(s0 - s)
-            if i == s_i:
+            if i == 0:
+                mu = 0
+            elif i == s_i:
                 mu = mu0
             else:
                 mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
             vec = mu * uv
-            if self.at_goal[p_i] and i == len(p):
+            if self.at_goal[p_i] and i == len(p) - 1:
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
             p[i] += vec
 
-        # resolve time inversions
+        # resolve time inversions and motion constraints
+        vel = [np.zeros(2) for _ in p]
         for i in range(1, len(p)):
-            p[i][2] = max(p[i][2], p[i - 1][2] + self._deltat(i - 1, i, p_i))
+            delt = self._deltat(p[i - 1], p[i], vel[i - 1], self.a_max[p_i])
+            vel[i] = vel[i - 1] + self.a_max[p_i] * delt
+            p[i][2] = p[i - 1][2] + delt
 
-        return p
+        return p, vel
         
-    def _deltat(self, i, j, p_i):
-        # return 0.02
-        s1 = self.paths[p_i][i]
-        s2 = self.paths[p_i][j]
+    def _deltat(self, s1, s2, v1, a): # TODO: redo this method
         d = np.linalg.norm(s2 - s1)
-        v = (self.vel[p_i][i].T @ (s2[:2] - s1[:2])) / d # component of velocity in direction of path
-        a = self.a_max[p_i]
+        v = (v1.T @ (s2[:2] - s1[:2])) / d # component of velocity in direction of path
         return (-v + math.sqrt(v**2 + 2 * a * d)) / a
 
     def _optimize(self, S, V, P, pri, rad):
@@ -319,7 +315,6 @@ class SpaceTimeGrid:
     def _pseudo_connect_obs(self, p_i):
 
         p = self.obs_paths[p_i]
-        # print(p)
 
         num = math.ceil(np.linalg.norm(p[-1] - p[-2]) / (self.r + self.r)) - 1
         for i in range(num):
@@ -405,18 +400,20 @@ class SpaceTimeGrid:
         X = self._optimize(S, V, P, pri, rad)
 
         # # plot paths and outstanding spheres
-        # fig = plt.figure()
-        # ax = fig.add_subplot(projection='3d')
-        # c = ["blue", "red"]
-        # for i, p in enumerate(self.paths):
-        #     ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-        # ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
-        # plt.show()
+        # if not S.shape[0] == 0:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
+        #     plt.show()
 
         for (p_i, s_i, is_ob), x in zip(log, X):
             if is_ob:
                 continue
-            self.paths[p_i] = self._path_shift(p_i, s_i, x - self.paths[p_i][s_i])
+            vec = x - self.paths[p_i][s_i]
+            self.paths[p_i], self.vel[p_i] = self._path_shift(p_i, s_i, vec)
 
         for p_i in range(len(self.paths)):
             self._pseudo_connect(p_i)

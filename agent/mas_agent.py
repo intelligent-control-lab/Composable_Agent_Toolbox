@@ -50,15 +50,7 @@ class MASAgent():
             self.at_goal = True
         if np.linalg.norm(self.path[-1][:2] - self.goal['goal'][0]) < 0.1:
             self.at_goal = True
-
-        # TODO: need to generate actual velocities in STG
-        for i in range(len(path) - 1):
-            uv = self.path[i + 1][:2] - self.path[i][:2]
-            mag = 100
-            self.path[i][2:] = mag * uv
-        self.path[-1][2:] = [0, 0]
         
-
     def action(self, dt, sensor_data) -> None:
 
         u = self.last_control

@@ -89,6 +89,7 @@ if __name__ == '__main__':
             path.append(waypoint)
             ob.set_path(path)
 
+    # # plot obstacle paths
     # fig = plt.figure()
     # ax = fig.add_subplot(projection='3d')
     # colors = 'brgcmk'
@@ -117,10 +118,6 @@ if __name__ == '__main__':
         
     visualize(stg)
 
-    print(stg.paths[0])
-    print('\n')
-    print(stg.paths[1])
-
     print(f"OPT NUM: {stg.opt_num}")
     print(f"OPT TIME: {stg.opt_time}")
     print(f"TREE TIME: {stg.tree_time}")
@@ -134,5 +131,9 @@ if __name__ == '__main__':
             #sensor data is grouped by agent
             print(f"{ag.name} : {actions[ag.name]['control']} : {actions[ag.name]['broadcast']['next_point']}")
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
+
+    print(stg.paths[0])
+    print('\n')
+    print(stg.paths[1])
 
     # evaluator.evaluate(record)
