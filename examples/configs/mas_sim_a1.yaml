@@ -66,15 +66,15 @@ sensors:
 -   type: StateSensor
     spec:
         alias: state_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: RadarSensor
     spec:
         alias: obstacle_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: GoalSensor
     spec:
         alias: goal_sensor
-        noise_var: 0.1
+        noise_var: 0.0
 -   type: RadioSensor
     spec:
         alias: communication_sensor
