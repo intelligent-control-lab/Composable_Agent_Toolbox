@@ -116,7 +116,7 @@ class SpaceTimeGrid:
         # initially intersecting w/ obs
         query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r)
         for i in range(len(query_obs)):
-            for j in range(len(query_obs[i])):
+            for j in query_obs[i]:
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
                 s_ag = self.paths[p_i][s_i]
@@ -181,6 +181,7 @@ class SpaceTimeGrid:
                 for p_k, _ in inter:
                     if p_i != p_k:
                         conflict = True
+                        break
                 if conflict:
                     q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
