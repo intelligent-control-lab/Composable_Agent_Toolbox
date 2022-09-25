@@ -397,7 +397,7 @@ class SpaceTimeGrid:
         S, V = np.array(S), np.array(V)
         P = self._get_P(S, log)
         pri = np.array([self.priority[p_i] if is_ob else 1 for p_i, _, is_ob in log])
-        rad = np.ones(S.shape[0])
+        rad = np.array([self.r for i in range(S.shape[0])])
         X = self._optimize(S, V, P, pri, rad)
 
         # # plot paths and outstanding spheres
