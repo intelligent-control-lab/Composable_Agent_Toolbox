@@ -101,13 +101,18 @@ class SpaceTimeGrid:
 
         # initially intersecting
         query = self.tree.query_pairs(self.r + self.r)
-        for idx1, idx2 in self.tree.query_pairs(self.r + self.r):
+        query_spheres = []
+        for idx1, idx2 in query:
             p_i, s_i = self._idx2sp(self.paths, idx1)
             p_j, s_j = self._idx2sp(self.paths, idx2)
             if p_i == p_j:
                 continue
             s1 = self.paths[p_i][s_i]
             s2 = self.paths[p_j][s_j]
+            query_spheres.append((s1, s2, np.linalg.norm(s1 - s2)))
+        query_spheres.sort(key=lambda tup: tup[2])
+
+        for s1, s2, _ in query_spheres:
             v1 = self._compute_dv(s1, s2)
             v2 = self._compute_dv(s2, s1)
             q.put((p_i, s_i, v1, False))
@@ -115,16 +120,21 @@ class SpaceTimeGrid:
 
         # initially intersecting w/ obs
         query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r)
+        query_obs_spheres = []
         for i in range(len(query_obs)):
             for j in query_obs[i]:
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
                 s_ag = self.paths[p_i][s_i]
                 s_ob = self.obs_paths[p_j][s_j]
-                v1 = self._compute_dv(s_ag, s_ob)
-                v2 = np.zeros(3)
-                q.put((p_i, s_i, v1, False))
-                q.put((p_j, s_j, v2, True))
+                query_obs_spheres.append((s_ag, s_ob, np.linalg.norm(s_ag - s_ob)))
+        query_obs_spheres.sort(key=lambda tup: tup[2])
+
+        for s_ag, s_ob, _ in query_obs_spheres:
+            v1 = self._compute_dv(s_ag, s_ob)
+            v2 = np.zeros(3)
+            q.put((p_i, s_i, v1, False))
+            q.put((p_j, s_j, v2, True))
 
         # bfs sim
         while not q.empty():
