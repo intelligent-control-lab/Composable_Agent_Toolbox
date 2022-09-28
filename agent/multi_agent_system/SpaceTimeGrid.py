@@ -185,13 +185,19 @@ class SpaceTimeGrid:
             for i, s3 in enumerate(sim_shift):
                 if i == s_i:
                     continue
+                conflict = False
+                # check agent conflict
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
-                conflict = False
                 for p_k, _ in inter:
                     if p_i != p_k:
                         conflict = True
                         break
+                # check obs conflict
+                query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r)
+                inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
+                if len(inter_obs) > 0:
+                    conflict = True
                 if conflict:
                     q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
