@@ -109,10 +109,12 @@ class SpaceTimeGrid:
                 continue
             s1 = self.paths[p_i][s_i]
             s2 = self.paths[p_j][s_j]
-            query_spheres.append((s1, s2, np.linalg.norm(s1 - s2)))
+            query_spheres.append(((p_i, s_i), (p_j, s_j), np.linalg.norm(s1 - s2)))
         query_spheres.sort(key=lambda tup: tup[2])
 
-        for s1, s2, _ in query_spheres:
+        for (p_i, s_i), (p_j, s_j), _ in query_spheres:
+            s1 = self.paths[p_i][s_i]
+            s2 = self.paths[p_j][s_j]
             v1 = self._compute_dv(s1, s2)
             v2 = self._compute_dv(s2, s1)
             q.put((p_i, s_i, v1, False))
