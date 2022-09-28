@@ -210,22 +210,16 @@ class SpaceTimeGrid:
         p = np.array(self.paths[p_i]).copy() # deep copy
         s0 = p[s_i]
         d_max = max([np.linalg.norm(s - s0) for s in p])
-        mu0 = np.linalg.norm(dv)
-        uv = dv / np.linalg.norm(dv)
 
         # apply path shift
         for i, s in enumerate(p):
             d = np.linalg.norm(s0 - s)
-            if i == 0:
-                mu = 0
-            elif i == s_i:
-                mu = mu0
-            else:
-                mu = mu0 * math.exp(-self.gamma[p_i] * (d / d_max)**2)
-            vec = mu * uv
+            mu = math.exp(-self.gamma[p_i] * (d / d_max)**2)
+            vec = mu * dv
             if self.at_goal[p_i] and i == len(p) - 1:
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
-            p[i] += vec
+            if i > 0: # don't move first sphere
+                p[i] += vec
 
         # resolve time inversions and motion constraints
         vel = [np.zeros(2) for _ in p]
