@@ -171,7 +171,7 @@ class SpaceTimeGrid:
                 if p_i == p_j:
                     continue
                 s_trans = self.paths[p_i][s_i] + v1
-                v2 = self._compute_dv(self.paths[p_j][s_j], s_trans)
+                v2 = self._compute_dv(self.paths[p_j][s_j], s_trans) # TODO: is this correct??
                 q.put((p_j, s_j, v2, False))
             for p_j, s_j in sw_obs:
                 v2 = np.zeros(3)
@@ -183,7 +183,7 @@ class SpaceTimeGrid:
             # add a path-shifted sphere only if it has a conflict
             sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
             for i, s3 in enumerate(sim_shift):
-                if i == p_i:
+                if i == s_i:
                     continue
                 query = self.tree.query_ball_point(s3, self.r + self.r)
                 inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
@@ -404,15 +404,15 @@ class SpaceTimeGrid:
         rad = np.array([self.r for i in range(S.shape[0])])
         X = self._optimize(S, V, P, pri, rad)
 
-        # # plot paths and outstanding spheres
-        # if not S.shape[0] == 0:
-        #     fig = plt.figure()
-        #     ax = fig.add_subplot(projection='3d')
-        #     c = ["blue", "red", "green"]
-        #     for i, p in enumerate(self.paths + self.obs_paths):
-        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-        #     ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
-        #     plt.show()
+        # plot paths and outstanding spheres
+        if not S.shape[0] == 0:
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')
+            c = ["blue", "red", "green"]
+            for i, p in enumerate(self.paths + self.obs_paths):
+                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+            ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
+            plt.show()
 
         for (p_i, s_i, is_ob), x in zip(log, X):
             if is_ob:
