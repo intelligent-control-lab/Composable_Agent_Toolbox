@@ -40,7 +40,7 @@ def get_action(action_id):
 # ---------------------------------------------------------------------------- #
 #                                  state space                                 #
 # ---------------------------------------------------------------------------- #
-STATE_DIMENSION = 8 # change this according to get_state()
+STATE_DIMENSION = 2 # change this according to get_state()
 
 # ---------------------------------------------------------------------------- #
 #                                      RL                                      #
@@ -163,7 +163,7 @@ class DQN_Agent():
 
         # Create memory and initialize with transitions from random policy
         if not self.args.demo:
-            self.memory = Replay_Memory(memory_size=50000, ep_burn_in=10)
+            self.memory = Replay_Memory(memory_size=50000, ep_burn_in=1)
             self.burn_in_memory()
 
         self.test_return = []
@@ -239,42 +239,45 @@ class DQN_Agent():
 
     def get_state(self, measurement_groups):
 
+        # TODO tune state representation
+
         state = []
+
         # add goal info
+        # what are other important components?
         state += list(measurement_groups['robot']['goal_sensor']['rel_pos'].reshape(-1))
-        state += list(measurement_groups['robot']['goal_sensor']['rel_vel'].reshape(-1))
-        # add obs info
-        for obs, measurement in measurement_groups['robot']['obstacle_sensor'].items():
-            state += list(measurement['rel_pos'].reshape(-1))
-            state += list(measurement['rel_vel'].reshape(-1))
+
+        # how to make the agent aware of the obstacle? (hint: check what's in measurement_groups)
+        # ATTENTION: make sure to adapt STATE_DIMENSION variable on the top after changing the state here
 
         return state
 
     def get_reward(self, measurement_groups, dphi):
+
+        # TODO design reward function
+
         r = 0
 
         # close to goal
         rel_pos_goal = measurement_groups['robot']['goal_sensor']['rel_pos'].reshape(-1)
         goal_dist = np.linalg.norm(rel_pos_goal)
-        rel_vel_goal = measurement_groups['robot']['goal_sensor']['rel_vel'].reshape(-1)
 
         if self.prev_goal_dist is None:
             ddist = 0
         else:
             ddist = goal_dist - self.prev_goal_dist
 
-        r -= ddist * 200
-        r -= np.linalg.norm(rel_vel_goal)
+        r -= ddist
 
-        # large reward for reaching (not penalizing distance far away)
-        if goal_dist < 10:
-            r += 1000
-
-        # penalize dphi
-        r -= dphi * 100
+        # reward for goal-reaching
+        # (hint: does the following two lines make sense?)
+        if goal_dist < 1:
+            r += 1
 
         # other reward components?
-        # print('{:>8.4f}, {:>8.4f}, {:>8.4f}'.format(ddist, np.linalg.norm(rel_vel_goal), dphi))
+        # e.g., how to encourage the agent to avoid overshoot when getting close to goal?
+
+        # Discourage SSA triggering. (hint: check what is 'dphi')
 
         self.prev_goal_dist = goal_dist
 

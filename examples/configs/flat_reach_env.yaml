@@ -6,7 +6,7 @@ world:
         agent_goal_lists:
             # robot: [[10, 15]]
             # human: [[30.0, 20.0]]
-            # 'random'/'static'/'near'
+            # 'random'/'static'/'near'/explicit
             robot: 'random'
             # Q 1.1
             human: 'static'
