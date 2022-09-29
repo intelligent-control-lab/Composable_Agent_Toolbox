@@ -4,6 +4,11 @@ import env.flat_world
 import matplotlib.pyplot as plt
 import importlib
 import time, math
+import copy
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import io
+from PIL import Image
+
 class FlatEnv(object):
     def __init__(self, env_spec, comp_agents):
         '''
@@ -11,16 +16,18 @@ class FlatEnv(object):
         classes. The add_agent function will instantiate a robot class and 
         some sensors based on the specs.
         '''
-        self.dt = env_spec['dt']
-        WorldClass = getattr(importlib.import_module("env.flat_world"), env_spec["world"]["type"])
-        self.world = WorldClass(env_spec["world"]["spec"])
-        self.env_spec = env_spec
+
+        self.env_spec = copy.deepcopy(env_spec)
+        self.dt = self.env_spec['dt']
+        WorldClass = getattr(importlib.import_module("env.flat_world"), self.env_spec["world"]["type"])
+        self.world = WorldClass(self.env_spec["world"]["spec"])
         self.comp_agents = comp_agents
         self.reset()
 
         # setup rendering
         self.fig, self.ax = plt.subplots(1, 1, figsize=(5, 5))
         # self.renderer = self.fig.canvas.renderer
+        self.canvas = FigureCanvas(self.fig)
 
     def reset(self):
         self.world.reset()
@@ -36,9 +43,10 @@ class FlatEnv(object):
     def step(self, actions, render=True):
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
+        img = None
         if render:
-            self.render()
-        return self.dt, env_info, sensor_data
+            img = self.render()
+        return self.dt, env_info, sensor_data, img
 
     def render(self):
         
@@ -92,6 +100,14 @@ class FlatEnv(object):
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])
 
         # self.ax.draw(self.renderer)
-        self.fig.canvas.draw()
+        # self.fig.canvas.draw()
+        self.canvas.draw()       # draw the canvas, cache the renderer
+        img_buf = io.BytesIO()
+        self.fig.savefig(img_buf, format='png')
         plt.pause(0.001)
+
+        return img_buf
+    
+    def close(self):
+        plt.close(self.fig)
 

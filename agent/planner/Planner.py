@@ -467,7 +467,7 @@ class CFSPlanner(IntegraterPlanner):
             if self._planning_prediction_converge(BlackBoxPrediction(traj_pos_only), traj_pos_only):
                 break
 
-        print(f"Plan pred {prediction_planning_cnt} iters.")
+        # print(f"Plan pred {prediction_planning_cnt} iters.")
 
         # update traj
         if traj_pos_only is not None:

@@ -36,7 +36,7 @@ class ModelBasedAgent(AgentBase):
         for i in range(len(module_spec["sensors"])):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
-    def action(self, dt, sensors_data):
+    def action(self, dt, sensors_data, external_action=None):
 
         # --------------------------- get previous control --------------------------- #
         u = self.last_control
@@ -56,16 +56,17 @@ class ModelBasedAgent(AgentBase):
         self.replanning_timer += 1
 
         # --------------------------- compute agent control -------------------------- #
-        control = self.controller(
+        control, dphi = self.controller(
             dt, est_data, next_traj_point, self.task.goal_type(est_data),
-            self.planner.state_dimension)
+            self.planner.state_dimension, external_action)
         
         self.last_control = control
 
         ret = {
             "control"  : control,
             "next_traj_point": next_traj_point,
-            "skip_control": True
+            "skip_control": False,
+            "delta_phi" : dphi
         }
         
         if "communication_sensor" in self.sensors.keys():

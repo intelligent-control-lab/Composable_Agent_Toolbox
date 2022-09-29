@@ -35,7 +35,7 @@ class UnsafeController(SafeController):
         '''
             Driver procedure. Do not change
         '''
-        return u_ref
+        return u_ref, None
 
 class EnergyFunctionController(SafeController):
     """
@@ -52,6 +52,8 @@ class EnergyFunctionController(SafeController):
         self.d_min = spec['d_min']
         self.eta = spec['eta']
         self.k_v = spec['k_v']
+
+        self.prev_phi = None
 
     def phi_and_derivatives(self, dt, ce, co):
         """
@@ -111,10 +113,18 @@ class EnergyFunctionController(SafeController):
         for obs in processed_data["obstacle_sensor_est"]:
             phi, u = self.safe_control(u_ref, obs, dt, processed_data)
             us.append((phi, u))
-        
         sorted(us, key=lambda x:x[0], reverse=True) # larger phi first
         
-        return us[0][1] # adopt the control that avoids the most dangerous collision.
+        phi = us[0][0]
+
+        if self.prev_phi is None or phi <= 0:
+            dphi = 0
+        else:
+            dphi = phi - self.prev_phi
+
+        self.prev_phi = phi
+
+        return us[0][1], dphi # adopt the control that avoids the most dangerous collision.
 
 
 
@@ -158,6 +168,8 @@ class SafeSetController(EnergyFunctionController):
         S = -self.eta - p_phi_p_xe.T @ fx - p_phi_p_co.T @ dot_co
         
         u = u_ref
+
+        phi = phi[0][0]
 
         if phi <= 0 or np.asscalar(L @ u_ref) < np.asscalar(S):
             u = u_ref

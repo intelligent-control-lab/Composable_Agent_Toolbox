@@ -39,12 +39,17 @@ class Controller(ABC):
         processed_data: dict,
         goal: np.ndarray,
         goal_type: GoalType,
-        state_dimension: int) -> np.ndarray:
+        state_dimension: int,
+        external_action: np.ndarray = None) -> np.ndarray:
+        
+        if external_action is None:
+            u_fb = self.feedback_controller(processed_data, goal, goal_type, state_dimension)
+        else:
+            u_fb = external_action
 
-        u_fb = self.feedback_controller(processed_data, goal, goal_type, state_dimension)
         # call safe controller
-        u_safe = self.safe_controller(dt, processed_data, u_fb, goal, goal_type)
+        u_safe, dphi = self.safe_controller(dt, processed_data, u_fb, goal, goal_type)
 
-        return u_safe
+        return u_safe, dphi
 
         

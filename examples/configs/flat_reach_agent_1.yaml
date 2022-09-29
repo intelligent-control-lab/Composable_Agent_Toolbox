@@ -10,12 +10,12 @@ model:
           dT: 0.02
           state_component: ['pos', 'vel']
     control:
-      # type: BallModel
-      # spec:
-      #     control_input_dim: 2
-      type: UnicycleModel
+      type: BallModel
       spec:
           control_input_dim: 2
+      # type: UnicycleModel
+      # spec:
+      #     control_input_dim: 2
 planner:
     type: IntegraterPlanner
     spec:
@@ -39,9 +39,9 @@ controller:
                 # kp: 200
                 # kv: 50
                 # for integrator planner
-                kp: 10
-                kv: 20
-                u_max: [40, 5]
+                kp: 200
+                kv: 50
+                u_max: [1000, 1000]
         safe_controller: 
             # type: UnsafeController
             type: SafeSetController
@@ -51,12 +51,12 @@ controller:
             # type: PotentialFieldController
             # type: SlidingModeController
             spec:
-                d_min: 10.0
+                d_min: 15.0
                 k_v: 5.0
                 eta: 1
                 c: 1000
                 lambd: 1
-                u_max: [40, 5]
+                u_max: [1000, 1000]
 estimator:
     type: NaiveEstimator
     spec:
