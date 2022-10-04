@@ -15,7 +15,8 @@ class SpaceTimeGrid:
     def __init__(self, 
         paths: list[list[np.array]], r: float, dt: list[float],
         a_max: list[float], gamma: list[float], priority: list[float], 
-        obs_paths: list[list[np.array]]=[], obs_dt: list[float]=[]
+        obs_paths: list[list[np.array]]=[], obs_dt: list[float]=[],
+        tol: float=1e-5
     ) -> None:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
@@ -33,6 +34,7 @@ class SpaceTimeGrid:
         self.at_goal = [False for i in range(len(self.paths))] # whether agent has reached goal
         self.tree = KDTree([s for p in self.paths for s in p])
         self.obs_tree = KDTree([s for p in self.obs_paths for s in p])
+        self.tol = tol
         self.eng = matlab.engine.start_matlab()
         self.eng.addpath(r"C:\Users\aniru\OneDrive\Documents\Code\ICL\OptimizationSolver", nargout=0)
 
@@ -75,16 +77,16 @@ class SpaceTimeGrid:
 
         # translate s_trans along v
         while np.linalg.norm(s_trans - s) < np.linalg.norm(v):
-            query = self.tree.query_ball_point(s_trans, self.r + self.r)
+            query = self.tree.query_ball_point(s_trans, self.r + self.r - self.tol)
             inter += [tuple(self._idx2sp(self.paths, idx)) for idx in query]
-            query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r)
+            query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r - self.tol)
             inter_obs += [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
             s_trans = s_trans + self.r * v / np.linalg.norm(v) # iterate by distance r
 
         s_trans = s + v # iterate to end of vector
-        query = self.tree.query_ball_point(s_trans, self.r + self.r)
+        query = self.tree.query_ball_point(s_trans, self.r + self.r - self.tol)
         inter += [tuple(self._idx2sp(self.paths, idx)) for idx in query]
-        query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r)
+        query_obs = self.obs_tree.query_ball_point(s_trans, self.r + self.r - self.tol)
         inter_obs += [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
         
         return inter, inter_obs
@@ -100,19 +102,12 @@ class SpaceTimeGrid:
         vis_obs = [[False for _ in p] for p in self.obs_paths]
 
         # initially intersecting
-        query = self.tree.query_pairs(self.r + self.r)
-        query_spheres = []
+        query = self.tree.query_pairs(self.r + self.r - self.tol)
         for idx1, idx2 in query:
             p_i, s_i = self._idx2sp(self.paths, idx1)
             p_j, s_j = self._idx2sp(self.paths, idx2)
             if p_i == p_j:
                 continue
-            s1 = self.paths[p_i][s_i]
-            s2 = self.paths[p_j][s_j]
-            query_spheres.append(((p_i, s_i), (p_j, s_j), np.linalg.norm(s1 - s2)))
-        query_spheres.sort(key=lambda tup: tup[2])
-
-        for (p_i, s_i), (p_j, s_j), _ in query_spheres:
             s1 = self.paths[p_i][s_i]
             s2 = self.paths[p_j][s_j]
             v1 = self._compute_dv(s1, s2)
@@ -121,22 +116,17 @@ class SpaceTimeGrid:
             q.put((p_j, s_j, v2, False))
 
         # initially intersecting w/ obs
-        query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r)
-        query_obs_spheres = []
+        query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
         for i in range(len(query_obs)):
             for j in query_obs[i]:
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
                 s_ag = self.paths[p_i][s_i]
                 s_ob = self.obs_paths[p_j][s_j]
-                query_obs_spheres.append((s_ag, s_ob, np.linalg.norm(s_ag - s_ob)))
-        query_obs_spheres.sort(key=lambda tup: tup[2])
-
-        for s_ag, s_ob, _ in query_obs_spheres:
-            v1 = self._compute_dv(s_ag, s_ob)
-            v2 = np.zeros(3)
-            q.put((p_i, s_i, v1, False))
-            q.put((p_j, s_j, v2, True))
+                v1 = self._compute_dv(s_ag, s_ob)
+                v2 = np.zeros(3)
+                q.put((p_i, s_i, v1, False))
+                q.put((p_j, s_j, v2, True))
 
         # bfs sim
         while not q.empty():
@@ -173,40 +163,39 @@ class SpaceTimeGrid:
                 if p_i == p_j:
                     continue
                 s_trans = self.paths[p_i][s_i] + v1
-                v2 = self._compute_dv(self.paths[p_j][s_j], s_trans) # TODO: is this correct??
+                v2 = self._compute_dv(self.paths[p_j][s_j], s_trans)
                 q.put((p_j, s_j, v2, False))
             for p_j, s_j in sw_obs:
                 v2 = np.zeros(3)
                 q.put((p_j, s_j, v2, True))
 
-            # TODO: when a path shift is applied, does every sphere in the path then need to be added to S?
+            # # simulate path shift and check for further intersections
+            # # insert ALL shifted spheres to queue
+            # sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
+            # for i, s3 in enumerate(sim_shift):
+            #     q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
             # simulate path shift and check for further intersections
-            # add a path-shifted sphere only if it has a conflict
+            # insert ONLY conflict spheres from shift to queue
             sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
             for i, s3 in enumerate(sim_shift):
                 if i == s_i:
                     continue
                 conflict = False
                 # check agent conflict
-                query = self.tree.query_ball_point(s3, self.r + self.r)
+                query = self.tree.query_ball_point(s3, self.r + self.r - self.tol)
                 inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
                 for p_k, _ in inter:
                     if p_i != p_k:
                         conflict = True
                         break
                 # check obs conflict
-                query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r)
+                query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r - self.tol)
                 inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
                 if len(inter_obs) > 0:
                     conflict = True
                 if conflict:
                     q.put((p_i, i, s3 - self.paths[p_i][i], False))
-
-            # # add all path-shifted spheres
-            # sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
-            # for i, s3 in enumerate(sim_shift):
-            #     q.put((p_i, i, s3 - self.paths[p_i][i], False))
 
         return S, V, log
 
@@ -229,11 +218,15 @@ class SpaceTimeGrid:
             if i > 0: # don't move first sphere
                 p[i] += vec
 
+        # # resolve time inversions
+        # for i in range(1, len(p)):
+        #     p[i][2] = max(p[i][2], p[i - 1][2] + self._deltat(i - 1, i, p_i))
+        
         # resolve time inversions and motion constraints
         vel = [np.zeros(2) for _ in p]
         for i in range(1, len(p)):
             delt = self._deltat(p[i - 1], p[i], vel[i - 1], self.a_max[p_i])
-            vel[i] = vel[i - 1] + self.a_max[p_i] * delt
+            # vel[i] = vel[i - 1] + self.a_max[p_i] * delt
             p[i][2] = p[i - 1][2] + delt
 
         return p, vel
@@ -412,15 +405,15 @@ class SpaceTimeGrid:
         rad = np.array([self.r for i in range(S.shape[0])])
         X = self._optimize(S, V, P, pri, rad)
 
-        # plot paths and outstanding spheres
-        if not S.shape[0] == 0:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
-            plt.show()
+        # # plot paths and outstanding spheres
+        # if not S.shape[0] == 0:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     ax.scatter([s[0] for s in S], [s[1] for s in S], [s[2] for s in S], color="yellow", s=100)
+        #     plt.show()
 
         for (p_i, s_i, is_ob), x in zip(log, X):
             if is_ob:
