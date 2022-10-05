@@ -226,8 +226,8 @@ class SpaceTimeGrid:
         vel = [np.zeros(2) for _ in p]
         for i in range(1, len(p)):
             delt = self._deltat(p[i - 1], p[i], vel[i - 1], self.a_max[p_i])
-            # vel[i] = vel[i - 1] + self.a_max[p_i] * delt
-            p[i][2] = p[i - 1][2] + delt
+            vel[i] = vel[i - 1] + self.a_max[p_i] * delt
+            p[i][2] = max(p[i][2], p[i - 1][2] + delt)
 
         return p, vel
         
