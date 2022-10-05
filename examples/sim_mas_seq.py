@@ -75,30 +75,54 @@ if __name__ == '__main__':
     r = 0.5 # TODO: perhaps allow for different paths to have different r?
     ag_dt = np.array([ag.dt for ag in agents])
     a_max = [10, 10]
-    gamma = [2, 2]
+    gamma = [1, 1]
     priority = [1, 1]
     obs_paths = [[np.array(ob.path[0][:2])] for ob in obs]
     obs_dt = np.array([ob.dt for ob in obs])
     stg = SpaceTimeGrid(paths, r, ag_dt, a_max, gamma, priority, obs_paths, obs_dt)
 
-    for i, ob in enumerate(obs):
-        while not ob.at_goal:
-            waypoint = ob.get_waypoint().flatten()
-            stg.update_obs_path(i, waypoint[:2])
-            path = ob.path.copy()
-            path.append(waypoint)
-            ob.set_path(path)
+    # for i, ob in enumerate(obs):
+    #     for j in range(3):
+    #         ob.goal['goal'] = np.array([20.0, 5.0, 0.0, 0.0]).reshape(2, 2)
+    #         while not ob.at_goal:
+    #             waypoint = ob.get_waypoint().flatten()
+    #             stg.update_obs_path(i, waypoint[:2])
+    #             path = ob.path.copy()
+    #             path.append(waypoint)
+    #             ob.set_path(path)
+    #         for k in range(100):
+    #             waypoint = ob.get_waypoint().flatten()
+    #             stg.update_obs_path(i, waypoint[:2])
+    #             path = ob.path.copy()
+    #             path.append(waypoint)
+    #             ob.set_path(path)
+    #         ob.at_goal = False
+    #         ob.goal['goal'] = np.array([10.0, 15.0, 0.0, 0.0]).reshape(2, 2)
+    #         while not ob.at_goal:
+    #             waypoint = ob.get_waypoint().flatten()
+    #             stg.update_obs_path(i, waypoint[:2])
+    #             path = ob.path.copy()
+    #             path.append(waypoint)
+    #             ob.set_path(path)
 
-    # # plot obstacle paths
-    # fig = plt.figure()
-    # ax = fig.add_subplot(projection='3d')
-    # colors = 'brgcmk'
-    # for i, p in enumerate(stg.obs_paths):
-    #     x = [s[0] for s in p]
-    #     y = [s[1] for s in p]
-    #     t = [s[2] for s in p]
-    #     ax.scatter(x, y, t, color=colors[i])
-    # plt.show()
+    # for i, ob in enumerate(obs):
+    #     while not ob.at_goal:
+    #         waypoint = ob.get_waypoint().flatten()
+    #         stg.update_obs_path(i, waypoint[:2])
+    #         path = ob.path.copy()
+    #         path.append(waypoint)
+    #         ob.set_path(path)
+
+    # plot obstacle paths
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    colors = 'brgcmk'
+    for i, p in enumerate(stg.obs_paths):
+        x = [s[0] for s in p]
+        y = [s[1] for s in p]
+        t = [s[2] for s in p]
+        ax.scatter(x, y, t, color=colors[i])
+    plt.show()
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
@@ -122,6 +146,18 @@ if __name__ == '__main__':
     print(f"OPT TIME: {stg.opt_time}")
     print(f"TREE TIME: {stg.tree_time}")
 
+    print(stg.paths[0])
+    print('\n')
+    print(stg.paths[1])
+
+    min_clear = np.inf
+    for i in range(len(stg.paths)):
+        for j in range(i + 1, len(stg.paths)):
+            for s1 in stg.paths[i]:
+                for s2 in stg.paths[j]:
+                    min_clear = min(min_clear, np.linalg.norm(s1 - s2))
+    print(f"MIN CLEARANCE: {min_clear}")
+
     dt, env_info, measurement_groups = env.reset()
     for i in range(iters):
         actions = {}
@@ -131,9 +167,5 @@ if __name__ == '__main__':
             #sensor data is grouped by agent
             print(f"{ag.name} : {actions[ag.name]['control']} : {actions[ag.name]['broadcast']['next_point']}")
         dt, env_info, measurement_groups = env.step(actions, debug_modes, render=render)
-
-    print(stg.paths[0])
-    print('\n')
-    print(stg.paths[1])
 
     # evaluator.evaluate(record)
