@@ -4,7 +4,7 @@ import onnx
 from onnx import numpy_helper
 sys.path.append('../')
 
-def write_nnet(weights,biases,fileName):
+def write_nnet(weights,biases,fileName, decimal='6'):
     '''
     Write network data to the .nnet file format. This format is used by NeuralVerification.jl
 
@@ -72,13 +72,15 @@ def write_nnet(weights,biases,fileName):
         for w,b in zip(weights,biases):
             for i in range(w.shape[0]):
                 for j in range(w.shape[1]):
-                    f2.write("%.5e," % w[i,j]) #Five digits written. More can be used, but that requires more more space.
+                    f2.write("{1:.{0}f},".format(decimal, w[i,j])) #Five digits written. More can be used, but that requires more more space.
+                    # f2.write("%."+str(decimal)+"e," % w[i,j]) #Five digits written. More can be used, but that requires more more space.
                 f2.write("\n")
                 
             for i in range(len(b)):
-                f2.write("%.5e,\n" % b[i]) #Five digits written. More can be used, but that requires more more space.
+                f2.write("{1:.{0}f},\n".format(decimal, b[i])) #Five digits written. More can be used, but that requires more more space.
+                # f2.write("%.6e,\n" % b[i]) #Five digits written. More can be used, but that requires more more space.
 
-def torch_model_to_nnet(Q, nnet_file):
+def torch_model_to_nnet(Q, nnet_file, decimal=5):
     weights = []
     biases = []
     for name, param in Q.named_parameters():
@@ -86,10 +88,10 @@ def torch_model_to_nnet(Q, nnet_file):
             weights.append(param.cpu().detach().numpy())
         if 'bias' in name:
             biases.append(param.cpu().detach().numpy())
-    write_nnet(weights, biases, nnet_file)
+    write_nnet(weights, biases, nnet_file, decimal)
     print("Converted pytorch model to an NNet model at %s"%nnet_file)
     
-def onnx_to_nnet(onnxFile, nnetFile="", inputName="", outputName=""):
+def onnx_to_nnet(onnxFile, nnetFile="", inputName="", outputName="", decimal=5):
     '''
     Write a .nnet file from an onnx file
     Args:
@@ -222,7 +224,7 @@ def onnx_to_nnet(onnxFile, nnetFile="", inputName="", outputName=""):
         print("    to an NNet model at %s"%nnetFile)
         
         # Write NNet file
-        write_nnet(weights,biases,nnetFile)
+        write_nnet(weights,biases,nnetFile, decimal)
         
     # Something went wrong, so don't write the NNet file
     else:
