@@ -91,202 +91,6 @@ class SpaceTimeGrid:
         
         return inter, inter_obs
 
-    # def _simulate(self):
-
-    #     S = [] # outstanding spheres
-    #     V = [] # DVs of S
-    #     log = [] # list of tuples (index of S[i] in its path, p_i)
-        
-    #     q = Queue()
-    #     vis = [[False for _ in p] for p in self.paths]
-    #     vis_obs = [[False for _ in p] for p in self.obs_paths]
-
-    #     # initially intersecting
-    #     query = self.tree.query_pairs(self.r + self.r - self.tol)
-    #     for idx1, idx2 in query:
-    #         p_i, s_i = self._idx2sp(self.paths, idx1)
-    #         p_j, s_j = self._idx2sp(self.paths, idx2)
-    #         if p_i == p_j:
-    #             continue
-    #         s1 = self.paths[p_i][s_i]
-    #         s2 = self.paths[p_j][s_j]
-    #         v1 = self._compute_dv(s1, s2)
-    #         v2 = self._compute_dv(s2, s1)
-    #         q.put((p_i, s_i, v1, False))
-    #         q.put((p_j, s_j, v2, False))
-
-    #     # initially intersecting w/ obs
-    #     query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
-    #     for i in range(len(query_obs)):
-    #         for j in query_obs[i]:
-    #             p_i, s_i = self._idx2sp(self.paths, i)
-    #             p_j, s_j = self._idx2sp(self.obs_paths, j)
-    #             s_ag = self.paths[p_i][s_i]
-    #             s_ob = self.obs_paths[p_j][s_j]
-    #             v1 = self._compute_dv(s_ag, s_ob)
-    #             v2 = np.zeros(3)
-    #             q.put((p_i, s_i, v1, False))
-    #             q.put((p_j, s_j, v2, True))
-
-    #     # bfs sim
-    #     while not q.empty():
-
-    #         p_i, s_i, v1, is_ob = q.get()
-            
-    #         if is_ob:
-    #             if vis_obs[p_i][s_i]: # prevent infinite loop
-    #                 continue
-    #             vis_obs[p_i][s_i] = True
-    #         else:
-    #             if vis[p_i][s_i]: # prevent infinite loop
-    #                 continue
-    #             vis[p_i][s_i] = True
-            
-    #         if not is_ob:
-    #             if s_i == 0:
-    #                 v1 = np.zeros(3) # locked in place
-    #             if self.at_goal[p_i] and s_i == len(self.paths[p_i]) - 1:
-    #                 v1 = v1[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
-
-    #         if is_ob:
-    #             S.append(self.obs_paths[p_i][s_i])
-    #         else:
-    #             S.append(self.paths[p_i][s_i])
-    #         V.append(v1)
-    #         log.append((p_i, s_i, is_ob))
-
-    #         if np.all(v1 == 0): # anything after this is guaranteed not to be an obs sphere
-    #             continue
-
-    #         sw, sw_obs = self._sweep(p_i, s_i, v1)
-    #         for p_j, s_j in sw:
-    #             if p_i == p_j:
-    #                 continue
-    #             s_trans = self.paths[p_i][s_i] + v1
-    #             v2 = self._compute_dv(self.paths[p_j][s_j], s_trans)
-    #             q.put((p_j, s_j, v2, False))
-    #         for p_j, s_j in sw_obs:
-    #             v2 = np.zeros(3)
-    #             q.put((p_j, s_j, v2, True))
-
-    #         # # simulate path shift and check for further intersections
-    #         # # insert ALL shifted spheres to queue
-    #         # sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
-    #         # for i, s3 in enumerate(sim_shift):
-    #         #     q.put((p_i, i, s3 - self.paths[p_i][i], False))
-
-    #         # simulate path shift and check for further intersections
-    #         # insert ONLY conflict spheres from shift to queue
-    #         sim_shift, sim_vel = self._path_shift(p_i, s_i, v1)
-    #         for i, s3 in enumerate(sim_shift):
-    #             if i == s_i:
-    #                 continue
-    #             conflict = False
-    #             # check agent conflict
-    #             query = self.tree.query_ball_point(s3, self.r + self.r - self.tol)
-    #             inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
-    #             for p_k, _ in inter:
-    #                 if p_i != p_k:
-    #                     conflict = True
-    #                     break
-    #             # check obs conflict
-    #             query_obs = self.obs_tree.query_ball_point(s3, self.r + self.r - self.tol)
-    #             inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
-    #             if len(inter_obs) > 0:
-    #                 conflict = True
-    #             if conflict:
-    #                 q.put((p_i, i, s3 - self.paths[p_i][i], False))
-
-    #     return S, V, log
-
-    # def _simulate(self):
-
-    #     S = [] # outstanding spheres
-    #     V = [] # DVs of S
-    #     log = [] # list of tuples (index of S[i] in its path, p_i)
-    #     q = Queue()
-
-    #     # initially intersecting
-    #     query = self.tree.query_pairs(self.r + self.r - self.tol)
-    #     for idx1, idx2 in query:
-    #         p_i, s_i = self._idx2sp(self.paths, idx1)
-    #         p_j, s_j = self._idx2sp(self.paths, idx2)
-    #         if p_i == p_j:
-    #             continue
-    #         s1 = self.paths[p_i][s_i]
-    #         s2 = self.paths[p_j][s_j]
-    #         v1 = self._compute_dv(s1, s2)
-    #         v2 = self._compute_dv(s2, s1)
-    #         q.put((self.paths, p_i, s_i, v1, False))
-    #         q.put((self.paths, p_j, s_j, v2, False))
-
-    #     # initially intersecting w/ obs
-    #     query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
-    #     for i in range(len(query_obs)):
-    #         for j in query_obs[i]:
-    #             p_i, s_i = self._idx2sp(self.paths, i)
-    #             p_j, s_j = self._idx2sp(self.obs_paths, j)
-    #             s_ag = self.paths[p_i][s_i]
-    #             s_ob = self.obs_paths[p_j][s_j]
-    #             v1 = self._compute_dv(s_ag, s_ob)
-    #             v2 = np.zeros(3)
-    #             q.put((self.paths, p_i, s_i, v1, False))
-    #             q.put((self.paths, p_j, s_j, v2, True))
-
-    #     while not q.empty():
-
-    #         T, p_i, s_i, v, is_ob = q.get()
-    #         # print(p_i, s_i, v, is_ob)
-
-    #         if not is_ob:
-    #             if s_i == 0:
-    #                 v = np.zeros(3) # locked in place
-    #             if self.at_goal[p_i] and s_i == len(self.paths[p_i]) - 1:
-    #                 v = v[2] * np.array([0, 0, 1]) # only move w.r.t. time if at goal
-
-    #         if is_ob:
-    #             S.append(self.obs_paths[p_i][s_i])
-    #         else:
-    #             S.append(self.paths[p_i][s_i])
-    #         V.append(v)
-    #         log.append((p_i, s_i, is_ob))
-
-    #         if np.all(v == 0): # anything after this is guaranteed not to be an obs sphere
-    #             continue
-
-    #         T_new = np.asarray(T).copy() # deep copy
-    #         T_new[p_i], vel = self._path_shift(T, p_i, s_i, v)
-
-    #         start = time.time()
-    #         local_tree = KDTree([s for p in T_new for s in p])
-    #         end = time.time()
-    #         self.tree_time += end - start
-
-    #         for s2 in T_new[p_i]:
-    #             # check agent conflict
-    #             query = local_tree.query_ball_point(s2, self.r + self.r - self.tol)
-    #             inter = [tuple(self._idx2sp(T_new, idx)) for idx in query]
-    #             for p_k, s_k in inter:
-    #                 if p_i == p_k:
-    #                     continue
-    #                 s3 = T_new[p_k][s_k]
-    #                 v_new = self._compute_dv(s3, s2)
-    #                 q.put((T_new, p_k, s_k, v_new, False))
-    #             # check obs conflict
-    #             query_obs = self.obs_tree.query_ball_point(s2, self.r + self.r - self.tol)
-    #             inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
-    #             # if len(inter_obs) > 0:
-    #             #     continue # deny DV to prevent infeasibility
-    #             for p_k, s_k in inter_obs:
-    #                 s3 = self.obs_paths[p_k][s_k]
-    #                 v_new = np.zeros(3)
-    #                 q.put((T_new, p_k, s_k, v_new, True))
-
-    #     return S, V, log
-
-
-
-
     def _solve(self, T, p_i, s_i, v, vis, vis_obs):
 
         log_list = []
@@ -480,6 +284,8 @@ class SpaceTimeGrid:
             vel[i] = vel[i - 1] + self.a_max[p_i] * delt
             p[i][2] = max(p[i][2], p[i - 1][2] + delt)
 
+        p, vel = self._pseudo_connect(p, vel)
+
         return p, vel
         
     def _deltat(self, s1, s2, v1, a):
@@ -505,38 +311,39 @@ class SpaceTimeGrid:
         print("Optimization finished!")
         return np.array(X), np.float64(fval)
 
-    def _pseudo_connect(self, p_i, end=False, clean=True):
+    def _pseudo_connect(self, p, vel, end=False, clean=True):
         
+        p_ret = list(np.asarray(p).copy()) # deep copy
+        vel_ret = list(np.asarray(vel).copy()) # deep copy
+
         if end:
             # insert pseudo-waypoints between p[-2] and p[-1]
-            p = self.paths[p_i]
             num = math.ceil(np.linalg.norm(p[-1] - p[-2]) / (self.r + self.r)) - 1
-            v_last = self.vel[p_i][-2]
-            v_end = self.vel[p_i][-1]
+            v_last = vel[-2]
+            v_end = vel[-1]
             for i in range(num):
                 # insert tangent to second to last sphere in direction towards last sphere
                 mag = self.r + self.r
-                uv = (p[-1] - p[-2]) / np.linalg.norm(p[-1] - p[-2])
-                pseu = p[-2] + mag * uv
-                self.paths[p_i].insert(-1, pseu)
-                self.vel[p_i].insert(-1, v_last + v_end / num)
-                v_last = self.vel[p_i][-1]
+                uv = (p_ret[-1] - p_ret[-2]) / np.linalg.norm(p_ret[-1] - p_ret[-2])
+                pseu = p_ret[-2] + mag * uv
+                p_ret.insert(-1, pseu)
+                vel_ret.insert(-1, v_last + v_end / num)
+                v_last = vel_ret[-1]
 
         else:
             # insert pseudo-waypoints anywhere necessary
-            p = self.paths[p_i]
             p_new = []
             vel_new = []
-            for i in range(len(p)):
-                p_new.append(p[i])
-                vel_new.append(self.vel[p_i][i])
-                if i == len(p) - 1:
+            for i in range(len(p_ret)):
+                p_new.append(p_ret[i])
+                vel_new.append(vel_ret[i])
+                if i == len(p_ret) - 1:
                     continue
-                num = math.ceil(np.linalg.norm(p[i + 1] - p[i]) / (self.r + self.r)) - 1
-                s1 = p[i]
-                s2 = p[i + 1]
-                v1 = self.vel[p_i][i]
-                v2 = self.vel[p_i][i + 1]
+                num = math.ceil(np.linalg.norm(p_ret[i + 1] - p_ret[i]) / (self.r + self.r)) - 1
+                s1 = p_ret[i]
+                s2 = p_ret[i + 1]
+                v1 = vel_ret[i]
+                v2 = vel_ret[i + 1]
                 for j in range(num):
                     mag = self.r + self.r
                     uv = (s2 - s1) / np.linalg.norm(s2 - s1)
@@ -545,29 +352,30 @@ class SpaceTimeGrid:
                     vel_new.append(v1 + v2 / num)
                     s1 = pseu
                     v1 = vel_new[-1]
-            self.paths[p_i] = p_new
-            self.vel[p_i] = vel_new
+            p_ret = list(np.array(p_new).copy())
+            vel_ret = list(np.array(vel_new).copy())
 
         # Remove unnecessary pseudo-waypoints:
         # iterate thru path, for each p[i] find the 
         # first p[j] that doesn't intersect p[i] where 
         # j > i, then delete everything between i and j - 1
         if clean:
-            p = self.paths[p_i]
             p_new = []
             vel_new = []
             i = 0
-            while i < len(p):
-                p_new.append(p[i])
-                vel_new.append(self.vel[p_i][i])
-                if i == len(p) - 1:
+            while i < len(p_ret):
+                p_new.append(p_ret[i])
+                vel_new.append(vel_ret[i])
+                if i == len(p_ret) - 1:
                     break
                 j = i + 1
-                while j < len(p) and self._intersects(p[i], p[j], eps=1e-5):
+                while j < len(p_ret) and self._intersects(p_ret[i], p_ret[j], eps=1e-5):
                     j += 1
                 i = j - 1
-            self.paths[p_i] = p_new
-            self.vel[p_i] = vel_new
+            p_ret = list(np.array(p_new).copy())
+            vel_ret = list(np.array(vel_new).copy())
+
+        return p_ret, vel_ret
 
     def _pseudo_connect_obs(self, p_i):
 
@@ -604,7 +412,7 @@ class SpaceTimeGrid:
         self.paths[p_i].append(s_new)
         self.vel[p_i].append(v)
 
-        self._pseudo_connect(p_i, end=True, clean=False)
+        self.paths[p_i], self.vel[p_i] = self._pseudo_connect(self.paths[p_i], self.vel[p_i], end=True, clean=False)
 
         start = time.time()
         self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
@@ -686,12 +494,20 @@ class SpaceTimeGrid:
                 self.paths[p_i], self.vel[p_i] = self._path_shift(self.paths, p_i, s_i, vec)
 
         for p_i in range(len(self.paths)):
-            self._pseudo_connect(p_i)
+            self.paths[p_i], self.vel[p_i] = self._pseudo_connect(self.paths[p_i], self.vel[p_i])
 
         start = time.time()
         self.tree = KDTree([s for p in self.paths for s in p]) # reinitialize tree
         end = time.time()
         self.tree_time += end - start
+
+        min_clear = np.inf
+        for i in range(len(self.paths)):
+            for j in range(i + 1, len(self.paths)):
+                for s1 in self.paths[i]:
+                    for s2 in self.paths[j]:
+                        min_clear = min(min_clear, np.linalg.norm(s1 - s2))
+        print(f"MIN CLEARANCE: {min_clear}")
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
