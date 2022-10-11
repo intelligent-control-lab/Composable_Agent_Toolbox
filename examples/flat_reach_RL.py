@@ -90,8 +90,8 @@ class QNetwork(nn.Module):
         if torch.cuda.is_available():
             map_location=lambda storage, loc: storage.cuda()
         else:
-            map_location='cpu'
-        self.load_state_dict(torch.load(weight_file))
+            map_location=torch.device('cpu')
+        self.load_state_dict(torch.load(weight_file, map_location=map_location))
 
 
 class Replay_Memory():
