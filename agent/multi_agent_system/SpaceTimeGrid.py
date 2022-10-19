@@ -68,6 +68,13 @@ class SpaceTimeGrid:
                 for s_i in range(len(paths[p_i]))]
         return map[idx][0], map[idx][1]
 
+    def _common_vis(self, vis1, vis2):
+        for p_i in range(len(self.paths)):
+            for s_i in range(len(self.paths[p_i])):
+                if vis1[p_i][s_i] and vis2[p_i][s_i]:
+                    return True
+        return False
+
     def _sweep(self, p_i, s_i, v):
 
         s = self.paths[p_i][s_i]
@@ -91,12 +98,95 @@ class SpaceTimeGrid:
         
         return inter, inter_obs
 
+    # def _solve(self, T, p_i, s_i, v, vis, vis_obs):
+
+    #     print(f"CUR SPHERE: {p_i} {s_i} VIS: {vis[p_i][s_i]}")
+
+    #     log_list = []
+    #     V_list = []
+    #     if vis[p_i][s_i]:
+    #         return False, log_list, V_list
+    #     vis_new = np.asarray(vis).copy() # deep copy
+    #     vis_new[p_i][s_i] = True
+    #     T_new = np.asarray(T).copy() # deep copy
+    #     T_new[p_i], new_vel = self._path_shift(T, p_i, s_i, v)
+        
+    #     start = time.time()
+    #     local_tree = KDTree([s for p in T_new for s in p])
+    #     end = time.time()
+    #     self.tree_time += end - start
+
+    #     for s_j in range(len(T_new[p_i])):
+
+    #         # agent-agent intersection
+    #         query = local_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
+    #         inter = [tuple(self._idx2sp(T_new, idx)) for idx in query]
+    #         for p_k, s_k in inter:
+    #             if p_i == p_k:
+    #                 continue
+    #             print(f"{p_i} {s_j} INTERSECTS {p_k} {s_k}")
+    #             v1 = self._compute_dv(T_new[p_i][s_j], T_new[p_k][s_k])
+    #             v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_i][s_j])
+    #             f1, log1, V1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs)
+    #             f2, log2, V2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs)
+    #             if not f1 and not f2:
+    #                 return False, log_list, V_list # no solution
+    #             if f1:
+    #                 for sol_s in log1:
+    #                     log_list.append([(p_i, s_j, False)] + sol_s)
+    #                 for sol_v in V1:
+    #                     V_list.append(list(np.append([v1], sol_v)))
+    #                     V_list.append([v1] + sol_v)
+    #             if f2:
+    #                 for sol_s in log2:
+    #                     print(f"SOL_S: {sol_s}")
+    #                     print(log_list)
+    #                     print([(p_k, s_k, False)])
+    #                     log_list.append([(p_k, s_k, False)] + sol_s)
+    #                     print(log_list)
+    #                 for sol_v in V2:
+    #                     V_list.append([v2] + sol_v)
+
+    #         # agent-obs intersection
+    #         query_obs = self.obs_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
+    #         inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
+    #         for p_k, s_k in inter_obs:
+    #             vis_obs_new = np.asarray(vis_obs).copy() # deep copy
+    #             vis_obs_new[p_k][s_k] = True
+    #             v1 = self._compute_dv(T_new[p_i][s_j], self.obs_paths[p_k][s_k])
+    #             f1, log1, V1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs_new)
+    #             if f1:
+    #                 if vis_obs[p_k][s_k]:
+    #                     for sol_s in log1:
+    #                         log_list.append([(p_i, s_j, False)] + sol_s)
+    #                     for sol_v in V1:
+    #                         V_list.append([v1] + sol_v)
+    #                 else:
+    #                     for sol_s in log1:
+    #                         log_list.append([(p_i, s_j, False), (p_k, s_k, True)] + sol_s)
+    #                     for sol_v in V1:
+    #                         V_list.append([v1, np.zeros(3)] + sol_v)
+    #             else:
+    #                 return False, log_list, V_list
+
+    #     if len(log_list) == 0 and not vis[p_i][s_i]:
+    #         log_list.append([(p_i, s_i, False)])
+    #         V_list.append([v])
+
+    #     print(f"{p_i} {s_i} RETURNS: {log_list} {V_list}")
+    #     return True, log_list, V_list
+
     def _solve(self, T, p_i, s_i, v, vis, vis_obs):
 
+        print(f"CURRENT: {p_i} {s_i} {v} {vis[p_i][s_i]}")
+        
         log_list = []
         V_list = []
+        vis_list = []
+        vis_obs_list = []
         if vis[p_i][s_i]:
-            return False, log_list, V_list
+            print(f" {p_i} {s_i} INFEASIBLE")
+            return [], [], [], []
         vis_new = np.asarray(vis).copy() # deep copy
         vis_new[p_i][s_i] = True
         T_new = np.asarray(T).copy() # deep copy
@@ -107,54 +197,189 @@ class SpaceTimeGrid:
         end = time.time()
         self.tree_time += end - start
 
-        for s_j in range(len(T_new[p_i])):
 
-            # agent-agent intersection
-            query = local_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
-            inter = [tuple(self._idx2sp(T_new, idx)) for idx in query]
-            for p_k, s_k in inter:
-                if p_i == p_k:
+        # agent-agent intersection
+        query = local_tree.query_pairs(self.r + self.r - self.tol)
+        for idx1, idx2 in query:
+            p_j, s_j = self._idx2sp(self.paths, idx1)
+            p_k, s_k = self._idx2sp(self.paths, idx2)
+            if p_j == p_k:
+                continue
+            print(f"{p_i} {s_i} AA QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
+            v1 = self._compute_dv(T_new[p_j][s_j], T_new[p_k][s_k])
+            v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_j][s_j])
+            print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
+            log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs)
+            print(f"{p_i} {s_i} CALLS {p_k} {s_k}")
+            log2, V2, vis2, vis_obs2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs)
+            if len(log1) == 0 and len(log2) == 0:
+                print(f"{p_i} {s_i} INFEASIBLE")
+                return [], [], [], [] # no solution
+            paired1 = [False for _ in log1]
+            paired2 = [False for _ in log2]
+            for i in range(len(log1)):
+                for j in range(len(log2)):
+                    if self._common_vis(vis1[i], vis2[j]):
+                        continue
+                    paired1[i] = True
+                    paired2[j] = True
+                    log_list.append(log1[i] + log2[j])
+                    V_list.append(V1[i] + V2[j])
+                    vis_combo = [[vis1[i][p_idx][s_idx] or vis2[j][p_idx][s_idx] 
+                            for s_idx in range(len(self.paths[p_idx]))] 
+                                for p_idx in range(len(self.paths))]
+                    vis_obs_combo = [[vis_obs1[i][p_idx][s_idx] or vis_obs2[j][p_idx][s_idx]
+                            for s_idx in range(len(self.obs_paths[p_idx]))] 
+                                for p_idx in range(len(self.obs_paths))]
+                    vis_list.append(vis_combo)
+                    vis_obs_list.append(vis_obs_combo)
+            for i in range(len(log1)):
+                if paired1[i]:
                     continue
-                v1 = self._compute_dv(T_new[p_i][s_j], T_new[p_k][s_k])
-                v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_i][s_j])
-                f1, S1, V1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs)
-                f2, S2, V2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs)
-                if not f1 and not f2:
-                    return False, log_list, V_list # no solution
-                if f1:
-                    for sol_s in S1:
-                        log_list.append([(p_i, s_j, False)].extend(sol_s))
-                    for sol_v in V1:
-                        V_list.append([v1].extend(sol_v))
-                if f2:
-                    for sol_s in S2:
-                        log_list.append([(p_k, s_k, False)].extend(sol_s))
-                    for sol_v in V2:
-                        V_list.append([v2].extend(sol_v))
+                if not vis1[i][p_k][s_k]:
+                    log1[i] += [(p_k, s_k, False)]
+                    V1[i] += [np.zeros(3)]
+                    vis1[i][p_k][s_k] = True
+                log_list.append(log1[i])
+                V_list.append(V1[i])
+                vis_list.append(vis1[i])
+                vis_obs_list.append(vis_obs1[i])
+            for i in range(len(log2)):
+                if paired2[i]:
+                    continue
+                if not vis2[i][p_j][s_j]:
+                    log2[i] += [(p_j, s_j, False)]
+                    V2[i] += [np.zeros(3)]
+                    vis2[i][p_j][s_j] = True
+                log_list.append(log2[i])
+                V_list.append(V2[i])
+                vis_list.append(vis2[i])
+                vis_obs_list.append(vis_obs2[i])
 
-            # agent-obs intersection
-            query_obs = self.obs_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
-            inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
-            for p_k, s_k in inter_obs:
+        # agent-obs intersection
+        query_obs = local_tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
+        for j in range(len(query_obs)):
+            for k in query_obs[j]:
+                p_j, s_j = self._idx2sp(self.paths, j)
+                p_k, s_k = self._idx2sp(self.obs_paths, k)
+                print(f"{p_i} {s_i} AO QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
                 vis_obs_new = np.asarray(vis_obs).copy() # deep copy
                 vis_obs_new[p_k][s_k] = True
-                v1 = self._compute_dv(T_new[p_i][s_j], self.obs_paths[p_k][s_k])
-                f1, S1, V1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs_new)
-                if f1:
-                    if vis_obs[p_k][s_k]:
-                        for sol_s in S1:
-                            log_list.append([(p_i, s_j, False)].extend(sol_s))
-                        for sol_v in V1:
-                            V_list.append([v1].extend(sol_v))
-                    else:
-                        for sol_s in S1:
-                            log_list.append([(p_i, s_j, False), (p_k, s_k, True)].extend(sol_s))
-                        for sol_v in V1:
-                            V_list.append([v1, np.zeros(3)].extend(sol_v))
-                else:
-                    return False, log_list, V_list
+                v1 = self._compute_dv(self.paths[p_j][s_j], self.obs_paths[p_k][s_k])
+                print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
+                log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs_new)
+                if len(log1) == 0:
+                    print(f"{p_i} {s_i} INFEASIBLE")
+                    return [], [], [], [] # no solution
+                for i in range(len(log1)):
+                    log_list.append(log1[i] + [(p_k, s_k, True)])
+                    V_list.append(V1[i] + [np.zeros(3)])
+                    vis_list.append(vis1[i])
+                    vis_obs_list.append(vis_obs1[i])
+                if len(log1) == 0:
+                    log_list.append([(p_k, s_k, True)])
+                    V_list.append([np.zeros(3)])
+                    vis_list.append(vis_new)
+                    vis_obs_list.append(vis_obs_new)
 
-        return True, log_list, V_list
+
+
+
+
+        # for s_j in range(len(T_new[p_i])):
+
+        #     # agent-agent intersection
+        #     query = local_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
+        #     inter = [tuple(self._idx2sp(T_new, idx)) for idx in query]
+        #     for p_k, s_k in inter:
+        #         if p_i == p_k:
+        #             continue
+        #         v1 = self._compute_dv(T_new[p_i][s_j], T_new[p_k][s_k])
+        #         v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_i][s_j])
+        #         print(f"{p_i} {s_i} CALLS {p_i} {s_j}")
+        #         log1, V1, vis1, vis_obs1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs)
+        #         print(f"{p_i} {s_i} CALLS {p_k} {s_k}")
+        #         log2, V2, vis2, vis_obs2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs)
+        #         if len(log1) == 0 and len(log2) == 0:
+        #             print(f"{p_i} {s_i} INFEASIBLE")
+        #             return [], [], [], [] # no solution
+        #         paired1 = [False for _ in log1]
+        #         paired2 = [False for _ in log2]
+        #         for i in range(len(log1)):
+        #             for j in range(len(log2)):
+        #                 if self._common_vis(vis1[i], vis2[j]):
+        #                     continue
+        #                 paired1[i] = True
+        #                 paired2[j] = True
+        #                 log_list.append(log1[i] + log2[j])
+        #                 V_list.append(V1[i] + V2[j])
+        #                 vis_combo = [[vis1[i][p_i][s_i] or vis2[j][p_i][s_i] 
+        #                     for s_i in range(len(self.paths[p_i]))] 
+        #                         for p_i in range(len(self.paths))]
+        #                 vis_obs_combo = [[vis_obs1[i][p_i][s_i] or vis_obs2[j][p_i][s_i] 
+        #                     for s_i in range(len(self.obs_paths[p_i]))] 
+        #                         for p_i in range(len(self.obs_paths))]
+        #                 vis_list.append(vis_combo)
+        #                 vis_obs_list.append(vis_obs_combo)
+        #         for i in range(len(log1)):
+        #             if paired1[i]:
+        #                 continue
+        #             if not vis1[i][p_k][s_k]:
+        #                 log1[i] += [(p_k, s_k, False)]
+        #                 V1[i] += [np.zeros(3)]
+        #                 vis1[i][p_k][s_k] = True
+        #             log_list.append(log1[i])
+        #             V_list.append(V1[i])
+        #             vis_list.append(vis1[i])
+        #             vis_obs_list.append(vis_obs1[i])
+        #         for i in range(len(log2)):
+        #             if paired2[i]:
+        #                 continue
+        #             if not vis2[i][p_i][s_j]:
+        #                 log2[i] += [(p_i, s_j, False)]
+        #                 V2[i] += [np.zeros(3)]
+        #                 vis2[i][p_i][s_j] = True
+        #             log_list.append(log2[i])
+        #             V_list.append(V2[i])
+        #             vis_list.append(vis2[i])
+        #             vis_obs_list.append(vis_obs2[i])
+
+        #     # agent-obs intersection
+        #     query_obs = self.obs_tree.query_ball_point(T_new[p_i][s_j], self.r + self.r - self.tol)
+        #     inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
+        #     for p_k, s_k in inter_obs:
+        #         vis_obs_new = np.asarray(vis_obs).copy() # deep copy
+        #         vis_obs_new[p_k][s_k] = True
+        #         v1 = self._compute_dv(T_new[p_i][s_j], self.obs_paths[p_k][s_k])
+        #         print(f"{p_i} {s_i} CALLS {p_i} {s_j}")
+        #         log1, V1, vis1, vis_obs1 = self._solve(T_new, p_i, s_j, v1, vis_new, vis_obs_new)
+        #         if len(log1) == 0:
+        #             print(f"{p_i} {s_i} INFEASIBLE")
+        #             return [], [], [], [] # no solution
+        #         for i in range(len(log1)):
+        #             log_list.append(log1[i] + [(p_k, s_k, True)])
+        #             V_list.append(V1[i] + [np.zeros(3)])
+        #             vis_list.append(vis1[i])
+        #             vis_obs_list.append(vis_obs1[i])
+        #         if len(log1) == 0:
+        #             log_list.append([(p_k, s_k, True)])
+        #             V_list.append([np.zeros(3)])
+        #             vis_list.append(vis_new)
+        #             vis_obs_list.append(vis_obs_new)
+
+        for i in range(len(log_list)):
+            # if not vis_list[i][p_i][s_i]:
+            log_list[i].append((p_i, s_i, False))
+            V_list[i].append(v)
+
+        if len(log_list) == 0:
+            log_list.append([(p_i, s_i, False)])
+            V_list.append([v])
+            vis_list.append(vis_new)
+            vis_obs_list.append(vis_obs)
+
+        print(f"{p_i} {s_i} FEASIBLE: {log_list}")
+        return log_list, V_list, vis_list, vis_obs_list
 
     def _simulate(self):
         
@@ -162,99 +387,106 @@ class SpaceTimeGrid:
         V_list = []
         log_list = []
 
-        # initially intersecting
+        # initially intersecting agent-agent
         query = self.tree.query_pairs(self.r + self.r - self.tol)
+        query_len = 0
         for idx1, idx2 in query:
             p_i, s_i = self._idx2sp(self.paths, idx1)
             p_j, s_j = self._idx2sp(self.paths, idx2)
             if p_i == p_j:
                 continue
-            # print(p_i, s_i, p_j, s_j)
-            s1 = self.paths[p_i][s_i]
-            s2 = self.paths[p_j][s_j]
-            v1 = self._compute_dv(s1, s2)
-            v2 = self._compute_dv(s2, s1)
+            query_len += 1
+            print(f"INITIAL AGENT-AGENT INTERSECTION: {self.paths[p_i][s_i]} {self.paths[p_j][s_j]}")
+            v1 = self._compute_dv(self.paths[p_i][s_i], self.paths[p_j][s_j])
+            v2 = self._compute_dv(self.paths[p_j][s_j], self.paths[p_i][s_i])
             vis = [[False for _ in p] for p in self.paths]
-            vis[p_i][s_i] = True
-            vis[p_j][s_j] = True
             vis_obs = [[False for _ in p] for p in self.obs_paths]
-            f1, log1, V1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
-            f2, log2, V2 = self._solve(self.paths, p_j, s_j, v2, vis, vis_obs)
-            print(f1, f2)
-            if f1:
-                if len(log1) == 0:
-                    S_list.append([s1, s2])
-                    V_list.append([v1, v2])
-                    log_list.append([(p_i, s_i, False), (p_j, s_j, False)])
-                for sol in log1:
-                    S = [s2]
-                    for p_k, s_k, is_ob in sol:
+            print("AGENT-AGENT", p_i, s_i, v1, p_j, s_j, v2)
+            print(f"SOLVE {p_i} {s_i} {v1}")
+            log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
+            print(f"SOLVE {p_j} {s_j} {v2}")
+            log2, V2, vis2, vis_obs2 = self._solve(self.paths, p_j, s_j, v2, vis, vis_obs)
+            paired1 = [False for _ in log1]
+            paired2 = [False for _ in log2]
+            for i in range(len(log1)):
+                for j in range(len(log2)):
+                    if self._common_vis(vis1[i], vis2[j]):
+                        continue
+                    print("PAIRING")
+                    paired1[i] = True
+                    paired2[j] = True
+                    log_list.append(log1[i] + log2[j])
+                    V_list.append(V1[i] + V2[j])
+                    S_list.append([])
+                    for p_k, s_k, is_ob in log_list[-1]:
                         if is_ob:
-                            S.append(self.obs_paths[p_k][s_k])
+                            S_list[-1].append(self.obs_paths[p_k][s_k])
                         else:
-                            S.append(self.paths[p_k][s_k])
-                    S_list.append(S)
-                for sol in V1:
-                    V = [v2]
-                    for dv in sol:
-                        V.append(dv)
-                    V_list.append(V)
-                log_list.extend(log1)
-            if f2:
-                if len(log1) == 0:
-                    S_list.append([s1, s2])
-                    V_list.append([v1, v2])
-                    log_list.append([(p_i, s_i, False), (p_j, s_j, False)])
-                for sol in log2:
-                    S = [s1]
-                    for p_k, s_k, is_ob in sol:
+                            S_list[-1].append(self.paths[p_k][s_k])
+                    print(f"log_pair_1: {log1[i]}")
+                    print(f"log_pair_2: {log2[j]}")
+            for i in range(len(log1)):
+                if not paired1[i]:
+                    log_list.append(log1[i])
+                    V_list.append(V1[i])
+                    if not vis1[i][p_j][s_j]:
+                        log_list[-1].append((p_j, s_j, False))
+                        V_list[-1].append(np.zeros(3))
+                    S_list.append([])
+                    for p_k, s_k, is_ob in log_list[-1]:
                         if is_ob:
-                            S.append(self.obs_paths[p_k][s_k])
+                            S_list[-1].append(self.obs_paths[p_k][s_k])
                         else:
-                            S.append(self.paths[p_k][s_k])
-                    S_list.append(S)
-                for sol in V2:
-                    V = [v1]
-                    for dv in sol:
-                        V.append(dv)
-                    V_list.append(V)
-                log_list.extend(log2)
+                            S_list[-1].append(self.paths[p_k][s_k])
+            for i in range(len(log2)):
+                if not paired2[i]:
+                    log_list.append(log2[i])
+                    V_list.append(V2[i])
+                    if not vis2[i][p_i][s_i]:
+                        log_list[-1].append((p_i, s_i, False))
+                        V_list[-1].append(np.zeros(3))
+                    S_list.append([])
+                    for p_k, s_k, is_ob in log_list[-1]:
+                        if is_ob:
+                            S_list[-1].append(self.obs_paths[p_k][s_k])
+                        else:
+                            S_list[-1].append(self.paths[p_k][s_k])
 
-        # initially intersecting w/ obs
+        print(f"QUERY LEN {query_len}")
+
+        # initially intersecting agent-obs
         query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
+        print(f"QUERY_obs LEN {len(query_obs)}")
         for i in range(len(query_obs)):
             for j in query_obs[i]:
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
+                print(f"INITIAL AGENT-OBS INTERSECTION: {self.paths[p_i][s_i]} {self.obs_paths[p_j][s_j]}")
                 s_ag = self.paths[p_i][s_i]
                 s_ob = self.obs_paths[p_j][s_j]
                 v1 = self._compute_dv(s_ag, s_ob)
                 v2 = np.zeros(3)
                 vis = [[False for _ in p] for p in self.paths]
                 vis_obs = [[False for _ in p] for p in self.obs_paths]
-                vis_obs[p_j][s_j] = True
-                f1, log1, V1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
-                if f1:
-                    if len(log1) == 0:
-                        S_list.append([s_ag, s_ob])
-                        V_list.append([v1, v2])
-                        log_list.append([(p_i, s_i, False), (p_j, s_j, True)])
-                    for sol in log1:
-                        S = [s_ob]
-                        for p_k, s_k, is_ob in sol:
-                            if is_ob:
-                                S.append(self.obs_paths[p_k][s_k])
-                            else:
-                                S.append(self.paths[p_k][s_k])
-                        S_list.append(S)
-                    for sol in V1:
-                        V = [v2]
-                        for dv in sol:
-                            V.append(dv)
-                        V_list.append(V)
-                    log_list.extend(log1)
-                
-        # print(S_list, V_list, log_list)
+                # vis_obs[p_j][s_j] = True
+                print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
+                v1 = self._compute_dv(self.paths[p_i][s_i], self.obs_paths[p_j][s_j])
+                print(f"SOLVE {p_i} {s_i} {v1}")
+                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
+                for i in range(len(log1)):
+                    log_list.append(log1[i])
+                    V_list.append(V1[i])
+                    if not vis_obs1[i][p_j][s_j]:
+                        log_list[-1].append((p_j, s_j, True))
+                        V_list[-1].append(np.zeros(3))
+                    S_list.append([])
+                    for p_k, s_k, is_ob in log_list[-1]:
+                        p_k, s_k = int(p_k), int(s_k)
+                        if is_ob:
+                            S_list[-1].append(self.obs_paths[p_k][s_k])
+                        else:
+                            S_list[-1].append(self.paths[p_k][s_k])
+
         return S_list, V_list, log_list
 
     def _path_shift(self, T, p_i, s_i, dv):
@@ -284,7 +516,7 @@ class SpaceTimeGrid:
             vel[i] = vel[i - 1] + self.a_max[p_i] * delt
             p[i][2] = max(p[i][2], p[i - 1][2] + delt)
 
-        p, vel = self._pseudo_connect(p, vel)
+        # p, vel = self._pseudo_connect(p, vel) # TODO: incorporate this without messing up indexing in simulation
 
         return p, vel
         
