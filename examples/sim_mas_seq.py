@@ -105,24 +105,24 @@ if __name__ == '__main__':
     #             path.append(waypoint)
     #             ob.set_path(path)
 
-    # for i, ob in enumerate(obs):
-    #     while not ob.at_goal:
-    #         waypoint = ob.get_waypoint().flatten()
-    #         stg.update_obs_path(i, waypoint[:2])
-    #         path = ob.path.copy()
-    #         path.append(waypoint)
-    #         ob.set_path(path)
+    for i, ob in enumerate(obs):
+        while not ob.at_goal:
+            waypoint = ob.get_waypoint().flatten()
+            stg.update_obs_path(i, waypoint[:2])
+            path = ob.path.copy()
+            path.append(waypoint)
+            ob.set_path(path)
 
-    # plot obstacle paths
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    colors = 'brgcmk'
-    for i, p in enumerate(stg.obs_paths):
-        x = [s[0] for s in p]
-        y = [s[1] for s in p]
-        t = [s[2] for s in p]
-        ax.scatter(x, y, t, color=colors[i])
-    plt.show()
+    # # plot obstacle paths
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    # colors = 'brgcmk'
+    # for i, p in enumerate(stg.obs_paths):
+    #     x = [s[0] for s in p]
+    #     y = [s[1] for s in p]
+    #     t = [s[2] for s in p]
+    #     ax.scatter(x, y, t, color=colors[i])
+    # plt.show()
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
@@ -135,7 +135,7 @@ if __name__ == '__main__':
                 continue
             waypoint = agent.get_waypoint()
             stg.update_path(i, waypoint[0], waypoint[1])
-            stg.resolve()
+            stg.resolve(it)
             for j, a in enumerate(agents):
                 path = stg.get_path(j)
                 a.set_path(path)

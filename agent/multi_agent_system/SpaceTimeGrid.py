@@ -16,7 +16,7 @@ class SpaceTimeGrid:
         paths: list[list[np.array]], r: float, dt: list[float],
         a_max: list[float], gamma: list[float], priority: list[float], 
         obs_paths: list[list[np.array]]=[], obs_dt: list[float]=[],
-        tol: float=1e-5
+        tol: float=1.5e-2
     ) -> None:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
@@ -179,6 +179,7 @@ class SpaceTimeGrid:
     def _solve(self, T, p_i, s_i, v, vis, vis_obs):
 
         print(f"CURRENT: {p_i} {s_i} {v} {vis[p_i][s_i]}")
+        print(f"VIS: {vis}")
         
         log_list = []
         V_list = []
@@ -206,6 +207,7 @@ class SpaceTimeGrid:
             if p_j == p_k:
                 continue
             print(f"{p_i} {s_i} AA QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
+            print(f"AA QUERY LOCATIONS: {T_new[p_j][s_j]} {T_new[p_k][s_k]}")
             v1 = self._compute_dv(T_new[p_j][s_j], T_new[p_k][s_k])
             v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_j][s_j])
             print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
@@ -403,9 +405,9 @@ class SpaceTimeGrid:
             vis_obs = [[False for _ in p] for p in self.obs_paths]
             print("AGENT-AGENT", p_i, s_i, v1, p_j, s_j, v2)
             print(f"SOLVE {p_i} {s_i} {v1}")
-            log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
+            log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, np.array([[False for _ in p] for p in self.paths]), np.array(vis_obs).copy())
             print(f"SOLVE {p_j} {s_j} {v2}")
-            log2, V2, vis2, vis_obs2 = self._solve(self.paths, p_j, s_j, v2, vis, vis_obs)
+            log2, V2, vis2, vis_obs2 = self._solve(self.paths, p_j, s_j, v2, np.array([[False for _ in p] for p in self.paths]), np.array(vis_obs).copy())
             paired1 = [False for _ in log1]
             paired2 = [False for _ in log2]
             for i in range(len(log1)):
@@ -456,7 +458,6 @@ class SpaceTimeGrid:
 
         # initially intersecting agent-obs
         query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
-        print(f"QUERY_obs LEN {len(query_obs)}")
         for i in range(len(query_obs)):
             for j in query_obs[i]:
                 p_i, s_i = self._idx2sp(self.paths, i)
@@ -472,7 +473,7 @@ class SpaceTimeGrid:
                 print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
                 v1 = self._compute_dv(self.paths[p_i][s_i], self.obs_paths[p_j][s_j])
                 print(f"SOLVE {p_i} {s_i} {v1}")
-                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs)
+                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, np.array(vis).copy(), np.array(vis_obs).copy())
                 for i in range(len(log1)):
                     log_list.append(log1[i])
                     V_list.append(V1[i])
@@ -683,7 +684,16 @@ class SpaceTimeGrid:
 
         return normalized
 
-    def resolve(self) -> None:
+    def resolve(self, i) -> None: # TODO: delete i param after debug
+
+        # if i >= 10:
+        #     # plot paths
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     plt.show()
 
         S_list, V_list, log_list = self._simulate()
 
@@ -706,17 +716,17 @@ class SpaceTimeGrid:
                 min_f = fval
                 best_i = i
 
-        # plot paths and outstanding spheres
-        if len(S_list) > 0:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            ax.scatter(
-                [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
-            color="yellow", s=100)
-            plt.show()
+        # # plot paths and outstanding spheres
+        # if len(S_list) > 0:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     ax.scatter(
+        #         [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
+        #     color="yellow", s=100)
+        #     plt.show()
 
         if len(S_list) > 0:
             for (p_i, s_i, is_ob), x in zip(log_list[best_i], X_star):
