@@ -19,7 +19,10 @@ def visualize(stg):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     colors = 'brgcmk'
-    for i, p in enumerate(stg.paths + stg.obs_paths):
+    pat = stg.paths
+    if not (len(stg.obs_paths) == 1 and len(stg.obs_paths[0]) == 1):
+        pat += stg.obs_paths
+    for i, p in enumerate(pat):
         x = [s[0] for s in p]
         y = [s[1] for s in p]
         t = [s[2] for s in p]
@@ -74,9 +77,9 @@ if __name__ == '__main__':
     paths = [[np.array(ag.path[0][:2])] for ag in agents]
     r = 0.5 # TODO: perhaps allow for different paths to have different r?
     ag_dt = np.array([ag.dt for ag in agents])
-    a_max = [10, 10]
-    gamma = [1, 1]
-    priority = [1, 1]
+    a_max = [10 for ag in agents]
+    gamma = [1 for ag in agents]
+    priority = [1 for ag in agents]
     obs_paths = [[np.array(ob.path[0][:2])] for ob in obs]
     obs_dt = np.array([ob.dt for ob in obs])
     stg = SpaceTimeGrid(paths, r, ag_dt, a_max, gamma, priority, obs_paths, obs_dt)
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):
 
-        print("Iterating...")
+        # print("Iterating...")
         
         for i, agent in enumerate(agents):
             if agent.at_goal:
@@ -140,7 +143,7 @@ if __name__ == '__main__':
                 path = stg.get_path(j)
                 a.set_path(path)
         
-    visualize(stg)
+    # visualize(stg)
 
     print(f"OPT NUM: {stg.opt_num}")
     print(f"OPT TIME: {stg.opt_time}")

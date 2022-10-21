@@ -16,7 +16,7 @@ class SpaceTimeGrid:
         paths: list[list[np.array]], r: float, dt: list[float],
         a_max: list[float], gamma: list[float], priority: list[float], 
         obs_paths: list[list[np.array]]=[], obs_dt: list[float]=[],
-        tol: float=1.5e-2
+        tol: float=1e-5
     ) -> None:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
@@ -29,6 +29,8 @@ class SpaceTimeGrid:
         self.obs_paths = [
             [np.append(s, obs_dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(obs_paths)] 
+        if len(self.obs_paths) == 0:
+            self.obs_paths.append([np.array([-1e9, -1e9, -1e9])])
         self.obs_dt = obs_dt # dt of each obs planner
         self.vel = [[np.array([0, 0]) for _ in p] for p in self.paths] # velocity at each waypoint for agent paths
         self.at_goal = [False for i in range(len(self.paths))] # whether agent has reached goal
@@ -310,7 +312,7 @@ class SpaceTimeGrid:
                 # print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
                 v1 = self._compute_dv(self.paths[p_i][s_i], self.obs_paths[p_j][s_j])
                 # print(f"SOLVE {p_i} {s_i} {v1}")
-                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, np.array(vis).copy(), np.array(vis_obs).copy())
+                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, np.array([[False for _ in p] for p in self.paths]), np.asarray(vis_obs).copy())
                 for i in range(len(log1)):
                     log_list.append(log1[i])
                     V_list.append(V1[i])
