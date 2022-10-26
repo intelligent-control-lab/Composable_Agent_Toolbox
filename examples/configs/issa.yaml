@@ -1,0 +1,23 @@
+robot: Point
+task: myGoal1
+algo: ppo_adamba_sc
+seed: 0
+safety_index: 
+    index: adaptive
+    k: 2.0
+    n: 2.0
+    sigma: 0.04
+    margin: 0.40
+hazards_size: 0.30
+pillars_size: 0.30
+ctrlrange: 10.0
+threshold: 0.0
+pre_execute: True
+pre_execute_coef: 0.00
+cpc: False
+cpc_coef: 0.01
+exp_name: ''
+cpu: 1
+
+
+
