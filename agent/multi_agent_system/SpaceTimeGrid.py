@@ -21,7 +21,8 @@ class SpaceTimeGrid:
         self.paths = [
             [np.append(s, dt[p_i] * i) for i, s in enumerate(p)] # add time dimension to all waypoints
         for p_i, p in enumerate(paths)] 
-        self.r = r # radius of waypoints on paths
+        self.alpha = 1 / (math.sqrt(3) - 1) # scale to remove discretization error
+        self.r = self.alpha * r # radius of waypoints on paths
         self.dt = dt # dt of each agent planner
         self.a_max = a_max # max acceleration of agent paths
         self.gamma = gamma # flexibility constant of agent paths
@@ -536,7 +537,7 @@ class SpaceTimeGrid:
             for p2 in (self.paths + self.obs_paths)[i + 1:]:
                 for s1 in p1:
                     for s2 in p2:
-                        min_clear = min(min_clear, np.linalg.norm(s1 - s2))
+                        min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
         print(f"MIN CLEARANCE BEFORE: {min_clear}")
 
         S_list, V_list, log_list = self._simulate()
@@ -593,7 +594,7 @@ class SpaceTimeGrid:
             for p2 in (self.paths + self.obs_paths)[i + 1:]:
                 for s1 in p1:
                     for s2 in p2:
-                        min_clear = min(min_clear, np.linalg.norm(s1 - s2))
+                        min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
         print(f"MIN CLEARANCE AFTER: {min_clear}")
 
     def _get_P(self, S, log):

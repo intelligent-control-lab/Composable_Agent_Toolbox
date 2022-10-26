@@ -143,7 +143,7 @@ if __name__ == '__main__':
                 path = stg.get_path(j)
                 a.set_path(path)
         
-    # visualize(stg)
+    visualize(stg)
 
     print(f"OPT NUM: {stg.opt_num}")
     print(f"OPT TIME: {stg.opt_time}")
@@ -154,12 +154,12 @@ if __name__ == '__main__':
     print(stg.paths[1])
 
     min_clear = np.inf
-    for i in range(len(stg.paths)):
-        for j in range(i + 1, len(stg.paths)):
-            for s1 in stg.paths[i]:
-                for s2 in stg.paths[j]:
-                    min_clear = min(min_clear, np.linalg.norm(s1 - s2))
-    print(f"MIN CLEARANCE: {min_clear}")
+    for i, p1 in enumerate(stg.paths + stg.obs_paths):
+        for p2 in (stg.paths + stg.obs_paths)[i + 1:]:
+            for s1 in p1:
+                for s2 in p2:
+                    min_clear = min(min_clear, np.linalg.norm(s1 - s2) / stg.alpha)
+    print(f"MIN CLEARANCE FINAL: {min_clear}")
 
     dt, env_info, measurement_groups = env.reset()
     for i in range(iters):
