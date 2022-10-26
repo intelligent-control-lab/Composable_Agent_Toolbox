@@ -36,6 +36,9 @@ agents:
   a2:
     type: MASAgent
     spec: configs/mas_sim_a2.yaml
+  a3:
+    type: MASAgent
+    spec: configs/mas_sim_a3.yaml
 
 obs:
   ob1:
