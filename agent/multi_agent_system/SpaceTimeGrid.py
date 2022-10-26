@@ -124,12 +124,15 @@ class SpaceTimeGrid:
 
 
         # agent-agent intersection
+        feasible = False
+        not_empty = False
         query = local_tree.query_pairs(self.r + self.r - self.tol)
         for idx1, idx2 in query:
             p_j, s_j = self._idx2sp(self.paths, idx1)
             p_k, s_k = self._idx2sp(self.paths, idx2)
             if p_j == p_k:
                 continue
+            not_empty = True
             print(f"{p_i} {s_i} AA QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
             print(f"AA QUERY LOCATIONS: {T_new[p_j][s_j]} {T_new[p_k][s_k]}")
             v1 = self._compute_dv(T_new[p_j][s_j], T_new[p_k][s_k])
@@ -138,9 +141,8 @@ class SpaceTimeGrid:
             log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs)
             print(f"{p_i} {s_i} CALLS {p_k} {s_k}")
             log2, V2, vis2, vis_obs2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs)
-            if len(log1) == 0 and len(log2) == 0:
-                print(f"{p_i} {s_i} INFEASIBLE")
-                return [], [], [], [] # no solution
+            if len(log1) + len(log2) > 0:
+                feasible = True
             paired1 = [False for _ in log1]
             paired2 = [False for _ in log2]
             for i in range(len(log1)):
@@ -182,11 +184,17 @@ class SpaceTimeGrid:
                 V_list.append(V2[i])
                 vis_list.append(vis2[i])
                 vis_obs_list.append(vis_obs2[i])
+        if not feasible and not_empty:
+            print(f"{p_i} {s_i} INFEASIBLE")
+            return [], [], [], [] # no solution
 
         # agent-obs intersection
+        feasible_obs = False
+        not_empty_obs = False
         query_obs = local_tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
         for j in range(len(query_obs)):
             for k in query_obs[j]:
+                not_empty_obs = True
                 p_j, s_j = self._idx2sp(self.paths, j)
                 p_k, s_k = self._idx2sp(self.obs_paths, k)
                 print(f"{p_i} {s_i} AO QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
@@ -195,9 +203,8 @@ class SpaceTimeGrid:
                 v1 = self._compute_dv(self.paths[p_j][s_j], self.obs_paths[p_k][s_k])
                 print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
                 log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs_new)
-                if len(log1) == 0:
-                    print(f"{p_i} {s_i} INFEASIBLE")
-                    return [], [], [], [] # no solution
+                if len(log1) > 0:
+                    feasible_obs = True
                 for i in range(len(log1)):
                     log_list.append(log1[i] + [(p_k, s_k, True)])
                     V_list.append(V1[i] + [np.zeros(3)])
@@ -208,6 +215,9 @@ class SpaceTimeGrid:
                     V_list.append([np.zeros(3)])
                     vis_list.append(vis_new)
                     vis_obs_list.append(vis_obs_new)
+        if not feasible_obs and not_empty_obs:
+            print(f"{p_i} {s_i} INFEASIBLE")
+            return [], [], [], [] # no solution
 
         for i in range(len(log_list)):
             # if not vis_list[i][p_i][s_i]:
@@ -519,14 +529,14 @@ class SpaceTimeGrid:
 
     def resolve(self, i) -> None: # TODO: delete i param after debug
 
-        if i >= 10:
-            # plot paths
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green", "orange"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            plt.show()
+        # if i >= 10:
+        #     # plot paths
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green", "orange"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     plt.show()
 
         min_clear = np.inf
         for i, p1 in enumerate(self.paths + self.obs_paths):
@@ -558,17 +568,17 @@ class SpaceTimeGrid:
                 min_f = fval
                 best_i = i
 
-        # plot paths and outstanding spheres
-        if len(S_list) > 0:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green", "orange"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            ax.scatter(
-                [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
-            color="yellow", s=100)
-            plt.show()
+        # # plot paths and outstanding spheres
+        # if len(S_list) > 0:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green", "orange"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     ax.scatter(
+        #         [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
+        #     color="yellow", s=100)
+        #     plt.show()
 
         if len(S_list) > 0:
             for (p_i, s_i, is_ob), x in zip(log_list[best_i], X_star):
