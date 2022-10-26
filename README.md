@@ -85,6 +85,19 @@ See [examples](https://github.com/intelligent-control-lab/Benchmark/tree/master/
 ## HW2 Safe Planning
 `python flat_reach.py`
 
+
+
 ### Note
 - `examples/configs/flat_reach_agent_2.yaml` uses `CFSPlanner` defined in `agent/planner/Planner.py` which calls `_CFS()` to solve planning.
 - Planner is invoked at `agent/model_based_agent.py:51`.
+
+
+
+## ISSA on Safety Gym
+To run this example, flease install env and baselines following the instructions below:
+`cd examples/issa/algo/safety-starter-agents`
+`pip install -e .`
+`cd examples/issa/env/safety-gym`
+`pip install -e `
+Run ISSA with base RL algorithm (PPO) on safety gym:
+`python issa_example_CATversion.py`
