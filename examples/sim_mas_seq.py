@@ -19,9 +19,10 @@ def visualize(stg):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     colors = 'brgcmk'
-    pat = stg.paths
-    if not (len(stg.obs_paths) == 1 and len(stg.obs_paths[0]) == 1):
-        pat += stg.obs_paths
+    if len(stg.obs_paths) == 1 and len(stg.obs_paths[0]) == 1:
+        pat = stg.paths
+    else:
+        pat = stg.paths + stg.obs_paths
     for i, p in enumerate(pat):
         x = [s[0] for s in p]
         y = [s[1] for s in p]
