@@ -300,21 +300,17 @@ class SpaceTimeGrid:
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
                 print(f"INITIAL AGENT-OBS INTERSECTION: {self.paths[p_i][s_i]} {self.obs_paths[p_j][s_j]}")
-                s_ag = self.paths[p_i][s_i]
-                s_ob = self.obs_paths[p_j][s_j]
-                v1 = self._compute_dv(s_ag, s_ob)
+                v1 = self._compute_dv(self.paths[p_i][s_i], self.obs_paths[p_j][s_j])
                 v2 = np.zeros(3)
                 vis = [[False for _ in p] for p in self.paths]
                 vis_obs = [[False for _ in p] for p in self.obs_paths]
-                # vis_obs[p_j][s_j] = True
                 print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
-                v1 = self._compute_dv(self.paths[p_i][s_i], self.obs_paths[p_j][s_j])
                 print(f"SOLVE {p_i} {s_i} {v1}")
                 log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, np.array([[False for _ in p] for p in self.paths]), np.asarray(vis_obs).copy())
-                for i in range(len(log1)):
-                    log_list.append(log1[i])
-                    V_list.append(V1[i])
-                    if not vis_obs1[i][p_j][s_j]:
+                for k in range(len(log1)):
+                    log_list.append(log1[k])
+                    V_list.append(V1[k])
+                    if not vis_obs1[k][p_j][s_j]:
                         log_list[-1].append((p_j, s_j, True))
                         V_list[-1].append(np.zeros(3))
                     S_list.append([])
