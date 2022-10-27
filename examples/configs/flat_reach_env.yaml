@@ -4,14 +4,14 @@ world:
         friction: 0
         reaching_eps: 1
         agent_goal_lists:
-            # robot: [[10, 15]]
-            # human: [[30.0, 20.0]]
+            # Model based
+            robot: [[10, 15]]
+            human: [[30.0, 20.0]]
+
+            # RL
             # 'random'/'static'/'near'
-            robot: 'random'
-            # Q 1.1
-            human: 'static'
-            # Q 1.2
-            # human: 'near'
+            # robot: 'random'
+            # human: 'static'
 dt: 0.02
 agent_comp_spec:
     robot: configs/flat_reach_agent_1.yaml
@@ -21,15 +21,21 @@ agent_env_spec:
     robot:
         type: BB8Agent
         spec:
+            # All
             # for specified location
-            # init_x: [50.0, 20.0, 0.0, 0.0]
+            init_x: [50.0, 20.0, 0.0, 0.0]
+
+            # RL
             # for random location
-            init_x: null
-            u_max: [1000, 1000]
+            # init_x: null
+            # u_max: [1000, 1000]
 
     human:
         type: BB8Agent
         spec:
-            # init_x: [30.0, 20.0, 0.0, 0.0]
-            init_x: null
+            # All
+            init_x: [30.0, 20.0, 0.0, 0.0]
+
+            # RL
+            # init_x: null
 

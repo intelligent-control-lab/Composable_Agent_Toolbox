@@ -26,6 +26,7 @@ if __name__ == "__main__":
             agents.append(agent.ModelBasedAgent(agent_module_spec))
 
     # init env
+    # TODO change to safety gym env
     env = env.FlatEnv(env_spec, agents)
     dt, env_info, measurement_groups = env.reset()
     record = []
@@ -34,8 +35,10 @@ if __name__ == "__main__":
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
+            # TODO if controller model is None, pass env (use kw arg)
             actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             #sensor data is grouped by agent
+        # TODO wrap safety gym env according to following syntax
         dt, env_info, measurement_groups, _ = env.step(actions)
         record.append((env_info,measurement_groups))
 

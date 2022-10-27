@@ -10,6 +10,7 @@ model:
           dT: 0.02
           state_component: ['pos', 'vel']
     control:
+      # TODO type null for ISSA
       type: BallModel
       spec:
           control_input_dim: 2
@@ -42,7 +43,8 @@ controller:
                 kp: 200
                 kv: 50
                 u_max: [1000, 1000]
-        safe_controller: 
+        safe_controller:
+            # TODO type ISSA
             # type: UnsafeController
             type: SafeSetController
             # type: ZeroingBarrierFunctionController
