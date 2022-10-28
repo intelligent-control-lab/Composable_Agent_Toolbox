@@ -99,6 +99,27 @@ class SafetyGymEnv(object):
         sensor_data['cost_info'] = {'cost_hazards': 0, 'cost': 0}
         sensor_data['safety_gym_env'] = self.safety_gym_env
 
+        robot_x = self.safety_gym_env.robot_pos[0]
+        robot_y = self.safety_gym_env.robot_pos[1]
+
+        robot_velx = self.safety_gym_env.data.get_body_xvelp('robot')[0]
+        robot_vely = self.safety_gym_env.data.get_body_xvelp('robot')[1]
+
+        obstacle_x = self.safety_gym_env.hazards_pos[0][0]
+        obstacle_y = self.safety_gym_env.hazards_pos[0][1]
+
+        goal_x = self.safety_gym_env.goal_pos[0]
+        goal_y = self.safety_gym_env.goal_pos[1]
+
+        sensor_data['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
+        sensor_data['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_velx], [robot_vely]])}
+        sensor_data['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
+                                                    'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]])} }
+        sensor_data['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
+                                                    'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]]) }
+        sensor_data['communication_sensor'] = {}
+
+
         return self.dt, env_info, sensor_data
 
     def step(self, actions, render=False, render_mode='human'):
@@ -114,6 +135,31 @@ class SafetyGymEnv(object):
         sensor_data['d'] = d
         sensor_data['cost_info'] = info # c = info.get('cost', 0)
         sensor_data['safety_gym_env'] = self.safety_gym_env
+        
+        robot_x = self.safety_gym_env.robot_pos[0]
+        robot_y = self.safety_gym_env.robot_pos[1]
+
+        robot_velx = self.safety_gym_env.data.get_body_xvelp('robot')[0]
+        robot_vely = self.safety_gym_env.data.get_body_xvelp('robot')[1]
+
+        obstacle_x = self.safety_gym_env.hazards_pos[0][0]
+        obstacle_y = self.safety_gym_env.hazards_pos[0][1]
+
+        goal_x = self.safety_gym_env.goal_pos[0]
+        goal_y = self.safety_gym_env.goal_pos[1]
+
+        sensor_data['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
+        sensor_data['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_velx], [robot_vely]])}
+        sensor_data['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
+                                                    'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]])} }
+        sensor_data['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
+                                                    'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]]) }
+        sensor_data['communication_sensor'] = {}
+
+
+
+        # goal 
+        #import ipdb; ipdb.set_trace()
         img = None
         if render:
             if render_mode == 'human':

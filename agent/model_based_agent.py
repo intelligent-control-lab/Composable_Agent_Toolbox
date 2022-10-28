@@ -40,7 +40,7 @@ class ModelBasedAgent(AgentBase):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     # TODO add env argument, default to None
-    def action(self, dt, sensors_data, external_action=None, safety_gym_env=None):
+    def action(self, dt, sensors_data, external_action=None):
         
 
         # --------------------------- get previous control --------------------------- #
@@ -48,12 +48,12 @@ class ModelBasedAgent(AgentBase):
 
         # ----------------------------- update estimation ---------------------------- #
         est_data, est_param = self.estimator.estimate(u, sensors_data)
-
-        # TODO if env is not None, add to est_data
-        if safety_gym_env is not None:
-            est_data['safety_gym_env'] = safety_gym_env
         
         control = None
+        #import ipdb; ipdb.set_trace()
+
+
+
         if external_action is None:
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner

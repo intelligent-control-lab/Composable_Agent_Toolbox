@@ -45,7 +45,7 @@ if __name__ == "__main__":
             if agent.control_model == None:
                 #import ipdb; ipdb.set_trace()
                 random_action = np.array([np.random.uniform(-1, 1), np.random.uniform(-1, 1)])
-                actions[agent.name] = agent.action(dt, measurement_groups, external_action = random_action, safety_gym_env=env)
+                actions[agent.name] = agent.action(dt, measurement_groups, external_action = random_action)
             else:
                 raise NotImplementedError
             # sensor data is grouped by agent
