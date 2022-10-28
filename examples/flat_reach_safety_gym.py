@@ -5,6 +5,9 @@ import numpy as np
 import evaluator, agent, env
 import time, yaml
 import progressbar
+import gym 
+import safety_gym
+import safe_rl
 
 if __name__ == "__main__":
 
@@ -14,7 +17,7 @@ if __name__ == "__main__":
 
     # The environment specs, including specs for the phsical agent model,
     # physics engine scenario, rendering options, etc.
-    with open('configs/flat_reach_env.yaml', 'r') as infile:
+    with open('configs/safety_gym_env.yaml', 'r') as infile:
         env_spec = yaml.load(infile, Loader=yaml.SafeLoader)
     evaluator = evaluator.Evaluator(agent_specs, env_spec)
 
@@ -26,8 +29,9 @@ if __name__ == "__main__":
             agents.append(agent.ModelBasedAgent(agent_module_spec))
 
     # init env
-    # TODO change to safety gym env
-    env = env.FlatEnv(env_spec, agents)
+    # TODO change to safety gym env # Done
+    env = env.SafetyGymEnv(env_spec, agents)
+    
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
@@ -36,9 +40,16 @@ if __name__ == "__main__":
         for agent in agents:
             # an action is dictionary which must contain a key "control"
             # TODO if controller model is None, pass env (use kw arg)
-            actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
-            #sensor data is grouped by agent
-        # TODO wrap safety gym env according to following syntax
+            
+            # if agent.controller == None:
+            if agent.control_model == None:
+                #import ipdb; ipdb.set_trace()
+                random_action = np.array([np.random.uniform(-1, 1), np.random.uniform(-1, 1)])
+                actions[agent.name] = agent.action(dt, measurement_groups, external_action = random_action, safety_gym_env=env)
+            else:
+                raise NotImplementedError
+            # sensor data is grouped by agent
+        # TODO wrap safety gym env according to following syntax # Done
         dt, env_info, measurement_groups, _ = env.step(actions)
         record.append((env_info,measurement_groups))
 

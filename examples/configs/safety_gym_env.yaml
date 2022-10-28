@@ -7,8 +7,8 @@ world:
         reaching_eps: 1
         agent_goal_lists:
             # Model based
-            robot: [[10, 15]]
-            human: [[30.0, 20.0]]
+            robot: null
+            human: null
 
             # RL
             # 'random'/'static'/'near'
@@ -16,8 +16,8 @@ world:
             # human: 'static'
 dt: 0.02
 agent_comp_spec:
-    robot: configs/flat_reach_agent_1.yaml
-    human: configs/flat_reach_agent_2.yaml
+    robot: configs/safety_gym_agent_1.yaml
+    # human: configs/flat_reach_agent_2.yaml
 agent_env_spec:
 
     robot:

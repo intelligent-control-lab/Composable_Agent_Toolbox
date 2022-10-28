@@ -9,6 +9,9 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import io
 from PIL import Image
 
+
+
+
 class FlatEnv(object):
     def __init__(self, env_spec, comp_agents):
         '''

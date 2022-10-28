@@ -26,7 +26,10 @@ class ModelBasedAgent(AgentBase):
         """
         self.name           = module_spec["name"]
         self.planning_model = self._class_by_name("model",      module_spec["model"]["planning"]["type"])(module_spec["model"]["planning"]["spec"])
-        self.control_model  = self._class_by_name("model",      module_spec["model"]["control" ]["type"])(module_spec["model"]["control" ]["spec"])
+        if module_spec["model"]["control" ]["type"] is None:
+            self.control_model = None
+        else:
+            self.control_model  = self._class_by_name("model",      module_spec["model"]["control" ]["type"])(module_spec["model"]["control" ]["spec"])
         self.task           = self._class_by_name("task",       module_spec["task"      ]["type"])(module_spec["task"       ]["spec"], self.planning_model)
         self.estimator      = self._class_by_name("estimator",  module_spec["estimator" ]["type"])(module_spec["estimator"  ]["spec"], self.planning_model)
         self.planner        = self._class_by_name("planner",    module_spec["planner"   ]["type"])(module_spec["planner"    ]["spec"], self.planning_model)
@@ -37,33 +40,54 @@ class ModelBasedAgent(AgentBase):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
     # TODO add env argument, default to None
-    def action(self, dt, sensors_data, external_action=None):
+    def action(self, dt, sensors_data, external_action=None, safety_gym_env=None):
+        
 
         # --------------------------- get previous control --------------------------- #
         u = self.last_control
 
         # ----------------------------- update estimation ---------------------------- #
-        est_data, est_param = self.estimator.estimate(u,sensors_data)
+        est_data, est_param = self.estimator.estimate(u, sensors_data)
 
         # TODO if env is not None, add to est_data
-
-        # ------------------------- update planned trajectory ------------------------ #
-        goal = self.task.goal(est_data) # todo need goal type for planner
-        if self.replanning_timer == self.planner.replanning_cycle:
-            # add the future planning information for another agent 
-            self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
-            self.replanning_timer = 0
-
-        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-        next_traj_point = np.vstack(next_traj_point.ravel())
-        self.replanning_timer += 1
-
-        # --------------------------- compute agent control -------------------------- #
-        control, dphi = self.controller(
-            dt, est_data, next_traj_point, self.task.goal_type(est_data),
-            self.planner.state_dimension, external_action)
+        if safety_gym_env is not None:
+            est_data['safety_gym_env'] = safety_gym_env
         
-        self.last_control = control
+        control = None
+        if external_action is None:
+            # ------------------------- update planned trajectory ------------------------ #
+            goal = self.task.goal(est_data) # todo need goal type for planner
+            if self.replanning_timer == self.planner.replanning_cycle:
+                # add the future planning information for another agent 
+                self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
+                self.replanning_timer = 0
+
+            next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
+            next_traj_point = np.vstack(next_traj_point.ravel())
+            self.replanning_timer += 1
+
+            # --------------------------- compute agent control -------------------------- #
+            control, dphi = self.controller(
+                dt, est_data, next_traj_point, self.task.goal_type(est_data),
+                self.planner.state_dimension, external_action)
+            self.last_control = control
+        else: #external action is given
+            print(" ------------------------------------------------")
+            print("ISSA controller giving safe controls .... ")
+            
+            next_traj_point = None
+            control, dphi = self.controller(
+                dt, est_data, None, None,
+                self.planner.state_dimension, external_action)
+            #print(" ------------------------------------------------")
+            print("Externel control = {}".format(external_action))
+            print("Safe control = {}".format(control))
+            print(" ------------------------------------------------")
+            self.last_control = np.array([control])
+            
+            
+
+        
 
         ret = {
             "control"  : control,
@@ -71,7 +95,7 @@ class ModelBasedAgent(AgentBase):
             "skip_control": False,
             "delta_phi" : dphi
         }
-        
+        #import ipdb; ipdb.set_trace()
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],

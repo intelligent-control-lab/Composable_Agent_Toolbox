@@ -49,7 +49,6 @@ class Controller(ABC):
 
         # call safe controller
         u_safe, dphi = self.safe_controller(dt, processed_data, u_fb, goal, goal_type)
-
         return u_safe, dphi
 
         

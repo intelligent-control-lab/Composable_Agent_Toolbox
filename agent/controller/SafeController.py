@@ -1,11 +1,13 @@
 import sys, os
 from os.path import abspath, join, dirname
+from env import safety_gym_env
 sys.path.insert(0, join(abspath(dirname(__file__)), '../../'))
 
 import numpy as np
 from abc import ABC, abstractmethod
 from utils import GoalType
 import cvxopt
+import copy
 
 class SafeController(ABC):
     def __init__(self, spec, model):
@@ -26,6 +28,230 @@ class SafeController(ABC):
         pass
 
 # TODO ISSA: new child class of SafeController
+class ISSAController(SafeController):
+    def __call__(self,
+        dt: float,
+        processed_data: dict,
+        u_ref: np.ndarray,
+        goal: np.ndarray,
+        goal_type: GoalType) -> np.ndarray:
+        '''
+            Driver procedure. Do not change
+        '''
+        
+        u_new, valid_adamba_sc, processed_data['safety_gym_env'].safety_gym_env, all_satisfied_u = self.adamba_safecontrol(processed_data['state'], [u_ref], env=processed_data['safety_gym_env'].safety_gym_env)
+        return u_new, None
+
+    def adamba_safecontrol(self, s, u, env, threshold=0, dt_ratio=1.0, ctrlrange=10.0, margin=0.4, adaptive_k=3, adaptive_n=1, adaptive_sigma=0.04, trigger_by_pre_execute=False, pre_execute_coef=0.0, vec_num=None, max_trial_num =1):
+
+        infSet = []
+
+        u = np.clip(u, -ctrlrange, ctrlrange)
+
+        action_space_num = env.action_space.shape[0]
+        action = np.array(u).reshape(-1, action_space_num)
+
+        
+
+        dt_adamba = env.model.opt.timestep * env.frameskip_binom_n * dt_ratio
+
+        assert dt_ratio == 1
+
+        limits= [[-ctrlrange, ctrlrange]] * action_space_num
+        NP = action
+
+        # generate direction
+        NP_vec_dir = []
+        NP_vec = []
+    
+        #sigma_vec = [[1, 0], [0, 1]]
+        # vec_num = 10 if action_space_num==2 else 
+        if action_space_num ==2:
+            vec_num = 10 if vec_num == None else vec_num
+        elif action_space_num == 12:
+            vec_num = 20 if vec_num == None else vec_num
+        else:
+            raise NotImplementedError
+
+        loc = 0 
+        scale = 0.1
+        
+        # num of actions input, default as 1
+        for t in range(0, NP.shape[0]):
+            if action_space_num == 2:
+                vec_set = []
+                vec_dir_set = []
+                for m in range(0, vec_num):
+                    # vec_dir = np.random.multivariate_normal(mean=[0, 0], cov=sigma_vec)
+                    theta_m = m * (2 * np.pi / vec_num)
+                    vec_dir = np.array([np.sin(theta_m), np.cos(theta_m)]) / 2
+                    #vec_dir = vec_dir / np.linalg.norm(vec_dir)
+                    vec_dir_set.append(vec_dir)
+                    vec = NP[t]
+                    vec_set.append(vec)
+                NP_vec_dir.append(vec_dir_set)
+                NP_vec.append(vec_set)
+            else:
+                vec_dir_set = np.random.normal(loc=loc, scale=scale, size=[vec_num, action_space_num])
+                vec_set = [NP[t]] * vec_num
+                #import ipdb; ipdb.set_trace()
+                NP_vec_dir.append(vec_dir_set)
+                NP_vec.append(vec_set)
+    
+        bound = 0.0001
+        # record how many boundary points have been found
+        # collected_num = 0
+        valid = 0
+        cnt = 0
+        out = 0
+        yes = 0
+        
+        max_trials = max_trial_num
+        for n in range(0, NP.shape[0]):
+            trial_num = 0
+            at_least_1 = False
+            while trial_num < max_trials and not at_least_1:
+                at_least_1 = False
+                trial_num += 1
+                NP_vec_tmp = copy.deepcopy(NP_vec[n])
+                #print(NP_vec)
+
+                if trial_num ==1:
+                    NP_vec_dir_tmp = NP_vec_dir[n]
+                else:
+                    NP_vec_dir_tmp = np.random.normal(loc=loc, scale=scale, size=[vec_num, action_space_num])
+
+
+                for v in range(0, vec_num):
+                    NP_vec_tmp_i = NP_vec_tmp[v]
+
+                    NP_vec_dir_tmp_i = NP_vec_dir_tmp[v]
+
+                    eta = bound
+                    decrease_flag = 0
+                    # print(eta)
+                    
+                    while True: 
+                        #print(eta)
+                        # chk_start_time = time.time()
+                        flag, env = self.chk_unsafe(s, NP_vec_tmp_i, dt_ratio=dt_ratio, dt_adamba=dt_adamba, env=env,
+                                            threshold=threshold, margin=margin, adaptive_k=adaptive_k, adaptive_n=adaptive_n, adaptive_sigma=adaptive_sigma,
+                                            trigger_by_pre_execute=trigger_by_pre_execute, pre_execute_coef=pre_execute_coef)
+
+                        # safety gym env itself has clip operation inside
+                        if self.outofbound(limits, NP_vec_tmp_i):
+                            break
+
+                        if eta <= bound and flag==0:
+                            at_least_1 = True
+                            break
+
+                        # AdamBA procudure
+                        if flag == 1 and decrease_flag == 0:
+                            # outreach
+                            NP_vec_tmp_i = NP_vec_tmp_i + eta * NP_vec_dir_tmp_i
+                            eta = eta * 2
+                            continue
+                        # monitor for 1st reaching out boundary
+                        if flag == 0 and decrease_flag == 0:
+                            decrease_flag = 1
+                            eta = eta * 0.25  # make sure decrease step start at 0.5 of last increasing step
+                            continue
+                        # decrease eta
+                        if flag == 1 and decrease_flag == 1:
+                            NP_vec_tmp_i = NP_vec_tmp_i + eta * NP_vec_dir_tmp_i
+                            eta = eta * 0.5
+                            continue
+                        if flag == 0 and decrease_flag == 1:
+                            NP_vec_tmp_i = NP_vec_tmp_i - eta * NP_vec_dir_tmp_i
+                            eta = eta * 0.5
+                            continue
+
+                    NP_vec_tmp[v] = NP_vec_tmp_i
+
+            NP_vec_tmp_new = []
+            # print("NP_vec_tmp: ",NP_vec_tmp)
+            # exit(0)
+
+            # print(u)
+            # print(NP_vec_tmp)
+            for vnum in range(0, len(NP_vec_tmp)):
+                cnt += 1
+                if self.outofbound(limits, NP_vec_tmp[vnum]):
+                    # print("out")
+                    out += 1
+                    continue
+                if NP_vec_tmp[vnum][0] == u[0][0] and NP_vec_tmp[vnum][1] == u[0][1]:
+                    # print("yes")
+                    yes += 1
+                    continue
+
+                valid += 1
+                NP_vec_tmp_new.append(NP_vec_tmp[vnum])
+            NP_vec[n] = NP_vec_tmp_new
+
+        NP_vec_tmp = NP_vec[0]
+
+        if valid > 0:
+            valid_adamba_sc = "adamba_sc success"
+        elif valid == 0 and yes==vec_num:
+            valid_adamba_sc = "itself satisfy"
+        elif valid == 0 and out==vec_num:
+            valid_adamba_sc = "all out"
+        else:
+            valid_adamba_sc = "exception"
+            print("out = ", out)
+            print("yes = ", yes)
+            print("valid = ", valid)
+
+        if len(NP_vec_tmp) > 0:  # at least we have one sampled action satisfying the safety index 
+            norm_list = np.linalg.norm(NP_vec_tmp, axis=1)
+            optimal_action_index = np.where(norm_list == np.amin(norm_list))[0][0]
+            return NP_vec_tmp[optimal_action_index], valid_adamba_sc, env, NP_vec_tmp
+        elif valid_adamba_sc == 'itself satisfy':
+            return u, valid_adamba_sc, env, None
+        else:
+            return None, valid_adamba_sc, env, None
+        
+    def chk_unsafe(self, s, point, dt_ratio, dt_adamba, env, threshold, margin, adaptive_k, adaptive_n, adaptive_sigma, trigger_by_pre_execute, pre_execute_coef):
+        action = point.tolist()
+        # save state of env
+        stored_state = copy.deepcopy(env.sim.get_state())
+        safe_index_now = env.adaptive_safety_index(k=adaptive_k, sigma=adaptive_sigma, n=adaptive_n)
+
+        # simulate the action
+        s_new = env.step(action, simulate_in_adamba=True)
+
+        safe_index_future = env.adaptive_safety_index(k=adaptive_k, sigma=adaptive_sigma, n=adaptive_n)
+
+        dphi = safe_index_future - safe_index_now
+
+        if trigger_by_pre_execute:
+            if safe_index_future < pre_execute_coef:
+                flag = 0  # safe
+            else:
+                flag = 1  # unsafe
+        else:
+            if dphi <= threshold * dt_adamba: #here dt_adamba = dt_env
+                flag = 0  # safe
+            else:
+                flag = 1  # unsafe
+
+        # set qpos and qvel
+        env.sim.set_state(stored_state)
+        
+        # Note that the position-dependent stages of the computation must have been executed for the current state in order for these functions to return correct results. So to be safe, do mj_forward and then mj_jac. If you do mj_step and then call mj_jac, the Jacobians will correspond to the state before the integration of positions and velocities took place.
+        env.sim.forward()
+        return flag, env
+
+    def outofbound(self, action_limit, action):
+        flag = False
+        for i in range(len(action_limit)):
+            assert action_limit[i][1] > action_limit[i][0]
+            if action[i] < action_limit[i][0] or action[i] > action_limit[i][1]:
+                flag = True
+                break
+        return flag
 
 class UnsafeController(SafeController):
     def __call__(self,
@@ -38,6 +264,9 @@ class UnsafeController(SafeController):
             Driver procedure. Do not change
         '''
         return u_ref, None
+
+
+
 
 class EnergyFunctionController(SafeController):
     """

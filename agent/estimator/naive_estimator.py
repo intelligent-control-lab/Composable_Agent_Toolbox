@@ -19,16 +19,22 @@ class NaiveEstimator(object):
         self.pred_state          = None
         self.cache               = {}
 
-    def estimate(self, u,sensor_data):
+    def estimate(self, u, sensor_data):
         est_data = {}
         # print(sensor_data)
-        for sensor, measurement in sensor_data.items():
-            est_data[sensor+"_est"] = measurement
-        est_param = {
-            "state_est":     sensor_data["state_sensor"]["state"],
-            "ego_state_est": sensor_data["state_sensor"]["state"]
-        }
 
-        return est_data, est_param
+        if 'state_sensor' in sensor_data.keys():
+            for sensor, measurement in sensor_data.items():
+                est_data[sensor+"_est"] = measurement
+            est_param = {
+                "state_est":     sensor_data["state_sensor"]["state"],
+                "ego_state_est": sensor_data["state_sensor"]["state"]
+            }
+            return est_data, est_param
+        else:
+            return sensor_data, None
+    
+    def direct_pass(self, sensor_data):
+        return sensor_data
 
     
