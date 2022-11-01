@@ -18,26 +18,26 @@ dt: 0.02
 agent_comp_spec:
     robot: configs/safety_gym_agent_1.yaml
     # human: configs/flat_reach_agent_2.yaml
-agent_env_spec:
+agent_env_spec: null
 
-    robot:
-        type: BB8Agent
-        spec:
-            # All
-            # for specified location
-            init_x: [50.0, 20.0, 0.0, 0.0]
+#     robot:
+#         type: BB8Agent
+#         spec:
+#             # All
+#             # for specified location
+#             init_x: [50.0, 20.0, 0.0, 0.0]
 
-            # RL
-            # for random location
-            # init_x: null
-            # u_max: [1000, 1000]
+#             # RL
+#             # for random location
+#             # init_x: null
+#             # u_max: [1000, 1000]
 
-    human:
-        type: BB8Agent
-        spec:
-            # All
-            init_x: [30.0, 20.0, 0.0, 0.0]
+#     human:
+#         type: BB8Agent
+#         spec:
+#             # All
+#             init_x: [30.0, 20.0, 0.0, 0.0]
 
-            # RL
-            # init_x: null
+#             # RL
+#             # init_x: null
 

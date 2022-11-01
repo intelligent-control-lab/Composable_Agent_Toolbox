@@ -1125,10 +1125,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 k_size = np.prod(obs[k].shape)
                 flat_obs[offset:offset + k_size] = obs[k].flat
                 offset += k_size
-                print(k)
-                print(k_size)
-                print()
-            exit(0)
+                # print(k)
+                # print(k_size)
+                # print()
+            # exit(0)
             obs = flat_obs
         assert self.observation_space.contains(obs), f'Bad obs {obs} {self.observation_space}'
         return obs

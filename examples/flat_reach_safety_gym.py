@@ -35,22 +35,17 @@ if __name__ == "__main__":
     dt, env_info, measurement_groups = env.reset()
     record = []
     print("Simulation progress:")
-    for it in progressbar.progressbar(range(200)):
+    # for it in progressbar.progressbar(range(200)):
+    for it in range(2000):
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"
             # TODO if controller model is None, pass env (use kw arg)
-            
-            # if agent.controller == None:
-            if agent.control_model == None:
-                #import ipdb; ipdb.set_trace()
-                random_action = np.array([np.random.uniform(-1, 1), np.random.uniform(-1, 1)])
-                actions[agent.name] = agent.action(dt, measurement_groups, external_action = random_action)
-            else:
-                raise NotImplementedError
+            actions[agent.name] = agent.action(dt, measurement_groups)
             # sensor data is grouped by agent
+            
         # TODO wrap safety gym env according to following syntax # Done
-        dt, env_info, measurement_groups, _ = env.step(actions)
+        dt, env_info, measurement_groups, _ = env.step(actions, render=True)
         record.append((env_info,measurement_groups))
 
     # evaluator.evaluate(record)

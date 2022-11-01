@@ -52,11 +52,10 @@ class ModelBasedAgent(AgentBase):
         control = None
         #import ipdb; ipdb.set_trace()
 
-
-
         if external_action is None:
             # ------------------------- update planned trajectory ------------------------ #
             goal = self.task.goal(est_data) # todo need goal type for planner
+
             if self.replanning_timer == self.planner.replanning_cycle:
                 # add the future planning information for another agent 
                 self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
@@ -71,6 +70,7 @@ class ModelBasedAgent(AgentBase):
                 dt, est_data, next_traj_point, self.task.goal_type(est_data),
                 self.planner.state_dimension, external_action)
             self.last_control = control
+            
         else: #external action is given
             print(" ------------------------------------------------")
             print("ISSA controller giving safe controls .... ")
@@ -79,15 +79,15 @@ class ModelBasedAgent(AgentBase):
             control, dphi = self.controller(
                 dt, est_data, None, None,
                 self.planner.state_dimension, external_action)
+            
+            if control is None:
+                control = external_action
+
             #print(" ------------------------------------------------")
             print("Externel control = {}".format(external_action))
             print("Safe control = {}".format(control))
             print(" ------------------------------------------------")
             self.last_control = np.array([control])
-            
-            
-
-        
 
         ret = {
             "control"  : control,

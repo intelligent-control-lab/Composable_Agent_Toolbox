@@ -209,7 +209,7 @@ class ISSAController(SafeController):
             optimal_action_index = np.where(norm_list == np.amin(norm_list))[0][0]
             return NP_vec_tmp[optimal_action_index], valid_adamba_sc, env, NP_vec_tmp
         elif valid_adamba_sc == 'itself satisfy':
-            return u, valid_adamba_sc, env, None
+            return u.reshape(-1, action_space_num), valid_adamba_sc, env, None
         else:
             return None, valid_adamba_sc, env, None
         
