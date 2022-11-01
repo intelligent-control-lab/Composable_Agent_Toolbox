@@ -52,42 +52,23 @@ class ModelBasedAgent(AgentBase):
         control = None
         #import ipdb; ipdb.set_trace()
 
-        if external_action is None:
-            # ------------------------- update planned trajectory ------------------------ #
-            goal = self.task.goal(est_data) # todo need goal type for planner
+        # ------------------------- update planned trajectory ------------------------ #
+        goal = self.task.goal(est_data) # todo need goal type for planner
 
-            if self.replanning_timer == self.planner.replanning_cycle:
-                # add the future planning information for another agent 
-                self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
-                self.replanning_timer = 0
+        if self.replanning_timer == self.planner.replanning_cycle:
+            # add the future planning information for another agent 
+            self.planned_traj = self.planner(dt, goal, est_data) # todo pass goal type
+            self.replanning_timer = 0
 
-            next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
-            next_traj_point = np.vstack(next_traj_point.ravel())
-            self.replanning_timer += 1
+        next_traj_point = self.planned_traj[min(self.replanning_timer, self.planned_traj.shape[0]-1)]  # After the traj ran out, always use the last traj point for reference.
+        next_traj_point = np.vstack(next_traj_point.ravel())
+        self.replanning_timer += 1
 
-            # --------------------------- compute agent control -------------------------- #
-            control, dphi = self.controller(
-                dt, est_data, next_traj_point, self.task.goal_type(est_data),
-                self.planner.state_dimension, external_action)
-            self.last_control = control
-            
-        else: #external action is given
-            print(" ------------------------------------------------")
-            print("ISSA controller giving safe controls .... ")
-            
-            next_traj_point = None
-            control, dphi = self.controller(
-                dt, est_data, None, None,
-                self.planner.state_dimension, external_action)
-            
-            if control is None:
-                control = external_action
-
-            #print(" ------------------------------------------------")
-            print("Externel control = {}".format(external_action))
-            print("Safe control = {}".format(control))
-            print(" ------------------------------------------------")
-            self.last_control = np.array([control])
+        # --------------------------- compute agent control -------------------------- #
+        control, dphi = self.controller(
+            dt, est_data, next_traj_point, self.task.goal_type(est_data),
+            self.planner.state_dimension, external_action)
+        self.last_control = control
 
         ret = {
             "control"  : control,

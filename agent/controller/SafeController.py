@@ -40,6 +40,13 @@ class ISSAController(SafeController):
         '''
         u_new, valid_adamba_sc, processed_data['safety_gym_env_est'], all_satisfied_u = self.adamba_safecontrol(processed_data['state_est'], [u_ref], env=processed_data['safety_gym_env_est'])
 
+        print(" ------------------------------------------------")
+        print("ISSA controller giving safe controls .... ")
+
+        print("Nominal control = {}".format(u_ref))
+        print("Safe    control = {}".format(u_new))
+        print(" ------------------------------------------------")
+
         return u_new, None
 
     def adamba_safecontrol(self, s, u, env, threshold=0, dt_ratio=1.0, ctrlrange=10.0, margin=0.4, adaptive_k=3, adaptive_n=1, adaptive_sigma=0.04, trigger_by_pre_execute=False, pre_execute_coef=0.0, vec_num=None, max_trial_num =1):
