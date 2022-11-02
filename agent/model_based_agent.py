@@ -76,7 +76,7 @@ class ModelBasedAgent(AgentBase):
             "skip_control": False,
             "delta_phi" : dphi
         }
-        #import ipdb; ipdb.set_trace()
+        
         if "communication_sensor" in self.sensors.keys():
             ret["broadcast"] = {
                 "planned_traj":self.planned_traj[min(self.replanning_timer, self.planner.horizon-1):],

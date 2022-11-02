@@ -95,7 +95,7 @@ class SafetyGymEnv(object):
         sensor_data = dict()
         sensor_data['state'] = o
         sensor_data['reward'] = 0
-        sensor_data['d'] = False
+        sensor_data['done'] = False
         sensor_data['cost_info'] = {'cost_hazards': 0, 'cost': 0}
         sensor_data['safety_gym_env'] = self.safety_gym_env
 
@@ -140,7 +140,7 @@ class SafetyGymEnv(object):
         sensor_data = dict()
         sensor_data['state'] = o2
         sensor_data['reward'] = r
-        sensor_data['d'] = d
+        sensor_data['done'] = d
         sensor_data['cost_info'] = info # c = info.get('cost', 0)
         sensor_data['safety_gym_env'] = self.safety_gym_env
         

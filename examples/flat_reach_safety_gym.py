@@ -47,5 +47,8 @@ if __name__ == "__main__":
         # TODO wrap safety gym env according to following syntax # Done
         dt, env_info, measurement_groups, _ = env.step(actions, render=True)
         record.append((env_info,measurement_groups))
+        
+        if measurement_groups['done']:
+            dt, env_info, measurement_groups = env.reset()
 
     # evaluator.evaluate(record)
