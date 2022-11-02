@@ -41,7 +41,7 @@ controller:
                 # for integrator planner
                 kp: 200
                 kv: 100
-                u_max: [0.1, 10]
+                u_max: [0.01, 10]
         safe_controller:
             # TODO type ISSA
             type: ISSAController
@@ -58,7 +58,7 @@ controller:
                 eta: 1
                 c: 1000
                 lambd: 1
-                u_max: [1000, 1000]
+                u_max: [0.01, 10]
 estimator:
     type: NaiveEstimator
     spec:
