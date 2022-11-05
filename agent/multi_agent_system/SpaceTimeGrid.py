@@ -238,7 +238,7 @@ class SpaceTimeGrid:
                     vis_obs_list.append(vis_obs_new)
         if not feasible_obs and not_empty_obs:
             # print(f"{p_i} {s_i} INFEASIBLE")
-            return [], [], [], [], [] # no solution
+            return [], [], [], [] # no solution
 
         for i in range(len(log_list)):
             log_list[i].append((p_i, s_i, False))
