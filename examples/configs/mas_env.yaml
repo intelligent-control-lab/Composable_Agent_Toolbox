@@ -9,6 +9,7 @@ world:
             ob1: [[20.0, 5.0]]
             # a3: [[20.0, 15.0]]
             a3: [[10.0, 5.0]]
+            obstat: [[15.0, 10.0]]
 dt: 0.02
 agent_comp_spec:
     a1: configs/mas_sim_a1.yaml
@@ -33,3 +34,7 @@ agent_env_spec:
         spec:
             # init_x: [10.0, 5.0, 0.0, 0.0]
             init_x: [20.0, 15.0, 0.0, 0.0]
+    obstat:
+        type: BB8Agent
+        spec:
+            init_x: [15.0, 10.0, 0.0, 0.0]

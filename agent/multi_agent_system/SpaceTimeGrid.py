@@ -55,7 +55,13 @@ class SpaceTimeGrid:
     def _compute_dv(self, s1, s2):
         mag = self.r + self.r - np.linalg.norm(s1 - s2)
         uv = (s1 - s2) / np.linalg.norm(s1 - s2)
-        return mag * uv
+        dv = mag * uv
+        for i in range(3):
+            if dv[i] == 0:
+                bound = 4 * self.r**2 - np.sum(dv) # value of dv[i] to make mag(dv) = 2r
+                rand = 2 * bound * np.random.random_sample() - bound # [-bound, bound)
+                dv[i] += rand
+        return dv
 
     def _intersects(self, s1, s2, eps=0):
         return np.linalg.norm(s1 - s2) <= self.r + self.r + eps
