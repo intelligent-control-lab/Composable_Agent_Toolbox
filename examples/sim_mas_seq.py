@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     ag_dt, env_info, measurement_groups = env.reset()
     paths = [[np.array(ag.path[0][:2])] for ag in agents]
-    r = 0.5 # TODO: perhaps allow for different paths to have different r?
+    r = 0.35 # TODO: perhaps allow for different paths to have different r?
     ag_dt = np.array([ag.dt for ag in agents])
     a_max = [10 for ag in agents]
     gamma = [1 for ag in agents]
@@ -149,10 +149,19 @@ if __name__ == '__main__':
     print(f"OPT NUM: {stg.opt_num}")
     print(f"OPT TIME: {stg.opt_time}")
     print(f"TREE TIME: {stg.tree_time}")
+    print(f"AVG OPTS PER RES {stg.opt_num / stg.res_num}")
+    print(f"RESOLVE TIME: {stg.resolve_time - stg.tree_time}")
 
-    print(stg.paths[0])
-    print('\n')
-    print(stg.paths[1])
+    makespan = stg.paths[0][-1][2]
+    for i in range(1, len(stg.paths)):
+        makespan = max(makespan, stg.paths[i][-1][2])
+    print(f"MAKESPAN: {makespan}")
+
+    tot_dist = 0
+    for p in stg.paths:
+        for i in range(len(p) - 1):
+            tot_dist += np.linalg.norm(p[i + 1] - p[i])
+    print(f"TOTAL DISTANCE: {tot_dist}")
 
     min_clear = np.inf
     for i, p1 in enumerate(stg.paths + stg.obs_paths):

@@ -48,6 +48,7 @@ class SpaceTimeGrid:
         self.opt_time = 0
         self.tree_time = 0
         self.res_num = 0
+        self.resolve_time = 0
 
         print("STG initialized...")
 
@@ -81,30 +82,24 @@ class SpaceTimeGrid:
                     return True
         return False
 
-    def _solve(self, T, p_i, s_i, v, vis, vis_obs, shifts, conflict):
+    def _solve(self, T, p_i, s_i, v, vis, vis_obs, conflict):
 
-        print(f"CURRENT: {p_i} {s_i} {v} {vis[p_i][s_i]}")
-        print(f"CUR LOC: {T[p_i][s_i]} / ORIG LOC: {self.paths[p_i][s_i]}")
-        print(f"CUR SHIFT: {shifts[p_i][s_i]}")
+        # print(f"CURRENT: {p_i} {s_i} {v} {vis[p_i][s_i]}")
+        # print(f"CUR LOC: {T[p_i][s_i]} / ORIG LOC: {self.paths[p_i][s_i]}")
         
         log_list = []
         V_list = []
         vis_list = []
         vis_obs_list = []
-        shifts_list = []
         if vis[p_i][s_i]:
-            print(f" {p_i} {s_i} INFEASIBLE")
-            return [], [], [], [], []
+            # print(f" {p_i} {s_i} INFEASIBLE")
+            return [], [], [], []
         vis_new = copy.deepcopy(vis)
         vis_new[p_i][s_i] = True
         T_new = np.asarray(copy.deepcopy(T))
-        T_new[p_i], vel_new, sh = self._path_shift(T, p_i, s_i, v)
-        shifts_new = np.asarray(copy.deepcopy(shifts))
-        for i in range(len(shifts_new[p_i])):
-            shifts_new[p_i][i] += sh[i]
+        T_new[p_i], vel_new = self._path_shift(T, p_i, s_i, v)
 
-        print(f"NEW ({p_i} {s_i}) LOCATION: {T_new[p_i][s_i]}")
-        print(f"NEW ({p_i} {s_i}) SHIFT: {shifts_new[p_i][s_i]}")
+        # print(f"NEW ({p_i} {s_i}) LOCATION: {T_new[p_i][s_i]}")
 
         start = time.time()
         local_tree = KDTree([s for p in T_new for s in p])
@@ -117,14 +112,14 @@ class SpaceTimeGrid:
             query_obs = self.obs_tree.query_ball_point(T_new[p_i][s_i], self.r + self.r - self.tol)
             inter_obs = [tuple(self._idx2sp(self.obs_paths, idx)) for idx in query_obs]
             if (p_con, s_con) in inter_obs:
-                print(f" {p_i} {s_i} INFEASIBLE")
-                return [], [], [], [], []
+                # print(f" {p_i} {s_i} INFEASIBLE")
+                return [], [], [], []
         else:
             query = local_tree.query_ball_point(T_new[p_i][s_i], self.r + self.r - self.tol)
             inter = [tuple(self._idx2sp(self.paths, idx)) for idx in query]
             if (p_con, s_con) in inter:
-                print(f" {p_i} {s_i} INFEASIBLE")
-                return [], [], [], [], []
+                # print(f" {p_i} {s_i} INFEASIBLE")
+                return [], [], [], []
 
         # agent-agent intersection
         feasible = False
@@ -136,14 +131,14 @@ class SpaceTimeGrid:
             if p_j == p_k:
                 continue
             not_empty = True
-            print(f"{p_i} {s_i} AA QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
-            print(f"AA QUERY LOCATIONS: {T_new[p_j][s_j]} {T_new[p_k][s_k]}")
+            # print(f"{p_i} {s_i} AA QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
+            # print(f"AA QUERY LOCATIONS: {T_new[p_j][s_j]} {T_new[p_k][s_k]}")
             v1 = self._compute_dv(T_new[p_j][s_j], T_new[p_k][s_k])
             v2 = self._compute_dv(T_new[p_k][s_k], T_new[p_j][s_j])
-            print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
-            log1, V1, vis1, vis_obs1, shifts1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs, shifts_new, (p_k, s_k, False))
-            print(f"{p_i} {s_i} CALLS {p_k} {s_k}")
-            log2, V2, vis2, vis_obs2, shifts2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs, shifts_new, (p_j, s_j, False))
+            # print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
+            log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs, (p_k, s_k, False))
+            # print(f"{p_i} {s_i} CALLS {p_k} {s_k}")
+            log2, V2, vis2, vis_obs2 = self._solve(T_new, p_k, s_k, v2, vis_new, vis_obs, (p_j, s_j, False))
             if len(log1) + len(log2) > 0:
                 feasible = True
             paired1 = [False for _ in log1]
@@ -171,9 +166,6 @@ class SpaceTimeGrid:
                                 for p_idx in range(len(self.obs_paths))]
                     vis_list.append(vis_combo)
                     vis_obs_list.append(vis_obs_combo)
-                    shifts_combo = [shifts_new[idx] + shifts1[i][idx] + shifts2[j][idx] 
-                        for idx in range(len(shifts_new))]
-                    shifts_list.append(shifts_combo)
             for i in range(len(log1)):
                 if paired1[i]:
                     continue
@@ -185,8 +177,6 @@ class SpaceTimeGrid:
                 V_list.append(V1[i])
                 vis_list.append(vis1[i])
                 vis_obs_list.append(vis_obs1[i])
-                shifts_list.append([shifts_new[idx] + shifts1[i][idx] 
-                    for idx in range(len(shifts_new))])
             for i in range(len(log2)):
                 if paired2[i]:
                     continue
@@ -198,11 +188,9 @@ class SpaceTimeGrid:
                 V_list.append(V2[i])
                 vis_list.append(vis2[i])
                 vis_obs_list.append(vis_obs2[i])
-                shifts_list.append([shifts_new[idx] + shifts2[i][idx] 
-                    for idx in range(len(shifts_new))])
         if not feasible and not_empty:
-            print(f"{p_i} {s_i} INFEASIBLE")
-            return [], [], [], [], [] # no solution
+            # print(f"{p_i} {s_i} INFEASIBLE")
+            return [], [], [], [] # no solution
 
         # agent-obs intersection
         feasible_obs = False
@@ -214,7 +202,7 @@ class SpaceTimeGrid:
                 not_empty_obs = True
                 p_j, s_j = self._idx2sp(T_new, j)
                 p_k, s_k = self._idx2sp(self.obs_paths, k)
-                print(f"{p_i} {s_i} AO QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
+                # print(f"{p_i} {s_i} AO QUERY: ({p_j} {s_j}), ({p_k} {s_k})")
                 vis_obs_new = np.asarray(copy.deepcopy(vis_obs))
                 vis_obs_new[p_k][s_k] = True
                 doubled = False
@@ -228,8 +216,8 @@ class SpaceTimeGrid:
                     k_i += 1
                 else:
                     v1 = self._compute_dv(T_new[p_j][s_j], self.obs_paths[p_k][s_k])
-                print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
-                log1, V1, vis1, vis_obs1, shifts1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs_new, shifts_new, (p_k, s_k, True))
+                # print(f"{p_i} {s_i} CALLS {p_j} {s_j}")
+                log1, V1, vis1, vis_obs1 = self._solve(T_new, p_j, s_j, v1, vis_new, vis_obs_new, (p_k, s_k, True))
                 if len(log1) > 0:
                     feasible_obs = True
                 for i in range(len(log1)):
@@ -240,8 +228,6 @@ class SpaceTimeGrid:
                         V_list[-1].append(np.zeros(3))
                     vis_list.append(vis1[i])
                     vis_obs_list.append(vis_obs1[i])
-                    shifts_list.append([shifts_new[idx] + shifts1[i][idx] 
-                        for idx in range(len(shifts_new))])
                 if len(log1) == 0:
                     log_list.append([(p_k, s_k, True)])
                     V_list.append([np.zeros(3)])
@@ -250,13 +236,11 @@ class SpaceTimeGrid:
                         V_list[-1].append(np.zeros(3))
                     vis_list.append(vis_new)
                     vis_obs_list.append(vis_obs_new)
-                    shifts_list.append(shifts_new)
         if not feasible_obs and not_empty_obs:
-            print(f"{p_i} {s_i} INFEASIBLE")
+            # print(f"{p_i} {s_i} INFEASIBLE")
             return [], [], [], [], [] # no solution
 
         for i in range(len(log_list)):
-            # if not vis_list[i][p_i][s_i]:
             log_list[i].append((p_i, s_i, False))
             V_list[i].append(v)
 
@@ -265,10 +249,9 @@ class SpaceTimeGrid:
             V_list.append([v])
             vis_list.append(vis_new)
             vis_obs_list.append(vis_obs)
-            shifts_list.append(shifts_new)
 
-        print(f"{p_i} {s_i} FEASIBLE: {log_list}")
-        return log_list, V_list, vis_list, vis_obs_list, shifts_list
+        # print(f"{p_i} {s_i} FEASIBLE: {log_list}")
+        return log_list, V_list, vis_list, vis_obs_list
 
     def _simulate(self):
         
@@ -283,47 +266,25 @@ class SpaceTimeGrid:
             p_j, s_j = self._idx2sp(self.paths, idx2)
             if p_i == p_j:
                 continue
-            print(f"INITIAL AGENT-AGENT INTERSECTION: {self.paths[p_i][s_i]} {self.paths[p_j][s_j]}")
+            # print(f"INITIAL AGENT-AGENT INTERSECTION: {self.paths[p_i][s_i]} {self.paths[p_j][s_j]}")
             v1 = self._compute_dv(self.paths[p_i][s_i], self.paths[p_j][s_j])
             v2 = self._compute_dv(self.paths[p_j][s_j], self.paths[p_i][s_i])
             vis1_init = np.array([[False for _ in p] for p in self.paths])
-            # vis1_init[p_j][s_j] = True
             vis2_init = np.array([[False for _ in p] for p in self.paths])
-            # vis2_init[p_i][s_i] = True
             vis_obs = np.array([[False for _ in p] for p in self.obs_paths])
-            shifts = np.array([[np.zeros(3) for _ in p] for p in self.paths])
-            print("AGENT-AGENT", p_i, s_i, v1, p_j, s_j, v2)
-            print(f"SOLVE {p_i} {s_i} {v1}")
-            log1, V1, vis1, vis_obs1, shifts1 = self._solve(self.paths, p_i, s_i, v1, vis1_init, vis_obs, shifts, (p_j, s_j, False))
-            print(f"SOLVE {p_j} {s_j} {v2}")
-            log2, V2, vis2, vis_obs2, shifts2 = self._solve(self.paths, p_j, s_j, v2, vis2_init, vis_obs, shifts, (p_i, s_i, False))
+            # print("AGENT-AGENT", p_i, s_i, v1, p_j, s_j, v2)
+            # print(f"SOLVE {p_i} {s_i} {v1}")
+            log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis1_init, vis_obs, (p_j, s_j, False))
+            # print(f"SOLVE {p_j} {s_j} {v2}")
+            log2, V2, vis2, vis_obs2 = self._solve(self.paths, p_j, s_j, v2, vis2_init, vis_obs, (p_i, s_i, False))
             paired1 = [False for _ in log1]
             paired2 = [False for _ in log2]
-            # for i in range(len(log1)):
-            #     for v_i in range(len(V1[i])):
-            #         p_k, s_k, is_ob = log1[i][v_i]
-            #         if not is_ob:
-            #             print(f"APPLYING VEC SHIFT: ({p_k} {s_k}) {V1[i][v_i]} += {shifts1[i][p_k][s_k]}")
-            #             V1[i][v_i] += shifts1[i][p_k][s_k]
-            # for i in range(len(log2)):
-            #     for v_i in range(len(V2[i])):
-            #         p_k, s_k, is_ob = log2[i][v_i]
-            #         if not is_ob:
-            #             print(f"APPLYING VEC SHIFT: ({p_k} {s_k}) {V2[i][v_i]} += {shifts2[i][p_k][s_k]}")
-            #             V2[i][v_i] += shifts2[i][p_k][s_k]
             for i in range(len(log1)):
                 for j in range(len(log2)):
                     if self._common_vis([[False for _ in p] for p in self.paths], vis1[i], vis2[j]):
                         continue
                     paired1[i] = True
                     paired2[j] = True
-                    # log_list.append(log1[i])
-                    # V_list.append(V1[i])
-                    # for idx, (p_k, s_k, is_ob) in enumerate(log2[j]):
-                    #     if is_ob and vis_obs1[i][p_k][s_k]: # skip double-counted obs
-                    #         continue
-                    #     log_list[-1].append(log2[j][idx])
-                    #     V_list[-1].append(V2[j][idx])
                     log_list.append(log1[i] + log2[j])
                     V_list.append(V1[i] + V2[j])
                     S_list.append([])
@@ -366,7 +327,7 @@ class SpaceTimeGrid:
                 j = query_obs[i][j_i]
                 p_i, s_i = self._idx2sp(self.paths, i)
                 p_j, s_j = self._idx2sp(self.obs_paths, j)
-                print(f"INITIAL AGENT-OBS INTERSECTION: {self.paths[p_i][s_i]} {self.obs_paths[p_j][s_j]}")
+                # print(f"INITIAL AGENT-OBS INTERSECTION: {self.paths[p_i][s_i]} {self.obs_paths[p_j][s_j]}")
                 doubled = False
                 p_next, s_next = None, None
                 if j_i < len(query_obs[i]) - 1 and query_obs[i][j_i + 1] == j + 1:
@@ -380,16 +341,9 @@ class SpaceTimeGrid:
                 v2 = np.zeros(3)
                 vis = [[False for _ in p] for p in self.paths]
                 vis_obs = [[False for _ in p] for p in self.obs_paths]
-                shifts = [[np.zeros(3) for _ in p] for p in self.paths]
-                print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
-                print(f"SOLVE {p_i} {s_i} {v1}")
-                log1, V1, vis1, vis_obs1, shifts1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs, shifts, (p_j, s_j, True))
-                # for k in range(len(log1)):
-                #     for v_k in range(len(V1[k])):
-                #         p_k, s_k, is_ob = log1[k][v_k]
-                #         if not is_ob:
-                #             print(f"APPLYING VEC SHIFT: ({p_k} {s_k}) {V1[k][v_k]} += {shifts1[k][p_k][s_k]}")
-                #             V1[k][v_k] += shifts1[k][p_k][s_k]
+                # print("AGENT-OBS", p_i, s_i, v1, p_j, s_j, v2)
+                # print(f"SOLVE {p_i} {s_i} {v1}")
+                log1, V1, vis1, vis_obs1 = self._solve(self.paths, p_i, s_i, v1, vis, vis_obs, (p_j, s_j, True))
                 for k in range(len(log1)):
                     log_list.append(log1[k])
                     V_list.append(V1[k])
@@ -411,10 +365,8 @@ class SpaceTimeGrid:
 
     def _path_shift(self, T, p_i, s_i, dv):
 
-        shifts = [np.zeros(3) for _ in T[p_i]]
-
         if np.all(dv == 0):
-            return T[p_i], self.vel[p_i], shifts
+            return T[p_i], self.vel[p_i]
 
         p = np.asarray(copy.deepcopy(T[p_i]))
         s0 = p[s_i]
@@ -430,8 +382,6 @@ class SpaceTimeGrid:
             if self.at_goal[p_i] and i == len(p) - 1:
                 vec = vec[2] * np.array([0, 0, 1]) # only t component
             p[i] += vec
-            if i != s_i:
-                shifts[i] += vec
 
         # resolve time inversions and motion constraints
         vel = [np.zeros(2) for _ in p]
@@ -440,11 +390,10 @@ class SpaceTimeGrid:
             vel[i] = vel[i - 1] + self.a_max[p_i] * delt
             t_orig = p[i][2]
             p[i][2] = max(p[i][2], p[i - 1][2] + delt)
-            shifts[i][2] += p[i][2] - t_orig
 
         # p, vel = self._pseudo_connect(p, vel) # TODO: incorporate this without messing up indexing in simulation
 
-        return p, vel, shifts
+        return p, vel
         
     def _deltat(self, s1, s2, v1, a):
         d = np.linalg.norm(s2 - s1) # TODO: change to d = np.linalg.norm(s2[:2] - s1[:2]) once it starts working
@@ -620,30 +569,32 @@ class SpaceTimeGrid:
 
     def resolve(self, i) -> None: # TODO: delete i param after debug
 
-        if i >= 10:
-            # plot paths
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green", "orange"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            plt.show()
+        # if i >= 10:
+        #     # plot paths
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green", "orange"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     plt.show()
 
-        min_clear = np.inf
-        for j, p1 in enumerate(self.paths + self.obs_paths):
-            for p2 in (self.paths + self.obs_paths)[j + 1:]:
-                for s1 in p1:
-                    for s2 in p2:
-                        min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
-        print(f"MIN CLEARANCE BEFORE: {min_clear}")
+        # min_clear = np.inf
+        # for j, p1 in enumerate(self.paths + self.obs_paths):
+        #     for p2 in (self.paths + self.obs_paths)[j + 1:]:
+        #         for s1 in p1:
+        #             for s2 in p2:
+        #                 min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
+        # print(f"MIN CLEARANCE BEFORE: {min_clear}")
+
+        start_res = time.time()
 
         S_list, V_list, log_list = self._simulate()
 
-        print('\n')
-        for S, V, log in zip(S_list, V_list, log_list):
-            for i in range(len(S)):
-                print(f"S[i]: {S[i]} ##### V[i]: {V[i]} ##### log[i]: {log[i]}")
-            print("---------------------------------------------------")
+        # print('\n')
+        # for S, V, log in zip(S_list, V_list, log_list):
+        #     for i in range(len(S)):
+        #         print(f"S[i]: {S[i]} ##### V[i]: {V[i]} ##### log[i]: {log[i]}")
+        #     print("---------------------------------------------------")
 
         X_star = []
         min_f = np.inf
@@ -660,17 +611,17 @@ class SpaceTimeGrid:
                 min_f = fval
                 best_i = i
 
-        # plot paths and outstanding spheres
-        if len(S_list) > 0:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')
-            c = ["blue", "red", "green", "orange"]
-            for i, p in enumerate(self.paths + self.obs_paths):
-                ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
-            ax.scatter(
-                [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
-            color="yellow", s=100)
-            plt.show()
+        # # plot paths and outstanding spheres
+        # if len(S_list) > 0:
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(projection='3d')
+        #     c = ["blue", "red", "green", "orange"]
+        #     for i, p in enumerate(self.paths + self.obs_paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     ax.scatter(
+        #         [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
+        #     color="yellow", s=100)
+        #     plt.show()
 
         if len(S_list) > 0:
             solution = list(zip(log_list[best_i], X_star))
@@ -680,7 +631,7 @@ class SpaceTimeGrid:
                     continue
                 vec = x - self.paths[p_i][s_i]
                 # print(f"VECTORRRR ({p_i} {s_i}): {vec}")
-                self.paths[p_i], self.vel[p_i], shifts = self._path_shift(self.paths, p_i, s_i, vec)
+                self.paths[p_i], self.vel[p_i] = self._path_shift(self.paths, p_i, s_i, vec)
             self.res_num += 1
 
         # min_clear = np.inf
@@ -699,29 +650,32 @@ class SpaceTimeGrid:
         end = time.time()
         self.tree_time += end - start
 
-        min_clear = np.inf
-        for i, p1 in enumerate(self.paths + self.obs_paths):
-            for p2 in (self.paths + self.obs_paths)[i + 1:]:
-                for s1 in p1:
-                    for s2 in p2:
-                        min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
-        print(f"MIN CLEARANCE AFTER: {min_clear}")
+        end_res = time.time()
+        self.resolve_time += end_res - start_res
 
-        query = self.tree.query_pairs(self.r + self.r - self.tol)
-        for idx1, idx2 in query:
-            p_i, s_i = self._idx2sp(self.paths, idx1)
-            p_j, s_j = self._idx2sp(self.paths, idx2)
-            if p_i == p_j:
-                continue
-            print(f"REMAINING AGENT-AGENT INTERSECTION (AFTER pseudo): ({p_i} {s_i}) ({p_j} {s_j}) -> {self.paths[p_i][s_i]} {self.paths[p_j][s_j]}")
+        # min_clear = np.inf
+        # for i, p1 in enumerate(self.paths + self.obs_paths):
+        #     for p2 in (self.paths + self.obs_paths)[i + 1:]:
+        #         for s1 in p1:
+        #             for s2 in p2:
+        #                 min_clear = min(min_clear, np.linalg.norm(s1 - s2) / self.alpha)
+        # print(f"MIN CLEARANCE AFTER: {min_clear}")
 
-        query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
-        for k in range(len(query_obs)):
-            for j_i in range(len(query_obs[k])):
-                j = query_obs[k][j_i]
-                p_i, s_i = self._idx2sp(self.paths, k)
-                p_j, s_j = self._idx2sp(self.obs_paths, j)
-                print(f"REMAINING AGENT-OBS INTERSECTION: ({p_i} {s_i}) ({p_j} {s_j})")
+        # query = self.tree.query_pairs(self.r + self.r - self.tol)
+        # for idx1, idx2 in query:
+        #     p_i, s_i = self._idx2sp(self.paths, idx1)
+        #     p_j, s_j = self._idx2sp(self.paths, idx2)
+        #     if p_i == p_j:
+        #         continue
+        #     print(f"REMAINING AGENT-AGENT INTERSECTION (AFTER pseudo): ({p_i} {s_i}) ({p_j} {s_j}) -> {self.paths[p_i][s_i]} {self.paths[p_j][s_j]}")
+
+        # query_obs = self.tree.query_ball_tree(self.obs_tree, self.r + self.r - self.tol)
+        # for k in range(len(query_obs)):
+        #     for j_i in range(len(query_obs[k])):
+        #         j = query_obs[k][j_i]
+        #         p_i, s_i = self._idx2sp(self.paths, k)
+        #         p_j, s_j = self._idx2sp(self.obs_paths, j)
+        #         print(f"REMAINING AGENT-OBS INTERSECTION: ({p_i} {s_i}) ({p_j} {s_j})")
 
     def _get_P(self, S, log):
         # P is a n*2 matrix containing pairs of spheres in S (1-indexed)
