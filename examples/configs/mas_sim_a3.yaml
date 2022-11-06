@@ -2,10 +2,10 @@ name: a1
 task:
   type: FlatReachingTask
   spec: {}
-  # init_x: [10.0, 5.0, 0.0, 0.0]
-  # goal: [20.0, 15.0, 0.0, 0.0]
-  init_x: [20.0, 15.0, 0.0, 0.0]
-  goal: [10.0, 5.0, 0.0, 0.0]
+  init_x: [10.0, 5.0, 0.0, 0.0]
+  goal: [20.0, 15.0, 0.0, 0.0]
+  # init_x: [20.0, 15.0, 0.0, 0.0]
+  # goal: [10.0, 5.0, 0.0, 0.0]
 model:
   planning:
     type: DoubleIntegrator

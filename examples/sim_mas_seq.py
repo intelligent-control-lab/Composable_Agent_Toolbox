@@ -117,16 +117,16 @@ if __name__ == '__main__':
             path.append(waypoint)
             ob.set_path(path)
 
-    # plot obstacle paths
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    colors = 'brgcmk'
-    for i, p in enumerate(stg.obs_paths):
-        x = [s[0] for s in p]
-        y = [s[1] for s in p]
-        t = [s[2] for s in p]
-        ax.scatter(x, y, t, color=colors[i])
-    plt.show()
+    # # plot obstacle paths
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    # colors = 'brgcmk'
+    # for i, p in enumerate(stg.obs_paths):
+    #     x = [s[0] for s in p]
+    #     y = [s[1] for s in p]
+    #     t = [s[2] for s in p]
+    #     ax.scatter(x, y, t, color=colors[i])
+    # plt.show()
 
     print("Simulation progress:")
     for it in progressbar.progressbar(range(iters)):

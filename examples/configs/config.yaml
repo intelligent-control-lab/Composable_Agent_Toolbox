@@ -36,17 +36,17 @@ agents:
   a2:
     type: MASAgent
     spec: configs/mas_sim_a2.yaml
-  # a3:
-  #   type: MASAgent
-  #   spec: configs/mas_sim_a3.yaml
+  a3:
+    type: MASAgent
+    spec: configs/mas_sim_a3.yaml
 
 obs:
-  # ob1:
-  #   type: MASAgent
-  #   spec: configs/mas_sim_ob1.yaml
-  obstat:
+  ob1:
     type: MASAgent
-    spec: configs/mas_sim_obstat.yaml
+    spec: configs/mas_sim_ob1.yaml
+  # obstat:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_obstat.yaml
 
 iters: 1000
 render: true
