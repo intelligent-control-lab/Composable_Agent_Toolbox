@@ -73,9 +73,14 @@ class ISSAController(SafeController):
         processed_data['safety_gym_env_est'].sim.forward()
 
         if trigger_by_pre_execute:
+
+            u_ref_pass = u_ref
+            # u_ref_pass = np.random.rand(2)
+            # u_ref_pass = np.array([1, 1])
+
             u_new, valid_adamba_sc, processed_data['safety_gym_env_est'], all_satisfied_u = \
                 self.adamba_safecontrol(
-                    processed_data['safety_gym_state_est'], [u_ref],
+                    processed_data['safety_gym_state_est'], [u_ref_pass],
                     env=processed_data['safety_gym_env_est'],
                     trigger_by_pre_execute=trigger_by_pre_execute)
             # print(" ------------------------------------------------")
@@ -175,11 +180,17 @@ class ISSAController(SafeController):
                 else:
                     NP_vec_dir_tmp = np.random.normal(loc=loc, scale=scale, size=[vec_num, action_space_num])
 
+                dphi_sim_list = []
 
                 for v in range(0, vec_num):
+
+
                     NP_vec_tmp_i = NP_vec_tmp[v]
 
                     NP_vec_dir_tmp_i = NP_vec_dir_tmp[v]
+                    
+                    # print(f'NP_vec_dir_tmp_i {NP_vec_dir_tmp_i}')
+                    # import ipdb; ipdb.set_trace()
 
                     eta = bound
                     decrease_flag = 0
@@ -188,7 +199,7 @@ class ISSAController(SafeController):
                     while True: 
                         #print(eta)
                         # chk_start_time = time.time()
-                        flag, env = self.chk_unsafe(s, NP_vec_tmp_i, dt_ratio=dt_ratio, dt_adamba=dt_adamba, env=env,
+                        flag, env, dphi_sim = self.chk_unsafe(s, NP_vec_tmp_i, dt_ratio=dt_ratio, dt_adamba=dt_adamba, env=env,
                                             threshold=threshold, margin=margin, adaptive_k=adaptive_k, adaptive_n=adaptive_n, adaptive_sigma=adaptive_sigma,
                                             trigger_by_pre_execute=trigger_by_pre_execute, pre_execute_coef=pre_execute_coef)
 
@@ -222,13 +233,15 @@ class ISSAController(SafeController):
                             continue
 
                     NP_vec_tmp[v] = NP_vec_tmp_i
+                    dphi_sim_list.append(dphi_sim)
 
-            NP_vec_tmp_new = []
+            NP_vec_tmp_valid = []
             # print("NP_vec_tmp: ",NP_vec_tmp)
             # exit(0)
 
             # print(u)
             # print(NP_vec_tmp)
+            dphi_sim_list_valid = []
             for vnum in range(0, len(NP_vec_tmp)):
                 cnt += 1
                 if self.outofbound(limits, NP_vec_tmp[vnum]):
@@ -241,8 +254,10 @@ class ISSAController(SafeController):
                     continue
 
                 valid += 1
-                NP_vec_tmp_new.append(NP_vec_tmp[vnum])
-            NP_vec[n] = NP_vec_tmp_new
+                NP_vec_tmp_valid.append(NP_vec_tmp[vnum])
+                dphi_sim_list_valid.append(dphi_sim_list[vnum])
+
+            NP_vec[n] = NP_vec_tmp_valid
 
         NP_vec_tmp = NP_vec[0]
 
@@ -258,31 +273,53 @@ class ISSAController(SafeController):
             print("yes = ", yes)
             print("valid = ", valid)
 
+        print(valid_adamba_sc)
+
         if len(NP_vec_tmp) > 0:  # at least we have one sampled action satisfying the safety index 
-            norm_list = np.linalg.norm(NP_vec_tmp, axis=1)
-            optimal_action_index = np.where(norm_list == np.amin(norm_list))[0][0]
+            
+            dphi_sim_list_final = [] 
+            for NP_vec_tmp_single in NP_vec_tmp:
+                flag, env, dphi_sim = self.chk_unsafe(s, NP_vec_tmp_single, dt_ratio=dt_ratio, dt_adamba=dt_adamba, env=env,
+                                            threshold=threshold, margin=margin, adaptive_k=adaptive_k, adaptive_n=adaptive_n, adaptive_sigma=adaptive_sigma,
+                                            trigger_by_pre_execute=trigger_by_pre_execute, pre_execute_coef=pre_execute_coef, sim_steps=10)
+                dphi_sim_list_final.append(dphi_sim)
+
+            # print(NP_vec)
+            # print(f'NP_vec_tmp: {NP_vec_tmp}')
+            # norm_list = np.linalg.norm(NP_vec_tmp - NP, axis=1)
+            # optimal_action_index = np.where(norm_list == np.amin(norm_list))[0][0]
+            # optimal_action_index = np.where(dphi_sim_list_valid == np.amin(dphi_sim_list_valid))[0][0]
+            optimal_action_index = np.where(dphi_sim_list_final == np.amin(dphi_sim_list_final))[0][0]
+
+            # print(f'optimal id: {optimal_action_index}')
+            # print(f'optimal: {NP_vec_tmp[optimal_action_index]}')
+
+            # import ipdb; ipdb.set_trace()
+
             return NP_vec_tmp[optimal_action_index], valid_adamba_sc, env, NP_vec_tmp
         elif valid_adamba_sc == 'itself satisfy':
             return u.reshape(-1, action_space_num), valid_adamba_sc, env, None
         else:
             return None, valid_adamba_sc, env, None
         
-    def chk_unsafe(self, s, point, dt_ratio, dt_adamba, env, threshold, margin, adaptive_k, adaptive_n, adaptive_sigma, trigger_by_pre_execute, pre_execute_coef):
+    def chk_unsafe(self, s, point, dt_ratio, dt_adamba, env, threshold, margin, adaptive_k, adaptive_n, adaptive_sigma, trigger_by_pre_execute, pre_execute_coef, sim_steps=1):
         action = point.tolist()
         # save state of env
         stored_state = copy.deepcopy(env.sim.get_state())
         safe_index_now = env.adaptive_safety_index(k=adaptive_k, sigma=adaptive_sigma, n=adaptive_n)
 
         # simulate the action
-        s_new = env.step(action, simulate_in_adamba=True)
+        for _ in range(sim_steps):
+            s_new = env.step(action, simulate_in_adamba=True)
 
         safe_index_future = env.adaptive_safety_index(k=adaptive_k, sigma=adaptive_sigma, n=adaptive_n)
 
         dphi = safe_index_future - safe_index_now
 
         if trigger_by_pre_execute:
-            if safe_index_future < pre_execute_coef:
+            if safe_index_future < pre_execute_coef and dphi < -0.01:
                 flag = 0  # safe
+                # print(f'dphi: {dphi} now: {safe_index_now} future: {safe_index_future}')
             else:
                 flag = 1  # unsafe
         else:
@@ -296,7 +333,7 @@ class ISSAController(SafeController):
         
         # Note that the position-dependent stages of the computation must have been executed for the current state in order for these functions to return correct results. So to be safe, do mj_forward and then mj_jac. If you do mj_step and then call mj_jac, the Jacobians will correspond to the state before the integration of positions and velocities took place.
         env.sim.forward()
-        return flag, env
+        return flag, env, dphi
 
     def outofbound(self, action_limit, action):
         flag = False

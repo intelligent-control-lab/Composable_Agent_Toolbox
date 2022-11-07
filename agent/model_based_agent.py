@@ -68,10 +68,20 @@ class ModelBasedAgent(AgentBase):
         control, dphi = self.controller(
             dt, est_data, next_traj_point, self.task.goal_type(est_data),
             self.planner.state_dimension, external_action)
+        control = control.reshape(-1, 1)
         self.last_control = control
 
         # hack
-        # control = np.array([[0.01], [0.6]])
+        # control = np.array([[0.0], [-0.6]])
+
+        # print(control)
+        # if control[0, 0] > 0.01 or control[0, 1] > 10:
+        #     import ipdb; ipdb.set_trace()
+        # try:
+        #     control[0, 0] *= 10
+        #     control[1, 0] *= 100
+        # except:
+        #     import ipdb; ipdb.set_trace()
 
         ret = {
             "control"  : control,

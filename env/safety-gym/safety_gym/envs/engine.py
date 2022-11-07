@@ -858,8 +858,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
         robot_y = robot_y + 1 if robot_y >= 0 else robot_y - 1
         goal_x = -robot_x + (np.random.rand()*2-1)*0.2
         goal_y = -robot_y + (np.random.rand()*2-1)*0.2
-        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.7
-        harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.7
+        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.2
+        harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.2
+        # harzard_x = (robot_x+goal_x)/2
+        # harzard_y = (robot_y+goal_y)/2
+
+        # robot_x = 0
+        # robot_y = -1
+        # goal_x = 0
+        # goal_y = 1
+        # harzard_x = 0.18
+        # harzard_y = 0
 
         # Sample object positions
         self.build_layout()
@@ -1352,7 +1361,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             raise NotImplementedError
 
 
-    def adaptive_safety_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index(self, k=2, sigma=0.04, n=2, debug=True):
         '''
         synthesis the safety index that ensures the valid solution 
         '''
@@ -1360,6 +1369,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # print(sigma)
         # print(n)
         # exit(0)
+
+        # if debug:
+        #     import ipdb; ipdb.set_trace()
+
         if self.constrain_hazards:
 
             # initialize safety index
