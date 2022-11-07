@@ -95,7 +95,7 @@ class ISSAController(SafeController):
     def adamba_safecontrol(self, s, u, env,
             threshold=0, dt_ratio=1.0, ctrlrange=10.0, margin=0.4,
             adaptive_k=0.5, adaptive_n=1, adaptive_sigma=0.4,
-            trigger_by_pre_execute=False, pre_execute_coef=0.0,
+            trigger_by_pre_execute=False, pre_execute_coef=-0.01,
             vec_num=None, max_trial_num =1):
 
         infSet = []

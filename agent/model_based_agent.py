@@ -70,6 +70,9 @@ class ModelBasedAgent(AgentBase):
             self.planner.state_dimension, external_action)
         self.last_control = control
 
+        # hack
+        # control = np.array([[0.01], [0.6]])
+
         ret = {
             "control"  : control,
             "next_traj_point": next_traj_point,

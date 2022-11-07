@@ -1,6 +1,6 @@
 {
     "env_name": "FlatReachSafetyGym",
-    "max_ep": 1000,
+    "max_ep": 2000,
     "hidden_size": 256,
     "lr": 0.0001,
     "grad_norm": 100.0,
@@ -9,8 +9,8 @@
     "epsilon_max": 0.5,
     "epsilon_min": 0.01,
     "C": 400,
-    "test_freq": 50,
-    "test_eps": 20,
+    "test_freq": 100,
+    "test_eps": 10,
     "checkpt_freq": 100,
     "log_freq": 1,
     "render": true,

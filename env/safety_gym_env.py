@@ -25,8 +25,15 @@ class SafetyGymEnv(object):
         self.dt = self.env_spec['dt']
 
         if self.env_spec['suite_name'] == 'mygoal1':
+
+            # randomize but keep obstacle engaged
+
             env_config = {
                 'robot_base': 'xmls/point.xml', # dt in xml, default 0.002s for point
+                # 'robot_locations': [[robot_x, robot_y]],
+                # 'robot_rot': 0,
+                # 'goal_locations': [[goal_x, goal_y]],
+                # 'hazards_locations': [[harzard_x, harzard_y]],
                 'task': 'goal',
                 'observation_flatten': True,  # Flatten observation into a vector
                 'observe_sensors': True,  # Observe all sensor data from simulator

@@ -825,14 +825,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
     def build_goal_position(self):
         ''' Build a new goal position, maybe with resampling due to hazards '''
-        # Resample until goal is compatible with layout
-        if 'goal' in self.layout:
-            del self.layout['goal']
-        for _ in range(10000):  # Retries
-            if self.sample_goal_position():
-                break
-        else:
-            raise ResamplingError('Failed to generate goal')
+
+        # RUIC disabled
+        # # Resample until goal is compatible with layout
+        # if 'goal' in self.layout:
+        #     del self.layout['goal']
+        # for _ in range(10000):  # Retries
+        #     if self.sample_goal_position():
+        #         break
+        # else:
+        #     raise ResamplingError('Failed to generate goal')
+
         # Move goal geom to new layout position
         self.world_config_dict['geoms']['goal']['pos'][:2] = self.layout['goal']
         #self.world.rebuild(deepcopy(self.world_config_dict))
@@ -847,11 +850,31 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
     def build(self):
         ''' Build a new physics simulation environment '''
+
+        # ruic
+        robot_x = (np.random.rand()*2-1)*0.5
+        robot_x = robot_x + 1 if robot_x >= 0 else robot_x - 1
+        robot_y = (np.random.rand()*2-1)*0.5
+        robot_y = robot_y + 1 if robot_y >= 0 else robot_y - 1
+        goal_x = -robot_x + (np.random.rand()*2-1)*0.2
+        goal_y = -robot_y + (np.random.rand()*2-1)*0.2
+        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.7
+        harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.7
+
         # Sample object positions
         self.build_layout()
 
+        # ruic
+        self.layout['goal'] = np.array([goal_x, goal_y])
+
         # Build the underlying physics world
         self.world_config_dict = self.build_world_config()
+
+        # ruic
+        self.world_config_dict['robot_xy'] = np.array([robot_x, robot_y])
+        self.world_config_dict['geoms']['hazard0']['pos'][:2] = np.array([harzard_x, harzard_y])
+
+        # import ipdb; ipdb.set_trace()
 
         if self.world is None:
             self.world = World(self.world_config_dict)
