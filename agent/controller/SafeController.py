@@ -48,10 +48,10 @@ class ISSAController(SafeController):
         stored_state = copy.deepcopy(processed_data['safety_gym_env_est'].sim.get_state())
         safe_index_now = processed_data['safety_gym_env_est'].adaptive_safety_index(k=0.5, sigma=0.4, n=1)
 
-        if self.prev_phi is None:
-            dphi = 0
-        else:
-            dphi = safe_index_now - self.prev_phi
+        # if self.prev_phi is None:
+        #     dphi = 0
+        # else:
+        #     dphi = safe_index_now - self.prev_phi
 
         self.prev_phi = safe_index_now
 
@@ -60,28 +60,37 @@ class ISSAController(SafeController):
 
         safe_index_future = processed_data['safety_gym_env_est'].adaptive_safety_index(k=0.5, sigma=0.4, n=1)
 
+        # set dphi to constant if issa is triggered
         if safe_index_future >=0:
             trigger_by_pre_execute = True
+            dphi = 1
         else:
             trigger_by_pre_execute = False
+            dphi = 0
 
         # set qpos and qvel
         processed_data['safety_gym_env_est'].sim.set_state(stored_state)
         processed_data['safety_gym_env_est'].sim.forward()
 
         if trigger_by_pre_execute:
-            u_new, valid_adamba_sc, processed_data['safety_gym_env_est'], all_satisfied_u = self.adamba_safecontrol(processed_data['state_est'], [u_ref], env=processed_data['safety_gym_env_est'], trigger_by_pre_execute=trigger_by_pre_execute)
+            u_new, valid_adamba_sc, processed_data['safety_gym_env_est'], all_satisfied_u = \
+                self.adamba_safecontrol(
+                    processed_data['safety_gym_state_est'], [u_ref],
+                    env=processed_data['safety_gym_env_est'],
+                    trigger_by_pre_execute=trigger_by_pre_execute)
             # print(" ------------------------------------------------")
             # print("ISSA controller giving safe controls .... ")
 
             # print("Nominal control = {}".format(u_ref))
             # print("Safe    control = {}".format(u_new))
             # print(" ------------------------------------------------")
+            if u_new is not None:
+                u_new = u_new.reshape(-1, 1)
         else:
             u_new = u_ref.reshape(1, -1)
         # u_new, valid_adamba_sc, processed_data['safety_gym_env_est'], all_satisfied_u = self.adamba_safecontrol(processed_data['state_est'], [u_ref], env=processed_data['safety_gym_env_est'])
 
-        return u_new.reshape(-1, 1), dphi
+        return u_new, dphi
 
     def adamba_safecontrol(self, s, u, env,
             threshold=0, dt_ratio=1.0, ctrlrange=10.0, margin=0.4,

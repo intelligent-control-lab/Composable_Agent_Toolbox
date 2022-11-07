@@ -93,11 +93,14 @@ class SafetyGymEnv(object):
         o= self.safety_gym_env.reset()
         env_info = None
         sensor_data = dict()
-        sensor_data['state'] = o
-        sensor_data['reward'] = 0
-        sensor_data['done'] = False
-        sensor_data['cost_info'] = {'cost_hazards': 0, 'cost': 0}
-        sensor_data['safety_gym_env'] = self.safety_gym_env
+
+        # -------------------------------- robot state ------------------------------- #
+        sensor_data['robot'] = {}
+        sensor_data['robot']['safety_gym_state'] = o
+        sensor_data['robot']['safety_gym_reward'] = 0
+        sensor_data['robot']['safety_gym_done'] = False
+        sensor_data['robot']['safety_gym_cost_info'] = {'cost_hazards': 0, 'cost': 0}
+        sensor_data['robot']['safety_gym_env'] = self.safety_gym_env
 
         robot_x = self.safety_gym_env.robot_pos[0]
         robot_y = self.safety_gym_env.robot_pos[1]
@@ -119,13 +122,13 @@ class SafetyGymEnv(object):
         goal_x = self.safety_gym_env.goal_pos[0]
         goal_y = self.safety_gym_env.goal_pos[1]
 
-        sensor_data['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
-        sensor_data['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_t], [robot_velx], [robot_vely], [robot_velt]])}
-        sensor_data['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
+        sensor_data['robot']['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
+        sensor_data['robot']['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_t], [robot_velx], [robot_vely], [robot_velt]])}
+        sensor_data['robot']['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
                                                     'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]])} }
-        sensor_data['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
+        sensor_data['robot']['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
                                                     'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]]) }
-        sensor_data['communication_sensor'] = {}
+        sensor_data['robot']['communication_sensor'] = {}
 
 
         return self.dt, env_info, sensor_data
@@ -138,12 +141,15 @@ class SafetyGymEnv(object):
 
         env_info = None
         sensor_data = dict()
-        sensor_data['state'] = o2
-        sensor_data['reward'] = r
-        sensor_data['done'] = d
-        sensor_data['cost_info'] = info # c = info.get('cost', 0)
-        sensor_data['safety_gym_env'] = self.safety_gym_env
-        
+
+        # -------------------------------- robot state ------------------------------- #
+        sensor_data['robot'] = {}
+        sensor_data['robot']['safety_gym_state'] = o2
+        sensor_data['robot']['safety_gym_reward'] = r
+        sensor_data['robot']['safety_gym_done'] = d
+        sensor_data['robot']['safety_gym_cost_info'] = info # c = info.get('cost', 0)
+        sensor_data['robot']['safety_gym_env'] = self.safety_gym_env
+
         robot_x = self.safety_gym_env.robot_pos[0]
         robot_y = self.safety_gym_env.robot_pos[1]
 
@@ -164,13 +170,13 @@ class SafetyGymEnv(object):
         goal_x = self.safety_gym_env.goal_pos[0]
         goal_y = self.safety_gym_env.goal_pos[1]
 
-        sensor_data['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
-        sensor_data['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_t], [robot_velx], [robot_vely], [robot_velt]])}
-        sensor_data['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
+        sensor_data['robot']['cartesian_sensor'] = {'pos': np.array([[robot_x], [robot_y]]), 'vel': np.array([[robot_velx], [robot_vely]])}
+        sensor_data['robot']['state_sensor'] = {'state': np.array([[robot_x], [robot_y], [robot_t], [robot_velx], [robot_vely], [robot_velt]])}
+        sensor_data['robot']['obstacle_sensor'] = {'hazard': {'rel_pos': np.array([[obstacle_x - robot_x], [obstacle_y - robot_y]]), 
                                                     'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]])} }
-        sensor_data['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
+        sensor_data['robot']['goal_sensor'] = {'rel_pos': np.array([[goal_x - robot_x], [goal_y - robot_y]]), 
                                                     'rel_vel': np.array([[0 - robot_velx], [0 - robot_vely]]) }
-        sensor_data['communication_sensor'] = {}
+        sensor_data['robot']['communication_sensor'] = {}
 
         # goal 
         #import ipdb; ipdb.set_trace()
@@ -180,7 +186,7 @@ class SafetyGymEnv(object):
                 self.safety_gym_env.render()
                 img = None
             elif render_mode == 'rgb':
-                img = env.render(mode='rgb_array', width=1920, height=1200)
+                img = self.safety_gym_env.render(mode='rgb_array', width=1920, height=1200)
 
         return self.dt, env_info, sensor_data, img
 

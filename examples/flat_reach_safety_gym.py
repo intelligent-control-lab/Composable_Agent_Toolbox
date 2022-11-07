@@ -41,14 +41,14 @@ if __name__ == "__main__":
         for agent in agents:
             # an action is dictionary which must contain a key "control"
             # TODO if controller model is None, pass env (use kw arg)
-            actions[agent.name] = agent.action(dt, measurement_groups)
+            actions[agent.name] = agent.action(dt, measurement_groups[agent.name])
             # sensor data is grouped by agent
             
         # TODO wrap safety gym env according to following syntax # Done
         dt, env_info, measurement_groups, _ = env.step(actions, render=True)
         record.append((env_info,measurement_groups))
         
-        if measurement_groups['done']:
+        if measurement_groups['robot']['safety_gym_done']:
             dt, env_info, measurement_groups = env.reset()
 
     # evaluator.evaluate(record)

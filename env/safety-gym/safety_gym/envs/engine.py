@@ -115,7 +115,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Starting position distribution
         'randomize_layout': True,  # If false, set the random seed before layout to constant
         'build_resample': True,  # If true, rejection sample from valid environments
-        'continue_goal': True,  # If true, draw a new goal after achievement
+        'continue_goal': False,  # If true, draw a new goal after achievement
         'terminate_resample_failure': True,  # If true, end episode when resampling fails,
                                              # otherwise, raise a python exception.
 

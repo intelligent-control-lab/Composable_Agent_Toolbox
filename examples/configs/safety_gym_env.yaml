@@ -1,3 +1,4 @@
+# todo merge config of CAT-env and 3rd-party env
 suite_name: mygoal1
 hazards_size: 0.15
 world:
@@ -8,7 +9,7 @@ world:
         agent_goal_lists:
             # Model based
             robot: null
-            human: null
+            # human: null
 
             # RL
             # 'random'/'static'/'near'
@@ -18,6 +19,7 @@ dt: 0.02
 agent_comp_spec:
     robot: configs/safety_gym_agent_1.yaml
     # human: configs/flat_reach_agent_2.yaml
+# todo move agent config for env inside world config
 agent_env_spec: null
 
 #     robot:
