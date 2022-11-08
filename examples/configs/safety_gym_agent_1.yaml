@@ -41,7 +41,7 @@ controller:
                 # for integrator planner
                 kp: 200
                 kv: 100
-                u_max: [0.01, 10]
+                u_max: [0.01, 0.3]
         safe_controller:
             # TODO type ISSA
             type: ISSAController

@@ -36,7 +36,7 @@ if __name__ == "__main__":
     record = []
     print("Simulation progress:")
     # for it in progressbar.progressbar(range(200)):
-    for it in range(2000):
+    for it in range(10000):
         actions = {}
         for agent in agents:
             # an action is dictionary which must contain a key "control"

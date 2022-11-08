@@ -858,8 +858,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
         robot_y = robot_y + 1 if robot_y >= 0 else robot_y - 1
         goal_x = -robot_x + (np.random.rand()*2-1)*0.2
         goal_y = -robot_y + (np.random.rand()*2-1)*0.2
-        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.2
-        harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.2
+        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.5
+        harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.5
         # harzard_x = (robot_x+goal_x)/2
         # harzard_y = (robot_y+goal_y)/2
 
@@ -867,7 +867,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # robot_y = -1
         # goal_x = 0
         # goal_y = 1
-        # harzard_x = 0.18
+        # harzard_x = 0.15
         # harzard_y = 0
 
         # Sample object positions
@@ -881,6 +881,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         # ruic
         self.world_config_dict['robot_xy'] = np.array([robot_x, robot_y])
+        self.world_config_dict['robot_rot'] = 0
         self.world_config_dict['geoms']['hazard0']['pos'][:2] = np.array([harzard_x, harzard_y])
 
         # import ipdb; ipdb.set_trace()
@@ -1359,7 +1360,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else:
             raise NotImplementedError
+    
+    def heuristic_safety(self):
+        '''
+        score the ISSA-generated action candidates
+        '''
+        hazard_pos = self.hazards_pos[0][:2]
+        safe_dir = self.robot_pos[:2] - hazard_pos
+        heading_vec = self.data.get_geom_xpos('pointarrow')[:2] - self.robot_pos[:2]
+        projection = np.dot(heading_vec, safe_dir) / np.linalg.norm(heading_vec) / np.linalg.norm(safe_dir)
 
+        return projection
 
     def adaptive_safety_index(self, k=2, sigma=0.04, n=2, debug=True):
         '''
@@ -1437,7 +1448,6 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else:
             raise NotImplementedError  
-
 
     def adaptive_safety_index_index(self, k=2, sigma=0.04, n=2):
         '''

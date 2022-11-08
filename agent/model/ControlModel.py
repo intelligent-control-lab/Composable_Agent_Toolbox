@@ -96,7 +96,7 @@ class UnicycleModel(ControlModel):
             [0, 0, 0],
             [0, 0, 0],
             [0.1, 0.1, 0],
-            [0, 0, 1.5]
+            [0, 0, 0.5]
         ])
 
     def get_goal(self, goal: np.ndarray) -> np.ndarray:
