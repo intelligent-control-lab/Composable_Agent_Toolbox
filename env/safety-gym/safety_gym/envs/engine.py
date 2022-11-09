@@ -858,17 +858,21 @@ class Engine(gym.Env, gym.utils.EzPickle):
         robot_y = robot_y + 1 if robot_y >= 0 else robot_y - 1
         goal_x = -robot_x + (np.random.rand()*2-1)*0.2
         goal_y = -robot_y + (np.random.rand()*2-1)*0.2
-        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*0.5
+        harzard_x = (robot_x+goal_x)/2 + (np.random.rand()*2-1)*1.0
         harzard_y = (robot_y+goal_y)/2 + (np.random.rand()*2-1)*0.5
         # harzard_x = (robot_x+goal_x)/2
         # harzard_y = (robot_y+goal_y)/2
 
-        # robot_x = 0
-        # robot_y = -1
-        # goal_x = 0
-        # goal_y = 1
-        # harzard_x = 0.15
-        # harzard_y = 0
+        override = False
+
+        if override:
+            robot_x = 0
+            robot_y = 0.3
+            robot_rot = -np.pi/2
+            goal_x = 0
+            goal_y = 2
+            harzard_x = -0.1
+            harzard_y = -0.4
 
         # Sample object positions
         self.build_layout()
@@ -881,7 +885,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         # ruic
         self.world_config_dict['robot_xy'] = np.array([robot_x, robot_y])
-        self.world_config_dict['robot_rot'] = 0
+        if override:
+            self.world_config_dict['robot_rot'] = robot_rot
         self.world_config_dict['geoms']['hazard0']['pos'][:2] = np.array([harzard_x, harzard_y])
 
         # import ipdb; ipdb.set_trace()

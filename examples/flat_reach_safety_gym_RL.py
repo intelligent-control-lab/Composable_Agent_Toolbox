@@ -307,7 +307,7 @@ class DQN_Agent():
         #     r += 500
 
         # penalize dphi
-        r -= dphi
+        r -= dphi*2
 
         # other reward components?
         # print('dist_goal {:>8.4f}, ddist {:>8.4f}, rel_angle {:>8.4f}, rel_vel_goal {:>8.4f}, dphi {:>8.4f}'.format(
@@ -375,7 +375,7 @@ class DQN_Agent():
         # RL compatible
         s_next = self.get_state(measurement_groups_next)
         r = self.get_reward(measurement_groups_next, dphi)
-        done = (self.step_env_instance >= 500) or ('safety_gym_done' in measurement_groups_next['robot'] and measurement_groups_next['robot']['safety_gym_done'])
+        done = (self.step_env_instance >= 1000) or ('safety_gym_done' in measurement_groups_next['robot'] and measurement_groups_next['robot']['safety_gym_done'])
 
         return s_next, r, done, measurement_groups_next, img
 
@@ -753,7 +753,8 @@ def main(args):
     if rl_agent.args.demo:
         checkpt_path = os.path.join(rl_agent.args.demo_path, 'checkpts', '{}_{}.pt'.format(rl_agent.args.env_name, rl_agent.args.demo_ep))
         rl_agent.load_Q_weights_and_eval(checkpt_path)
-        test_video(rl_agent, rl_agent.args.exp_name, rl_agent.args.demo_ep)
+        for _ in range(10):
+            test_video(rl_agent, rl_agent.args.exp_name, rl_agent.args.demo_ep)
         rl_agent.plot_and_save()
     else:
         print('Training started...')
