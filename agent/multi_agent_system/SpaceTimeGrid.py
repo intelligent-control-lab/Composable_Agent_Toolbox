@@ -428,6 +428,7 @@ class SpaceTimeGrid:
         X = np.array([S[i] + w0[i] * V[i] for i in range(n)])
         # fval = np.sum([pri[i] * w0[i] * (V[i].T @ V[i]) for i in range(n)]) # dot product
         fval = np.sum([pri[i] * w0[i] * np.linalg.norm(V[i]) for i in range(n)]) # 2-norm
+        # fval = np.linalg.norm(np.sum([pri[i] * w0[i] * V[i] for i in range(n)])) # sum before 2-norm
         # fval = np.sum([pri[i] * w0[i] * V[i][2] for i in range(n)]) # only t-component
         # fval = np.sum([pri[i] * w0[i] * np.linalg.norm(V[i][:2]) for i in range(n)]) # only xy-components
         return X, fval
