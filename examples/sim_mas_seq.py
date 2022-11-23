@@ -85,30 +85,6 @@ if __name__ == '__main__':
     obs_dt = np.array([ob.dt for ob in obs])
     stg = SpaceTimeGrid(paths, r, ag_dt, a_max, gamma, priority, obs_paths, obs_dt)
 
-    # for i, ob in enumerate(obs):
-    #     for j in range(3):
-    #         ob.goal['goal'] = np.array([20.0, 5.0, 0.0, 0.0]).reshape(2, 2)
-    #         while not ob.at_goal:
-    #             waypoint = ob.get_waypoint().flatten()
-    #             stg.update_obs_path(i, waypoint[:2])
-    #             path = ob.path.copy()
-    #             path.append(waypoint)
-    #             ob.set_path(path)
-    #         for k in range(100):
-    #             waypoint = ob.get_waypoint().flatten()
-    #             stg.update_obs_path(i, waypoint[:2])
-    #             path = ob.path.copy()
-    #             path.append(waypoint)
-    #             ob.set_path(path)
-    #         ob.at_goal = False
-    #         ob.goal['goal'] = np.array([10.0, 15.0, 0.0, 0.0]).reshape(2, 2)
-    #         while not ob.at_goal:
-    #             waypoint = ob.get_waypoint().flatten()
-    #             stg.update_obs_path(i, waypoint[:2])
-    #             path = ob.path.copy()
-    #             path.append(waypoint)
-    #             ob.set_path(path)
-
     for i, ob in enumerate(obs):
         while not ob.at_goal or ('stat' in ob.name and stg.obs_paths[i][-1][2] < 5):
             waypoint = ob.get_waypoint().flatten()
@@ -147,7 +123,6 @@ if __name__ == '__main__':
     visualize(stg)
 
     print(f"OPT NUM: {stg.opt_num}")
-    print(f"OPT TIME: {stg.opt_time}")
     print(f"TREE TIME: {stg.tree_time}")
     print(f"AVG OPTS PER RES {stg.opt_num / stg.res_num}")
     print(f"RESOLVE TIME: {stg.resolve_time - stg.tree_time}")
