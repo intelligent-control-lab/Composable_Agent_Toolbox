@@ -361,8 +361,9 @@ class SpaceTimeGrid:
         # fval = np.sum([pri[i] * (V[i].T @ V[i]) for i in range(n)]) # dot product
         fval = np.sum([pri[i] * np.linalg.norm(V[i]) for i in range(n)]) # 2-norm
         # fval = np.linalg.norm(np.sum([pri[i] * V[i] for i in range(n)])) # sum before 2-norm
-        # fval = np.sum([pri[i] * V[i][2] for i in range(n)]) # only t-component
+        # fval = np.sum([pri[i] * abs(V[i][2]) for i in range(n)]) # only t-component
         # fval = np.sum([pri[i] * np.linalg.norm(V[i][:2]) for i in range(n)]) # only xy-components
+        # print(f"OPT_NUM: {self.opt_num} FVAL: {fval}")
         return fval
 
     def _pseudo_connect(self, p, vel, end=False, clean=True):
