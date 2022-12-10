@@ -28,7 +28,7 @@ def visualize(stg):
         x = [s[0] for s in p]
         y = [s[1] for s in p]
         t = [s[2] for s in p]
-        ax.scatter(x, y, t, color=colors[i])
+        ax.scatter(x, y, t, s=400, color=colors[i])
     plt.show()
     return
 
@@ -82,7 +82,7 @@ def main():
     a_max = [10 for ag in agents]
     gamma = [1 for ag in agents]
     priority = [1 for ag in agents]
-    # priority[1] = 100
+    # priority[0] = 100
     obs_paths = [[np.array(ob.path[0][:2])] for ob in obs]
     obs_dt = np.array([ob.dt for ob in obs])
     stg = SpaceTimeGrid(paths, r, ag_dt, a_max, gamma, priority, obs_paths, obs_dt)
@@ -113,11 +113,13 @@ def main():
         
     print(f"OPT NUM: {stg.opt_num}")
     print(f"TREE TIME: {stg.tree_time}")
-    print(f"AVG OPTS PER RES {stg.opt_num / stg.res_num}")
+    # print(f"AVG OPTS PER RES {stg.opt_num / stg.res_num}")
     print(f"RESOLVE TIME: {stg.resolve_time - stg.tree_time}")
 
     T = stg.paths[0][-1][2]
+    print(stg.paths[0][-1][2])
     for i in range(1, len(stg.paths)):
+        print(stg.paths[i][-1][2])
         T = max(T, stg.paths[i][-1][2])
     print(f"T: {T}")
 
@@ -127,17 +129,20 @@ def main():
             D += np.linalg.norm(p[i + 1] - p[i])
     print(f"D: {D}")
 
-    T_star = 0
-    for i, p in enumerate(stg.paths):
-        d = np.linalg.norm(p[-1] - p[0])
-        a = a_max[i]
-        t = math.sqrt(2 * a * d) / a
-        T_star = max(T_star, t)
+    # T_star = 0
+    # for i, p in enumerate(stg.paths):
+    #     d = np.linalg.norm(p[-1] - p[0])
+    #     a = a_max[i]
+    #     t = math.sqrt(2 * d / a)
+    #     T_star = max(T_star, t)
+    #     print(t)
+    T_star = 1.8
     print(f"T*: {T_star}")
 
     D_star = 0
     for p in stg.paths:
-        D_star += np.linalg.norm(p[-1] - p[0])
+        # D_star += np.linalg.norm(p[-1] - p[0])
+        D_star += 10.384397806098928
     print(f"D*: {D_star}")
 
     print(f"T SUBOPT: {T / T_star}")
