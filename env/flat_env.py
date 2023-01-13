@@ -32,12 +32,13 @@ class FlatEnv(object):
         env_info, sensor_data = self.world.measure()
         return self.dt, env_info, sensor_data
 
-    def step(self, actions, debug_modes, render=True):
+    def step(self, actions, debug_modes=None, render=True):
         self.world.simulate(actions, self.dt)
         env_info, sensor_data = self.world.measure()
         if render:
             self.render(actions, debug_modes)
-        self.log_debug(sensor_data, debug_modes)
+        if debug_modes is not None:
+            self.log_debug(sensor_data, debug_modes)
         return self.dt, env_info, sensor_data
 
     def log_debug(self, sensor_data, debug_modes):
@@ -95,16 +96,17 @@ class FlatEnv(object):
                 self.ax.plot([xc, xc+r*math.cos(t)], [yc, yc+r*math.sin(t)],
                     color='b', linestyle='-')
 
-        if debug_modes['render_traj']:
-            traj_x = []
-            traj_y = []
-            for pt in actions[self.comp_agents[0].name]['broadcast']['planned_traj']:
-                traj_x.append(pt[0][0])
-                traj_y.append(pt[0][1])
-            self.ax.plot(traj_x, traj_y, color='black')
-        if debug_modes['render_next_traj_point']:
-            next_point = actions[self.comp_agents[0].name]['broadcast']['next_point']
-            self.ax.scatter([next_point[0]], [next_point[1]], c='gray')
+        if debug_modes is not None:
+            if debug_modes['render_traj']:
+                traj_x = []
+                traj_y = []
+                for pt in actions[self.comp_agents[0].name]['broadcast']['planned_traj']:
+                    traj_x.append(pt[0][0])
+                    traj_y.append(pt[0][1])
+                self.ax.plot(traj_x, traj_y, color='black')
+            if debug_modes['render_next_traj_point']:
+                next_point = actions[self.comp_agents[0].name]['broadcast']['next_point']
+                self.ax.scatter([next_point[0]], [next_point[1]], c='gray')
 
         # self.ax.plot(human_traj[:,0],human_traj[:,1])
         # self.ax.plot(robot_traj[:,0],robot_traj[:,1])

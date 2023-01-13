@@ -45,7 +45,7 @@ class ModelBasedAgent(AgentBase):
         for i in range(len(module_spec["sensors"])):
             self.sensors[module_spec["sensors"][i]["spec"]["alias"]] = sensor.Sensor(module_spec["sensors"][i])
 
-    def action(self, dt, sensors_data, debug_modes):
+    def action(self, dt, sensors_data, debug_modes=None):
 
         # --------------------------- get previous control --------------------------- #
         u = self.last_control
@@ -84,14 +84,15 @@ class ModelBasedAgent(AgentBase):
         self.control_log['y'].append(control[1])
         self.control_log['t'].append(time.time() - self.start_time)
 
-        if debug_modes['log_traj']: 
-            print(f'({self.name}) traj: {self.planned_traj}\n')
-        if debug_modes['log_next_traj_point']: 
-            print(f'({self.name}) next_traj_point: {next_traj_point}\n')
-        if debug_modes['log_control']: 
-            print(f'({self.name}) control: {control}\n')
-        if debug_modes['plot_control'] and self.name == "human":
-            self.plot_control()
+        if debug_modes is not None:
+            if debug_modes['log_traj']: 
+                print(f'({self.name}) traj: {self.planned_traj}\n')
+            if debug_modes['log_next_traj_point']: 
+                print(f'({self.name}) next_traj_point: {next_traj_point}\n')
+            if debug_modes['log_control']: 
+                print(f'({self.name}) control: {control}\n')
+            if debug_modes['plot_control'] and self.name == "human":
+                self.plot_control()
 
         ret = {"control"  : control}
         if "communication_sensor" in self.sensors.keys():
