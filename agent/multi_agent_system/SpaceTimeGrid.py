@@ -508,13 +508,16 @@ class SpaceTimeGrid:
 
     def resolve(self, i) -> None: # TODO: delete i param after debug
 
-        # if i >= 10:
+        # if i == 12:
         #     # plot paths
         #     fig = plt.figure()
         #     ax = fig.add_subplot(projection='3d')
+        #     ax.axes.set_xlim3d(left=10, right=20) 
+        #     ax.axes.set_ylim3d(bottom=5, top=15) 
+        #     ax.axes.set_zlim3d(bottom=0, top=3) 
         #     c = ["blue", "red", "green", "orange"]
-        #     for i, p in enumerate(self.paths + self.obs_paths):
-        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     for i, p in enumerate(self.paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i], s=400)
         #     plt.show()
 
         # min_clear = np.inf
@@ -540,7 +543,7 @@ class SpaceTimeGrid:
         best_i = -1
         for i, (S, V, log) in enumerate(zip(S_list, V_list, log_list)):
             S, V = np.asarray(S), np.asarray(V)
-            pri = np.array([1 if is_ob else self.priority[p_i]for p_i, _, is_ob in log])
+            pri = np.array([1 if is_ob else self.priority[p_i] for p_i, _, is_ob in log])
             fval = self._optimize(S, V, pri)
             if fval < min_f:
                 X_star = np.array([S[i] + V[i] for i in range(S.shape[0])])
@@ -549,14 +552,18 @@ class SpaceTimeGrid:
 
         # # plot paths and outstanding spheres
         # if len(S_list) > 0:
+        #     print(i)
         #     fig = plt.figure()
         #     ax = fig.add_subplot(projection='3d')
+        #     ax.axes.set_xlim3d(left=10, right=20) 
+        #     ax.axes.set_ylim3d(bottom=5, top=15) 
+        #     ax.axes.set_zlim3d(bottom=0, top=1) 
         #     c = ["blue", "red", "green", "orange"]
-        #     for i, p in enumerate(self.paths + self.obs_paths):
-        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i])
+        #     for i, p in enumerate(self.paths):
+        #         ax.scatter([s[0] for s in p], [s[1] for s in p], [s[2] for s in p], color=c[i], s=400)
         #     ax.scatter(
         #         [s[0] for s in S_list[best_i]], [s[1] for s in S_list[best_i]], [s[2] for s in S_list[best_i]], 
-        #     color="yellow", s=100)
+        #     color="yellow", s=700)
         #     plt.show()
 
         if len(S_list) > 0:
