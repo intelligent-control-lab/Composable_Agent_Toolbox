@@ -17,7 +17,11 @@ lR = []
 
 s_min = L
 vH_max = [30]
-dvH_th = [5]
+dvH_th = [10]
+
+alpha = 0
+beta = 0
+p3 = 0
 
 fig, ax = plt.subplots()
 
@@ -48,6 +52,9 @@ def apply_control(u):
     aH, dH = f_theta()
     aR, dR = u
 
+    f_theta_last = [(aH, dH)]
+    u_last = [(aR, dR)]
+
     for i in range(nH):
         vH[i] += aH[i] * dt
         xH[i] += vH[i] * dt
@@ -64,23 +71,37 @@ def f_theta():
     return ([0.8 for _ in range(nH)], 
             [random.gauss(0, 0.2) for _ in range(nH)])
 
-def hF(iH, iR):
-    return xR[iR] - xH[iH] - L - s_min
-def hF_dot(iH, iR):
-    return vR[iR] - vH[iH]
-def hL(iH, iR):
-    return vH_max[iH] - vR[iR] - dvH_th[iH]
-def hL_dot(iH, iR):
-    return vR[iR] - vH[iH]
+def hF():
+    return xR[0] - xH[0] - L - s_min
+def hF_dot():
+    return vR[0] - vH[0]
+def hF_ddot():
+    return compute_u()[0][0] - f_theta()[0][0]
+def get_alphabeta():
+    p1 = max(0.1, -hF_dot() / hF())
+    p2 = max(0.1, -(hF_ddot() + p1 * hF_dot()) 
+                    / (hF_dot() + p1 * hF()))
+    return (p1 + p2, p1 * p2)
+
+def hL():
+    return vH_max[0] - vR[0] - dvH_th[0]
+def hL_dot():
+    return vR[0] - vH[0]
+def get_p3():
+    return max(0.1, -hL_dot() / hL())
 
 def compute_u():
-    return ([1 for _ in range(nR)], 
+    phiF = f_theta()[0][0] - alpha * hF_dot() - beta * hF()
+    uF = max(0, phiF)
+    uL = min(0, p3 * hL())
+    u_star = uF if uF**2 < uL**2 else uL
+    return ([u_star for _ in range(nR)], 
             [0 for _ in range(nR)])
 
 if __name__ == '__main__':
 
     for i in range(nH):
-        xH.append(-2*L)
+        xH.append(-3*L)
         vH.append(25)
         lH.append(0)
     for i in range(nR):
@@ -88,6 +109,10 @@ if __name__ == '__main__':
         vR.append(25)
         lR.append(0)
 
+    alpha, beta = get_alphabeta()
+    p3 = get_p3()
+
     for t in range(T):
-        apply_control(compute_u())
-        plot(xR[0])
+        u = compute_u()
+        apply_control(u)
+        plot(xH[0])
