@@ -1,12 +1,13 @@
 import math
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 nH = 1
 nR = 1
-dt = 0.01
-t_max = 10000
+dt = 0.1
+t_max = 100000
 L = 5
 
 xH = []
@@ -16,11 +17,11 @@ xR = []
 vR = []
 lR = []
 
-s_min = 2*L
+s_min = 1.2*L
 a_max = 1.5
-vR_max = 25
+vR_max = 35
 
-s0 = L / 4
+s0 = 0.25*L
 v0 = 30
 dvH_th = 10
 T = 0.01 # 1.3
@@ -30,6 +31,9 @@ b = 3.1
 alpha = 0
 beta = 0
 p3 = 0
+
+t = 0
+safe = False
 
 fig, ax = plt.subplots()
 
@@ -42,6 +46,13 @@ def plot(fref):
     ax.axvline(x=-3*L/2, color="black", linestyle="-")
     ax.axvline(x=3*L/2, color="black", linestyle="-")
 
+    ax.text(-4*L, fref - 4*L, "Safe: " + str(safe()))
+    ax.text(-4*L, fref + 4*L, "t = " + str(t))
+    for i in range(nH):
+        ax.text(lH[i]*L, xH[i], str(vH[i]))
+    for i in range(nR):
+        ax.text(lR[i]*L, xR[i], str(vR[i]))
+
     for i in range(nH):
         ax.add_patch(Rectangle(
             (lH[i]*L - L/4, xH[i] - L/2), 
@@ -52,8 +63,15 @@ def plot(fref):
             (lR[i]*L - L/4, xR[i] - L/2), 
             L/2, L, 
             facecolor='red'))
+    ax.add_patch(Rectangle(
+            (lR[i]*L - L/4, xR[i] - L/2 - s_min), 
+            L/2, s_min,
+            facecolor=(1,1,0,0.5)))
 
     plt.pause(0.001)
+
+def safe(): 
+    return xR[0] - xH[0] - L >= s_min or lH[0] != lR[0]
 
 def apply_control(u):
 
@@ -109,6 +127,8 @@ def get_p3():
 
 def compute_u():
     phiF = f_theta()[0][0] - alpha * hF_dot() - beta * hF()
+    if v0 > vR_max:
+        phiF = np.inf
     uF = max(0, phiF)
     uL = min(0, p3 * hL())
     print(f'PHIF: {phiF}\tP3HL: {p3 * hL()}')
@@ -120,17 +140,24 @@ if __name__ == '__main__':
 
     for i in range(nH):
         xH.append(-2*L)
-        vH.append(25)
+        vH.append(29)
         lH.append(0)
     for i in range(nR):
         xR.append(0)
-        vR.append(25)
+        vR.append(29)
         lR.append(0)
 
     alpha, beta = get_alphabeta()
     p3 = get_p3()
 
-    for t in range(t_max):
-        u = compute_u()
+    was_safe = True
+    u = ([0], [0])
+    while t <= t_max:
+        if was_safe and not safe():
+            u = compute_u()
+        if safe() and not was_safe:
+            u = ([0], [0])
+        was_safe = safe()
         apply_control(u)
-        plot(xR[0])
+        plot(xH[0] + s_min)
+        t += dt
