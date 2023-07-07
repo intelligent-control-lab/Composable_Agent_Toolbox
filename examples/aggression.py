@@ -37,17 +37,17 @@ safe = False
 
 fig, ax = plt.subplots()
 
-def plot(fref):
+def plot(pov):
     
     ax.cla()
-    ax.axis([-4*L, 4*L, fref - 4*L, fref + 4*L])
+    ax.axis([-4*L, 4*L, pov - 4*L, pov + 4*L])
     ax.axvline(x=-L/2, color="black", linestyle="--")
     ax.axvline(x=L/2, color="black", linestyle="--")
     ax.axvline(x=-3*L/2, color="black", linestyle="-")
     ax.axvline(x=3*L/2, color="black", linestyle="-")
 
-    ax.text(-4*L, fref - 4*L, "Safe: " + str(safe()))
-    ax.text(-4*L, fref + 4*L, "t = " + str(t))
+    ax.text(-4*L, pov - 4*L, "Safe: " + str(safe()))
+    ax.text(-4*L, pov + 4*L, "t = " + str(t))
     for i in range(nH):
         ax.text(lH[i]*L, xH[i], str(vH[i]))
     for i in range(nR):
@@ -166,5 +166,5 @@ if __name__ == '__main__':
             u = ([0], [0])
         was_safe = safe()
         apply_control(u)
-        plot(xH[0] + s_min)
+        plot(min(xH[0] + s_min, xR[0]))
         t += dt
