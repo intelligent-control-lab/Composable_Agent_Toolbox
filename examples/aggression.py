@@ -129,7 +129,7 @@ def get_alphabeta():
 def hL():
     return v0 - vR[0] - dvH_th
 def hL_dot():
-    return vR[0] - vH[0]
+    return 0
 def get_p3():
     return max(0, -hL_dot() / hL()) + 0.1
 
