@@ -20,6 +20,7 @@ lR = []
 s_min = 1.4*L
 a_max = 1.5
 vR_max = 35
+p_min = 0.1
 
 s0 = 0.3*L
 v0 = 35
@@ -121,9 +122,9 @@ def hF_dot():
 def hF_ddot():
     return compute_u()[0][0] - f_theta()[0][0]
 def get_alphabeta():
-    p1 = max(0, -hF_dot() / hF()) + 0.1
+    p1 = max(0, -hF_dot() / hF()) + p_min
     p2 = max(0, -(hF_ddot() + p1 * hF_dot()) 
-                    / (hF_dot() + p1 * hF())) + 0.1
+                    / (hF_dot() + p1 * hF())) + p_min
     return (p1 + p2, p1 * p2)
 
 def hL():
@@ -131,7 +132,7 @@ def hL():
 def hL_dot():
     return 0
 def get_p3():
-    return max(0, -hL_dot() / hL()) + 0.1
+    return max(0, -hL_dot() / hL()) + p_min
 
 def compute_u():
     phiF = f_theta()[0][0] - alpha * hF_dot() - beta * hF()
