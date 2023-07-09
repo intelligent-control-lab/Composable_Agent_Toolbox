@@ -112,7 +112,7 @@ def f_theta():
             s_star = s0 + vH[i] * T + (vH[i] * (vH[i] - vR[f])) / (2 * math.sqrt(a * b))
             acc += -a * (s_star / (xR[f] - xH[i] - L))**2
         aH.append(acc)
-        dH.append(0 if f == -1 else v0 - vR[f] >= dvH_th)
+        dH.append(0 if f == -1 else -(v0 - vR[f] >= dvH_th))
     return (aH, dH)
 
 def hF():
