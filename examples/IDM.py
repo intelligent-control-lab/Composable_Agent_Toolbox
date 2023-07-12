@@ -16,12 +16,14 @@ class IDM:
     def _interaction_term(self, xH, xR, vH, vR):
         s_star = self.s0 + vH * self.T + (vH * (vH - vR)) / \
             (2 * math.sqrt(self.a * self.b))
-        return -self.a * (s_star / (xR - xH - self.L))**2
+        return -self.a * (max(0, s_star) / (xR - xH - self.L))**2
 
     def idm(self, xH, xR, vH, vR):
         return self.free_road(vH) + self._interaction_term(xH, xR, vH, vR)
 
     def dIdm_dvR(self, xH, xR, vH, vR, aH, aR):
+        if aR == 0:
+            return 0
         dxH_dvR = vH / aR
         dxR_dvR = vR / aR
         dvH_dvR = aH / aR
