@@ -1,5 +1,6 @@
 import math
 import random
+from IDM import IDM
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -28,6 +29,7 @@ dvH_th = 10
 T = 0.01 # 1.3
 a = 1.8
 b = 3.1
+idm = IDM(s0, v0, T, a, b, L)
 
 alpha = 0
 beta = 0
@@ -107,12 +109,10 @@ def f_theta():
     dH = []
     for i in range(nH):
         f = get_following(i)
-        acc = a * (1 - (vH[i] / v0)**4)
-        if f != -1:
-            s_star = s0 + vH[i] * T + (vH[i] * (vH[i] - vR[f])) / (2 * math.sqrt(a * b))
-            acc += -a * (s_star / (xR[f] - xH[i] - L))**2
-        aH.append(acc)
-        dH.append(0 if f == -1 else -(v0 - vR[f] >= dvH_th))
+        aH.append(idm.free_road(vH[i]) if f == -1 
+                  else idm.idm(xH[i], xR[f], vH[i], vR[f]))
+        dH.append(0 if f == -1 
+                  else -(v0 - vR[f] >= dvH_th))
     return (aH, dH)
 
 def hF():
@@ -146,26 +146,26 @@ def compute_u():
 
 if __name__ == '__main__':
 
-    for i in range(nH):
-        xH.append(-2*L)
-        vH.append(30)
-        lH.append(0)
-    for i in range(nR):
-        xR.append(0)
-        vR.append(26)
-        lR.append(0)
+    xH.append(-2*L)
+    vH.append(30)
+    lH.append(0)
+
+    xR.append(0)
+    vR.append(26)
+    lR.append(0)
 
     alpha, beta = get_alphabeta()
     p3 = get_p3()
 
     was_safe = True
-    u = ([0], [0])
+    u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
     while t <= t_max:
         if was_safe and not safe():
             u = compute_u()
         if safe() and not was_safe:
-            u = ([0], [0])
+            u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
         was_safe = safe()
         apply_control(u)
+        # apply_control(compute_u())
         plot(min(xH[0] + s_min, xR[0]))
         t += dt
