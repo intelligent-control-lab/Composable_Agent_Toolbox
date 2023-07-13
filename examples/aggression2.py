@@ -20,8 +20,8 @@ xR = []
 vR = []
 lR = []
 
-aH_last = 0
-aR_last = 0
+aH_last = 0.1
+aR_last = 0.1
 
 s_min = 1.4*L
 a_max = 2.0
@@ -240,21 +240,24 @@ def get_p4_f():
 
 def compute_u():
 
-    phiS_b = idm.dIdm_dvR(xH[0], xR[0], vH[0], vR[0], aH_last, aR_last) \
-        * (alpha_b * hS_b_ddot() + beta_b * hS_b_dot() + gamma_b * hS_b()) # u <= phiS_b
+    dIdm_dvR = idm.dIdm_dvR(xH[0], xR[0], vH[0], vR[0], aH_last, aR_last)
+
+    phiS_b = 1 / dIdm_dvR * (alpha_b * hS_b_ddot() + 
+                             beta_b * hS_b_dot() + gamma_b * hS_b()) # u <= phiS_b
     phiI_b = p4_b * hI_b() # u <= phiI_b
     sol_b = cvxopt.solvers.qp(cvxopt.matrix([[1.0]]), 
                             cvxopt.matrix([0.0]), 
                             cvxopt.matrix([[1.0, 1.0]]), 
                             cvxopt.matrix([phiS_b, phiI_b]))
+    print(f"phiS_b: {phiS_b} phiI_b: {phiI_b}")
     print(sol_b)
     u_star_b = sol_b['x'][0]
     print(f'~~~~~~~u_star_b = {u_star_b}~~~~~~~')
 
-    phiS_f = idm.dIdm_dvR(xH[0], xR[0], vH[0], vR[0], aH_last, aR_last) \
-        * (alpha_f * hS_f_ddot() + beta_f * hS_f_dot() + gamma_f * hS_f()) # u >= phiS_f
+    phiS_f = -1 / dIdm_dvR * (alpha_f * hS_f_ddot() + 
+                              beta_f * hS_f_dot() + gamma_f * hS_f()) # u >= phiS_f
     phiI_f = p4_f * hI_f() # u <= phiI_f
-    print(phiS_f, phiI_f)
+    print(f"phiS_f: {phiS_f} phiI_f: {phiI_f}")
     u_star_f = np.inf
     if phiS_f <= phiI_f:
         sol_f = cvxopt.solvers.qp(cvxopt.matrix([[1.0]]), 
