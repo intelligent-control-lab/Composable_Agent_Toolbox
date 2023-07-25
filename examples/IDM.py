@@ -20,16 +20,30 @@ class IDM:
 
     def idm(self, xH, xR, vH, vR):
         return self.free_road(vH) + self._interaction_term(xH, xR, vH, vR)
+    
+    def df_dxH(self, xH, xR, vH, vR):
+        return (2 * math.sqrt(self.a * self.b) * (self.s0 + self.T * vH) 
+                + vH * (vH - vR))**2 / (2 * self.b * (self.L + xH - xR)**3)
+    def df_dxR(self, xH, xR, vH, vR):
+        return -(2 * math.sqrt(self.a * self.b) * (self.s0 + self.T * vH) 
+                + vH * (vH - vR))**2 / (2 * self.b * (self.L + xH - xR)**3)
+    def df_dvH(self, xH, xR, vH, vR):
+        return -((2 * self.T * math.sqrt(self.a * self.b) + 2 * vH - vR) 
+                 * (2 * self.s0 * math.sqrt(self.a * self.b) + vH * 
+                    (2 * self.T * math.sqrt(self.a * self.b) + vH - vR))) \
+                / (2 * self.b * (self.L + xH - xR)**2) - (4 * self.a * vH**3) / self.v0**4
+    def df_dvR(self, xH, xR, vH, vR):
+        return (vH * (2 * math.sqrt(self.a * self.b) 
+                      * (self.s0 + self.T * vH) + vH * (vH - vR))) \
+                    / (2 * self.b * (self.L + xH - xR)**2)
 
-    def dIdm_dvR(self, xH, xR, vH, vR, aH, aR):
-        if aR == 0:
-            return 0
-        dxH_dvR = vH / aR
-        dxR_dvR = vR / aR
-        dvH_dvR = aH / aR
-        return self.a * (-(2 * ((vH * (vH - vR)) / (2 * math.sqrt(self.a * self.b)) + 
-            self.s0 + self.T * vH) * ((vH * (dvH_dvR - 1)) / (2 * math.sqrt(self.a * self.b)) + 
-            ((vH - vR) * dvH_dvR) / (2 * math.sqrt(self.a * self.b)) + self.T * dvH_dvR)) / 
-            (-self.L - xH + xR)**2 + (2 * (dxR_dvR - dxH_dvR) * ((vH * (vH - vR)) / 
-            (2 * math.sqrt(self.a * self.b)) + self.s0 + self.T * vH)**2) / 
-            (-self.L - xH + xH)**3 - (4 * vH**3 * dvH_dvR) / self.v0**4)
+    def control_lower_bound(self, bH_max, bR_max, res, xH, xR, vH, vR, dt):
+        lb = 0
+        while lb > -bR_max:
+            vR_new = vR + (lb - res) * dt
+            xR_new = xR + vR_new * dt
+            # print(lb - res, self.idm(xH, xR_new, vH, vR_new))
+            if self.idm(xH, xR_new, vH, vR_new) < -bH_max:
+                break
+            lb -= res
+        return lb
