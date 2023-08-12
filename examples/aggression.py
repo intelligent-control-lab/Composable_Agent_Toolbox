@@ -4,6 +4,7 @@ from IDM import IDM
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import cvxopt
 
 nH = 1
 nR = 1
@@ -11,29 +12,34 @@ dt = 0.1
 t_max = 100000
 L = 5
 
-xH = []
+pH = []
 vH = []
 lH = []
-xR = []
+pR = []
 vR = []
 lR = []
 
-s_min = 1.4*L
-a_max = 1.5
-vR_max = 35
-p_min = 0.1
+c_min = 1
+
+s_min = 1.1*L
+a_max = 2.0
+b_max = 4.0
+vR_max = 40
+v_max = 35
 
 s0 = 0.3*L
-v0 = 35
+v0 = 36
 dvH_th = 10
 T = 0.01 # 1.3
 a = 1.8
 b = 3.1
 idm = IDM(s0, v0, T, a, b, L)
 
-alpha = 0
-beta = 0
-p3 = 0
+alphaF = []
+alphaV = []
+
+aH_last = [0]
+aR_last = [0]
 
 t = 0
 safe = False
@@ -52,120 +58,156 @@ def plot(pov):
     ax.text(-4*L, pov - 4*L, "Safe: " + str(safe()))
     ax.text(-4*L, pov + 4*L, "t = " + str(t))
     for i in range(nH):
-        ax.text(lH[i]*L, xH[i], str(vH[i]))
+        ax.text(lH[i]*L, pH[i], str(vH[i]))
     for i in range(nR):
-        ax.text(lR[i]*L, xR[i], str(vR[i]))
+        ax.text(lR[i]*L, pR[i], str(vR[i]))
 
     for i in range(nH):
         ax.add_patch(Rectangle(
-            (lH[i]*L - L/4, xH[i] - L/2), 
+            (lH[i]*L - L/4, pH[i] - L/2), 
             L/2, L, 
             facecolor='blue'))
     for i in range(nR):
         ax.add_patch(Rectangle(
-            (lR[i]*L - L/4, xR[i] - L/2), 
+            (lR[i]*L - L/4, pR[i] - L/2), 
             L/2, L, 
             facecolor='red'))
     ax.add_patch(Rectangle(
-            (lR[i]*L - L/4, xR[i] - L/2 - s_min), 
+            (lR[i]*L - L/4, pR[i] - L/2 - s_min), 
             L/2, s_min,
             facecolor=(1,1,0,0.5)))
 
     plt.pause(0.001)
 
 def safe(): 
-    return xR[0] - xH[0] - L >= s_min or lH[0] != lR[0]
+    return pR[0] - pH[0] - L >= s_min or lH[0] != lR[0]
 
 def get_following(i):
     f = -1
     for j in range(nR):
-        if lH[i] != lR[j] or xH[i] > xR[j]:
+        if lH[i] != lR[j] or pH[i] > pR[j]:
             continue
-        if f == -1 or xR[j] < xR[f]:
+        if f == -1 or pR[j] < pR[f]:
             f = j
     return f
 
 def apply_control(u):
 
-    aH, dH = f_theta()
+    aH, dH = f()
     aR, dR = u
 
     for i in range(nH):
+        aH[i] = min(a_max, max(-b_max, aH[i]))
         vH[i] += aH[i] * dt
-        xH[i] += vH[i] * dt
+        pH[i] += vH[i] * dt
         lH[i] = max(-1, min(1, 
             lH[i] + round(dH[i])))
         
     for i in range(nR):
-        aR[i] = min(a_max, aR[i])
+        aR[i] = min(a_max, max(-b_max, aR[i]))
         vR[i] += aR[i] * dt
         vR[i] = min(vR_max, vR[i])
-        xR[i] += vR[i] * dt
+        pR[i] += vR[i] * dt
         lR[i] = max(-1, min(1, 
             lR[i] + round(dR[i])))
+        
+    global aH_last, aR_last
+    aH_last = aH
+    aR_last = aR
 
-def f_theta():
+def f():
     aH = []
     dH = []
     for i in range(nH):
         f = get_following(i)
         aH.append(idm.free_road(vH[i]) if f == -1 
-                  else idm.idm(xH[i], xR[f], vH[i], vR[f]))
-        dH.append(0 if f == -1 
-                  else -(v0 - vR[f] >= dvH_th))
+                  else idm.idm(pH[i], pR[f], vH[i], vR[f]))
+        # dH.append(0 if f == -1 
+        #           else -(v0 - vR[f] >= dvH_th))
+        dH.append(0)
     return (aH, dH)
 
 def hF():
-    return xR[0] - xH[0] - L - s_min
+    return pR[0] - pH[0] - L - s_min
 def hF_dot():
     return vR[0] - vH[0]
 def hF_ddot():
-    return compute_u()[0][0] - f_theta()[0][0]
-def get_alphabeta():
-    p1 = max(0, -hF_dot() / hF()) + p_min
-    p2 = max(0, -(hF_ddot() + p1 * hF_dot()) 
-                    / (hF_dot() + p1 * hF())) + p_min
-    return (p1 + p2, p1 * p2)
+    return aR_last[0] - aH_last[0]
+def get_alphaF():
+    c1 = max(0, -hF_dot() / hF()) + c_min
+    c2 = max(0, -(hF_ddot() + c1 * hF_dot()) 
+                    / (hF_dot() + c1 * hF())) + c_min
+    c3 = max(0, -(0 + c2 * hF_ddot() + c1 * hF_dot()) 
+             / (hF_ddot() + c2 * hF_dot() + c1 * hF())) + c_min
+    return [c1 + c2 + c3, 
+            c1*c2 + c1*c3 + c2*c3,
+            c1 * c2 * c3]
 
-def hL():
-    return v0 - vR[0] - dvH_th
-def hL_dot():
-    return 0
-def get_p3():
-    return max(0, -hL_dot() / hL()) + p_min
+def hV():
+    return v_max - vH[0]
+def hV_dot():
+    return -aH_last[0]
+def get_alphaV():
+    c1 = max(0, -hV_dot() / hV()) + c_min
+    c2 = max(0, -(0 + c1 * hV_dot()) 
+             / (hV_dot() + c1 * hV())) + c_min
+    return [c1 + c2, c1 * c2]
+
+# def hL():
+#     return v0 - vR[0] - dvH_th
+# def hL_dot():
+#     return 0
+# def get_p3():
+#     return max(0, -hL_dot() / hL()) + p_min
 
 def compute_u():
-    phiF = f_theta()[0][0] - alpha * hF_dot() - beta * hF()
-    if v0 > vR_max:
-        phiF = np.inf
-    uF = max(0, phiF)
-    uL = min(0, p3 * hL())
-    u_star = uF if uF**2 < uL**2 else uL
+
+    # Following distance lower bound
+    lb = (aR_last[0] / dt + alphaF[2] * f()[0][0] 
+          + idm.lamb(pH[0], pR[0], vH[0], vR[0], aH_last[0]) 
+          - alphaF[1] * hF_dot() - alphaF[0] * hF()) \
+    / (alphaF[2] + 1 / dt - idm.df_dvR(pH[0], pR[0], vH[0], vR[0])) # u >= lb
+
+    # Velocity upper bound
+    ub = (alphaV[1] * hV_dot() + alphaV[0] * hV() 
+          - idm.lamb(pH[0], pR[0], vH[0], vR[0], aH_last[0])) \
+    / idm.df_dvR(pH[0], pR[0], vH[0], vR[0]) # u <= ub
+
+    # Optimize that shit boi
+    u_star = 0
+    if lb <= ub:
+        sol = cvxopt.solvers.qp(cvxopt.matrix([[1.0]]), # 1.0 for min, -1.0 for max
+                                cvxopt.matrix([0.0]), 
+                                cvxopt.matrix([[-1.0, 1.0]]), 
+                                cvxopt.matrix([-lb, ub]))
+        u_star = sol['x'][0]
+        print(sol)
+    else:
+        print("INFEASIBLE")
+
+    # J(u) = ||u||^2
+    # u_star = max(0, lb)
+    # u_star = min(0, ub)
+
+    print(f"U_STAR: {u_star}")
     return ([u_star for _ in range(nR)], 
             [0 for _ in range(nR)])
 
 if __name__ == '__main__':
 
-    xH.append(-2*L)
+    pH.append(-2*L)
     vH.append(30)
     lH.append(0)
 
-    xR.append(0)
+    pR.append(0)
     vR.append(26)
     lR.append(0)
 
-    alpha, beta = get_alphabeta()
-    p3 = get_p3()
+    alphaF = get_alphaF()
+    alphaV = get_alphaV()
 
-    was_safe = True
     u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
     while t <= t_max:
-        if was_safe and not safe():
-            u = compute_u()
-        if safe() and not was_safe:
-            u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
-        was_safe = safe()
-        apply_control(u)
-        # apply_control(compute_u())
-        plot(min(xH[0] + s_min, xR[0]))
+        apply_control(compute_u())
+        plot(min(pH[0] + s_min, pR[0]))
         t += dt
