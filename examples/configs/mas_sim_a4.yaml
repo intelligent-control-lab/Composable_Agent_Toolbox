@@ -1,13 +1,11 @@
-name: ob1
+name: a4
 task:
   type: FlatReachingTask
   spec: {}
-  # init_x: [10.0, 15.0, 0.0, 0.0]
-  # goal: [20.0, 5.0, 0.0, 0.0]
-  init_x: [20.0, 10.0, 0.0, 0.0]
-  goal: [10.0, 10.0, 0.0, 0.0]
-  # init_x: [15.0, 5.0, 0.0, 0.0]
-  # goal: [15.0, 15.0, 0.0, 0.0]
+  init_x: [15.0, 15.0, 0.0, 0.0]
+  goal: [15.0, 5.0, 0.0, 0.0]
+  # init_x: [20.0, 15.0, 0.0, 0.0]
+  # goal: [10.0, 5.0, 0.0, 0.0]
 model:
   planning:
     type: DoubleIntegrator

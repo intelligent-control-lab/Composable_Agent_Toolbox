@@ -33,17 +33,23 @@ agents:
   a1:
     type: MASAgent
     spec: configs/mas_sim_a1.yaml
-  a2:
-    type: MASAgent
-    spec: configs/mas_sim_a2.yaml
-  a3:
-    type: MASAgent
-    spec: configs/mas_sim_a3.yaml
+  # a2:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_a2.yaml
+  # a3:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_a3.yaml
+  # a4:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_a4.yaml
 
-obs:
-  ob1:
-    type: MASAgent
-    spec: configs/mas_sim_ob1.yaml
+obs: []
+  # ob1:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_ob1.yaml
+  # ob2:
+  #   type: MASAgent
+  #   spec: configs/mas_sim_ob2.yaml
   # obstat:
   #   type: MASAgent
   #   spec: configs/mas_sim_obstat.yaml

@@ -1,10 +1,10 @@
 import math
 import random
+import cvxopt
 from IDM import IDM
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import cvxopt
 
 nH = 1
 nR = 1
@@ -19,34 +19,39 @@ pR = []
 vR = []
 lR = []
 
-c_min = 1
+aH_last = 0
+aH_last2 = 0
+aR_last = 0
 
-s_min = 1.1*L
-a_max = 2.0
-b_max = 4.0
-vR_max = 40
-v_max = 35
+s_min = 0.5*L
+v_max = 200
+a_max = 1
+j_max = 100
+
+vR_max = 35
+aR_max = 1.5
+p_min = 0.1
 
 s0 = 0.3*L
-v0 = 36
+v0 = 35
 dvH_th = 10
 T = 0.01 # 1.3
 a = 1.8
 b = 3.1
 idm = IDM(s0, v0, T, a, b, L)
 
-alphaF = []
-alphaV = []
-
-aH_last = [0]
-aR_last = [0]
+alpha_F = 0
+beta_F = 0
+alpha_V = 0 
+beta_V = 0
+p_A = 0
 
 t = 0
-safe = False
 
 fig, ax = plt.subplots()
+fig2, ax2 = plt.subplots(2, 2)
 
-def plot(pov):
+def vis(pov):
     
     ax.cla()
     ax.axis([-4*L, 4*L, pov - 4*L, pov + 4*L])
@@ -79,6 +84,22 @@ def plot(pov):
 
     plt.pause(0.001)
 
+def plot():
+
+    ax2[0, 0].set_title("Following Distance")
+    ax2[0, 1].set_title("Velocity")
+    ax2[1, 0].set_title("Acceleration")
+    ax2[1, 1].set_title("Jerk")
+
+    ax2[0, 0].scatter(t, pR[0] - pH[0], color='b')
+    ax2[0, 1].scatter(t, vH[0], color='b')
+    ax2[1, 0].scatter(t, aH_last, color='b')
+    global aH_last2
+    ax2[1, 1].scatter(t, (aH_last - aH_last2) / dt, color='b')
+    aH_last2 = aH_last
+
+    plt.pause(0.001)
+
 def safe(): 
     return pR[0] - pH[0] - L >= s_min or lH[0] != lR[0]
 
@@ -97,14 +118,13 @@ def apply_control(u):
     aR, dR = u
 
     for i in range(nH):
-        aH[i] = min(a_max, max(-b_max, aH[i]))
         vH[i] += aH[i] * dt
         pH[i] += vH[i] * dt
         lH[i] = max(-1, min(1, 
             lH[i] + round(dH[i])))
         
     for i in range(nR):
-        aR[i] = min(a_max, max(-b_max, aR[i]))
+        aR[i] = min(aR_max, aR[i])
         vR[i] += aR[i] * dt
         vR[i] = min(vR_max, vR[i])
         pR[i] += vR[i] * dt
@@ -112,8 +132,8 @@ def apply_control(u):
             lR[i] + round(dR[i])))
         
     global aH_last, aR_last
-    aH_last = aH
-    aR_last = aR
+    aH_last = aH[0]
+    aR_last = aR[0]
 
 def f():
     aH = []
@@ -132,46 +152,52 @@ def hF():
 def hF_dot():
     return vR[0] - vH[0]
 def hF_ddot():
-    return aR_last[0] - aH_last[0]
-def get_alphaF():
-    c1 = max(0, -hF_dot() / hF()) + c_min
-    c2 = max(0, -(hF_ddot() + c1 * hF_dot()) 
-                    / (hF_dot() + c1 * hF())) + c_min
-    c3 = max(0, -(0 + c2 * hF_ddot() + c1 * hF_dot()) 
-             / (hF_ddot() + c2 * hF_dot() + c1 * hF())) + c_min
-    return [c1 + c2 + c3, 
-            c1*c2 + c1*c3 + c2*c3,
-            c1 * c2 * c3]
+    return compute_u()[0][0] - f()[0][0]
+def get_alphabetaF():
+    p1 = max(0, -hF_dot() / hF()) + p_min
+    p2 = max(0, -(hF_ddot() + p1 * hF_dot()) 
+                    / (hF_dot() + p1 * hF())) + p_min
+    return (p1 + p2, p1 * p2)
 
 def hV():
     return v_max - vH[0]
 def hV_dot():
-    return -aH_last[0]
-def get_alphaV():
-    c1 = max(0, -hV_dot() / hV()) + c_min
-    c2 = max(0, -(0 + c1 * hV_dot()) 
-             / (hV_dot() + c1 * hV())) + c_min
-    return [c1 + c2, c1 * c2]
+    return -aH_last
+def hV_ddot():
+    return -aR_last * idm.df_dvR(pH[0], pR[0], vH[0], vR[0], 
+                        aH_last, aR_last)
+def get_alphabetaV():
+    p1 = max(0, -hV_dot() / hV()) + p_min
+    p2 = max(0, -(hV_ddot() + p1 * hV_dot()) 
+                    / (hV_dot() + p1 * hV())) + p_min
+    return (p1 + p2, p1 * p2)
 
-# def hL():
-#     return v0 - vR[0] - dvH_th
-# def hL_dot():
-#     return 0
-# def get_p3():
-#     return max(0, -hL_dot() / hL()) + p_min
+def hA():
+    return a_max - aH_last
+def hA_dot():
+    return -aR_last * idm.df_dvR(pH[0], pR[0], vH[0], vR[0], 
+                        aH_last, aR_last)
+def get_pA():
+    return max(0, -hA_dot() / hA()) + p_min
+
+def hJ():
+    return j_max - aR_last * idm.df_dvR(pH[0], pR[0], vH[0], vR[0], 
+                        aH_last, aR_last)
 
 def compute_u():
 
-    # Following distance lower bound
-    lb = (aR_last[0] / dt + alphaF[2] * f()[0][0] 
-          + idm.lamb(pH[0], pR[0], vH[0], vR[0], aH_last[0]) 
-          - alphaF[1] * hF_dot() - alphaF[0] * hF()) \
-    / (alphaF[2] + 1 / dt - idm.df_dvR(pH[0], pR[0], vH[0], vR[0])) # u >= lb
+    lb_F = aH_last - alpha_F * hF_dot() - beta_F * hF()
+    dvR_df = 1 / idm.df_dvR(pH[0], pR[0], vH[0], vR[0], 
+                            aH_last, aR_last)
+    ub_V = (alpha_V * hV_dot() + beta_V * hV()) * dvR_df
+    ub_A = p_A * hA() * dvR_df
+    ub_J = j_max * dvR_df
 
-    # Velocity upper bound
-    ub = (alphaV[1] * hV_dot() + alphaV[0] * hV() 
-          - idm.lamb(pH[0], pR[0], vH[0], vR[0], aH_last[0])) \
-    / idm.df_dvR(pH[0], pR[0], vH[0], vR[0]) # u <= ub
+    lb = lb_F
+    # lb = -b if safe() else lb_F
+    ub = min(ub_V, ub_A, ub_J)
+
+    print(f"LB: {lb}\tUB: {ub}")
 
     u_star = 0
     if lb <= ub:
@@ -179,16 +205,13 @@ def compute_u():
                                 cvxopt.matrix([0.0]), 
                                 cvxopt.matrix([[-1.0, 1.0]]), 
                                 cvxopt.matrix([-lb, ub]))
-        u_star = sol['x'][0]
         print(sol)
+        u_star = sol['x'][0]
     else:
-        print("INFEASIBLE")
-
-    # J(u) = ||u||^2
-    # u_star = max(0, lb)
-    # u_star = min(0, ub)
+        print("INFEASIBLE!")
 
     print(f"U_STAR: {u_star}")
+
     return ([u_star for _ in range(nR)], 
             [0 for _ in range(nR)])
 
@@ -202,11 +225,16 @@ if __name__ == '__main__':
     vR.append(26)
     lR.append(0)
 
-    alphaF = get_alphaF()
-    alphaV = get_alphaV()
+    u_init = 0.1
+    apply_control(([u_init for _ in range(nR)], [0 for _ in range(nR)]))
+
+    alpha_F, beta_F = get_alphabetaF()
+    alpha_V, beta_V = get_alphabetaV()
+    p_A = get_pA()
 
     u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
     while t <= t_max:
         apply_control(compute_u())
-        plot(min(pH[0] + s_min, pR[0]))
+        vis(min(pH[0] + s_min, pR[0]))
+        plot()
         t += dt
