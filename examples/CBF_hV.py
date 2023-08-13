@@ -13,7 +13,7 @@ class CBF_hV:
     def ub(self, x):
         return (self.alpha[1] * self.h_dot(x) + self.alpha[0] * self.h(x) 
           - self.idm.lamb(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0], x['aH'][0])) \
-    / self.idm.df_dvR(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0])
+        / self.idm.df_dvR(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0])
     
     def _alpha(self, x):
         c1 = max(0, -self.h_dot(x) / self.h(x)) + self.c_min
