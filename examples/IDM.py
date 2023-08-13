@@ -44,7 +44,6 @@ class IDM:
         while lb > -bR_max:
             vR_new = vR + (lb - res) * dt
             pR_new = pR + vR_new * dt
-            # print(lb - res, self.idm(pH, pR_new, vH, vR_new))
             if self.idm(pH, pR_new, vH, vR_new) < -bH_max:
                 break
             lb -= res
