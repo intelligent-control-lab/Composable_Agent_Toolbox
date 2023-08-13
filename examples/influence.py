@@ -11,10 +11,10 @@ import cvxopt
 
 m = 1
 n = 1
-q = 0
+q = 1
 
 dt = 0.1
-t_max = 20
+t_max = 60
 
 L = 5
 
@@ -39,7 +39,6 @@ b = 3.1
 idm = IDM(s0, v0, T, a, b, L)
 
 dist_min = 1.5 * L
-const_vel = [False, True]
 
 x_all = []
 
@@ -66,6 +65,8 @@ def vis(pov):
         ax.text(x['lH'][i]*L, x['pH'][i], str(x['vH'][i]))
     for i in range(n):
         ax.text(x['lR'][i]*L, x['pR'][i], str(x['vR'][i]))
+    for i in range(q):
+        ax.text(x['lB'][i]*L, x['pB'][i], str(x['vB'][i]))
 
     for i in range(m):
         ax.add_patch(Rectangle(
@@ -77,6 +78,13 @@ def vis(pov):
             (x['lR'][i]*L - L/4, x['pR'][i] - L/2), 
             L/2, L, 
             facecolor='red'))
+    for i in range(q):
+        print(x['pB'][i])
+        ax.add_patch(Rectangle(
+            (x['lB'][i]*L - L/4, x['pB'][i] - L/2), 
+            L/2, L, 
+            facecolor='green'))
+
     ax.add_patch(Rectangle(
             (x['lR'][i]*L - L/4, x['pR'][i] - L/2 - s_min), 
             L/2, s_min,
@@ -205,7 +213,7 @@ def apply_control(u):
             x['lR'][i] + round(dR[i])))
         
     for i in range(q):
-        x['pR'][i] += x['vR'][i]
+        x['pB'][i] += x['vB'][i] * dt
         
     x['aH'] = aH
     x['aR'] = aR
@@ -217,25 +225,14 @@ def f():
     dH = []
 
     for i in range(m):
-        if const_vel[i]:
-            fol = get_following(i)
-            if fol == None:
-                aH.append(0)
-            else:
-                aH.append(idm.idm(x['pH'][i], fol[0], x['vH'][i], fol[1]))
-            dH.append(0)
-            continue
-        
-        f = get_following(i)
-        aH.append(idm.free_road(x['vH'][i]) if f is None 
-                  else idm.idm(x['pH'][i], f[0], x['vH'][i], f[1]))
-        
+        fol = get_following(i)
+        aH.append(idm.free_road(x['vH'][i]) if fol is None 
+                  else idm.idm(x['pH'][i], fol[0], x['vH'][i], fol[1]))
         incentive = False
-        if f is not None:
+        if fol is not None:
             f_new = get_new_following(i, -1)
             vel_new = v0 if f_new is None else f_new[1]
-            incentive = vel_new - f[1] >= vH_th
-
+            incentive = vel_new - fol[1] >= vH_th
         safety = not is_occupied(x['pH'][i], x['lH'][i] - 1)
         # dH.append(0 if f is None 
         #           else -(incentive and safety))
@@ -282,6 +279,10 @@ if __name__ == '__main__':
     x['vR'].append(26)
     x['aR'].append(0)
     x['lR'].append(0)
+
+    x['pB'].append(0)
+    x['vB'].append(30)
+    x['lB'].append(-1)
 
     hF = CBF_hF(x, s_min, L, dt, c_min, idm)
     hV = CBF_hV(x, v_max, c_min, idm)
