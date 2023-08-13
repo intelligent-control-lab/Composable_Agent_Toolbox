@@ -5,11 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import cvxopt
+import scipy
 
 nH = 1
 nR = 1
 dt = 0.1
-t_max = 100000
+t_max = 60
 L = 5
 
 pH = []
@@ -21,11 +22,11 @@ lR = []
 
 c_min = 1
 
-s_min = 1.1*L
+s_min = 10.0001 - L
 a_max = 2.0
 b_max = 4.0
 vR_max = 40
-v_max = 35
+v_max = 25
 
 s0 = 0.3*L
 v0 = 36
@@ -41,12 +42,14 @@ alphaV = []
 aH_last = [0]
 aR_last = [0]
 
+state_all = []
+
 t = 0
 safe = False
 
 fig, ax = plt.subplots()
 
-def plot(pov):
+def vis(pov):
     
     ax.cla()
     ax.axis([-4*L, 4*L, pov - 4*L, pov + 4*L])
@@ -78,6 +81,50 @@ def plot(pov):
             facecolor=(1,1,0,0.5)))
 
     plt.pause(0.001)
+
+def plot():
+
+    global state_all
+    state_all = state_all[10:]
+
+    x = [s[0] for s in state_all]
+
+    fig0, ax0 = plt.subplots()
+    y_pH = [s[1][0] for s in state_all]
+    y_pR = [s[2][0] for s in state_all]
+    y = [r - h for h, r in zip(y_pH, y_pR)]
+    ax0.plot(x, y, label='dist')
+    # plt.axhline(y=s_min+L, color='black', linestyle='--')
+    # ax0.plot(x, y_pH, label='pH', c='b')
+    # ax0.plot(x, y_pR, label='pR', c='r')
+    ax0.legend(loc='upper right')
+
+    fig1, ax1 = plt.subplots()
+    y = [s[3][0] for s in state_all]
+    ax1.plot(x, y, label='vH')
+    plt.axhline(y=v_max, color='black', linestyle='--')
+    ax1.legend(loc='upper right')
+
+    fig2, ax2 = plt.subplots()
+    y_vH = [s[3][0] for s in state_all]
+    y_vR = [s[4][0] for s in state_all]
+    ax2.plot(x, y_vH, label='vH', c='b')
+    ax2.plot(x, y_vR, label='vR', c='r')
+    ax2.legend(loc='upper right')
+
+    fig3, ax3 = plt.subplots()
+    y_u = [s[6][0] for s in state_all]
+    ax3.plot(x, y_u, label='u')
+    ax3.legend(loc='lower right')
+
+    fig4, ax4 = plt.subplots()
+    y_aH = [s[5][0] for s in state_all]
+    y_aR = [s[6][0] for s in state_all]
+    ax4.plot(x, y_aH, label='aH', c='b')
+    ax4.plot(x, y_aR, label='aR', c='r')
+    ax4.legend(loc='lower right')
+
+    plt.show()
 
 def safe(): 
     return pR[0] - pH[0] - L >= s_min or lH[0] != lR[0]
@@ -114,6 +161,7 @@ def apply_control(u):
     global aH_last, aR_last
     aH_last = aH
     aR_last = aR
+    state_all.append([t, pH.copy(), pR.copy(), vH.copy(), vR.copy(), aH.copy(), aR.copy()])
 
 def f():
     aH = []
@@ -173,20 +221,20 @@ def compute_u():
           - idm.lamb(pH[0], pR[0], vH[0], vR[0], aH_last[0])) \
     / idm.df_dvR(pH[0], pR[0], vH[0], vR[0]) # u <= ub
 
-    u_star = 0
-    if lb <= ub:
-        sol = cvxopt.solvers.qp(cvxopt.matrix([[1.0]]), # 1.0 for min, -1.0 for max
-                                cvxopt.matrix([0.0]), 
-                                cvxopt.matrix([[-1.0, 1.0]]), 
-                                cvxopt.matrix([-lb, ub]))
-        u_star = sol['x'][0]
-        print(sol)
-    else:
-        print("INFEASIBLE")
+    # u_star = 0
+    # if lb <= ub:
+    #     sol = cvxopt.solvers.qp(cvxopt.matrix([[1.0]]), # 1.0 for min, -1.0 for max
+    #                             cvxopt.matrix([0.0]), 
+    #                             cvxopt.matrix([[-1.0, 1.0]]), 
+    #                             cvxopt.matrix([-lb, ub]))
+    #     u_star = sol['x'][0]
+    #     print(sol)
+    # else:
+    #     print("INFEASIBLE")
 
     # J(u) = ||u||^2
     # u_star = max(0, lb)
-    # u_star = min(0, ub)
+    u_star = min(0, ub)
 
     print(f"U_STAR: {u_star}")
     return ([u_star for _ in range(nR)], 
@@ -208,5 +256,7 @@ if __name__ == '__main__':
     u = ([0 for _ in range(nR)], [0 for _ in range(nR)])
     while t <= t_max:
         apply_control(compute_u())
-        plot(min(pH[0] + s_min, pR[0]))
+        vis(min(pH[0] + s_min, pR[0]))
         t += dt
+
+    plot()
