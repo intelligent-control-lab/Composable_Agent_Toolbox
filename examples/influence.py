@@ -14,7 +14,7 @@ n = 1
 q = 0
 
 dt = 0.1
-t_max = 60
+t_max = 20
 
 L = 5
 
@@ -98,8 +98,8 @@ def plot():
     xs = [s[0] for s in x_all]
 
     fig0, ax0 = plt.subplots()
-    y_pH = [s[1][0] for s in x_all]
-    y_pR = [s[2][0] for s in x_all]
+    y_pH = [s[1]['pH'][0] for s in x_all]
+    y_pR = [s[1]['pR'][0] for s in x_all]
     y = [r - h for h, r in zip(y_pH, y_pR)]
     ax0.plot(xs, y, label='dist')
     # plt.axhline(y=s_min+L, color='black', linestyle='--')
@@ -108,26 +108,26 @@ def plot():
     ax0.legend(loc='upper right')
 
     fig1, ax1 = plt.subplots()
-    y = [s[3][0] for s in x_all]
+    y = [s[1]['vH'][0] for s in x_all]
     ax1.plot(xs, y, label='vH')
     plt.axhline(y=v_max, color='black', linestyle='--')
     ax1.legend(loc='upper right')
 
     fig2, ax2 = plt.subplots()
-    y_vH = [s[3][0] for s in x_all]
-    y_vR = [s[4][0] for s in x_all]
+    y_vH = [s[1]['vH'][0] for s in x_all]
+    y_vR = [s[1]['vR'][0] for s in x_all]
     ax2.plot(xs, y_vH, label='vH', c='b')
     ax2.plot(xs, y_vR, label='vR', c='r')
     ax2.legend(loc='upper right')
 
     fig3, ax3 = plt.subplots()
-    y_u = [s[6][0] for s in x_all]
+    y_u = [s[1]['aH'][0] for s in x_all]
     ax3.plot(xs, y_u, label='u')
     ax3.legend(loc='lower right')
 
     fig4, ax4 = plt.subplots()
-    y_aH = [s[5][0] for s in x_all]
-    y_aR = [s[6][0] for s in x_all]
+    y_aH = [s[1]['aH'][0] for s in x_all]
+    y_aR = [s[1]['aR'][0] for s in x_all]
     ax4.plot(xs, y_aH, label='aH', c='b')
     ax4.plot(xs, y_aR, label='aR', c='r')
     ax4.legend(loc='lower right')
@@ -203,6 +203,9 @@ def apply_control(u):
         x['pR'][i] += x['vR'][i] * dt
         x['lR'][i] = max(-1, min(1, 
             x['lR'][i] + round(dR[i])))
+        
+    for i in range(q):
+        x['pR'][i] += x['vR'][i]
         
     x['aH'] = aH
     x['aR'] = aR
