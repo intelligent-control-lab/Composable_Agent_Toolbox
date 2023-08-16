@@ -1,4 +1,4 @@
-class CBF_hB31:
+class CBF_hB32_N:
     def __init__(self, x_init, s_min, L, dt, c_min, idm):
         self.s_min = s_min
         self.L = L
@@ -8,7 +8,7 @@ class CBF_hB31:
         self.alpha = self._alpha(x_init)
 
     def h(self, x):
-        return x['pH'][1] - x['pH'][0] - self.s_min - self.L
+        return x['pH'][1] - x['pH'][0] + self.s_min - self.L
     def h_dot(self, x):
         return x['vH'][1] - x['vH'][0]
     def h_ddot(self, x):
@@ -19,7 +19,7 @@ class CBF_hB31:
         coeff2 = self.idm.df_dvR(x['pH'][1], x['pR'][1], x['vH'][1], x['vR'][1])
         beta = self.idm.lamb(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0], x['aH'][0]) - \
             self.idm.lamb(x['pH'][1], x['pR'][1], x['vH'][1], x['vR'][1], x['aH'][1]) - \
-            self.alpha[2] * self.h_ddot(x) - self.alpha[1] * self.h_dot(x) - self.alpha[0] * self.h(x)
+            self.alpha[2] * x['aH'][1] - self.alpha[1] * self.h_dot(x) - self.alpha[0] * self.h(x)
         # coeff1*u1 + coeff2*u2 >= beta
         return (coeff1, coeff2, beta) 
     

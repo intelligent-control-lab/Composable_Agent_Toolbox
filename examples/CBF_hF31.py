@@ -15,7 +15,6 @@ class CBF_hF31:
         return x['aR'][0] - x['aH'][1]
     
     def constraint(self, x):
-        print(f"F: {self.h(x)} {self.h_dot(x)} {self.h_ddot(x)}")
         coeff1 = self.alpha[2] + 1 / self.dt
         coeff2 = -self.idm.df_dvR(x['pH'][1], x['pR'][1], x['vH'][1], x['vR'][1])
         beta = x['aR'][0] / self.dt + self.idm.lamb(x['pH'][1], x['pR'][1], x['vH'][1], x['vR'][1], x['aH'][1]) + \
