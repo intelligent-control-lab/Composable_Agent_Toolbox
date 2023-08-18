@@ -20,7 +20,7 @@ class CBF_hF21:
         beta = x['aR'][1] / self.dt + self.idm.lamb(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0], x['aH'][0]) + \
             self.alpha[2] * x['aH'][0] - self.alpha[1] * self.h_dot(x) - self.alpha[0] * self.h(x)
         # coeff1*u1 + coeff2*u2 >= beta
-        return (coeff1, coeff2, beta) 
+        return (coeff1, coeff2, 0, beta) 
     
     def _alpha(self, x):
         c1 = max(0, -self.h_dot(x) / self.h(x)) + self.c_min

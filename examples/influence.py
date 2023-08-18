@@ -2,24 +2,20 @@ import copy
 import math
 import random
 from IDM import IDM
-from CBF_hF import CBF_hF
-from CBF_hV import CBF_hV
-from CBF_hL import CBF_hL
-from CBF_hF31 import CBF_hF31
-from CBF_hB31 import CBF_hB31
-from CBF_hD1_33 import CBF_hD1_33
-from CBF_hD2_33 import CBF_hD2_33
+from CBF_hF21 import CBF_hF21
+from CBF_hB21 import CBF_hB21
+from CBF_hV21 import CBF_hV21
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import cvxopt
 
-m = 2
-n = 2
-q = 2
+m = 1
+n = 3
+q = 0
 
 dt = 0.1
-t_max = 45
+t_max = 20
 
 t_switch = -1
 
@@ -29,17 +25,19 @@ x = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [],
      'pR': [], 'vR': [], 'aR': [], 'lR': [], 
      'pB': [], 'vB': [], 'lB': []}
 
-c_min = 1
+# c_min = 0.005
+c_min = 0.09
+# c_min = 0.05
 
 s_min = 10.0001 - L
 a_max = 2.0
 b_max = 4.0
 # vR_max = [34.5, 38]
-vR_max = [35, 35]
+vR_max = [35, 35, 35]
 
 s0 = 0.3*L
 v0 = 35
-vH_th = 10
+dvH_th = 4.1
 T = 0.01 # 1.3
 a = 1.8
 b = 3.1
@@ -115,92 +113,59 @@ def plot():
 
     xs = [s[0] for s in x_all]
 
-    # fig0, ax0 = plt.subplots()
-    # y_pH = [s[1]['pH'][0] for s in x_all]
-    # y_pR = [s[1]['pR'][0] for s in x_all]
-    # y = [r - h for h, r in zip(y_pH, y_pR)]
-    # ax0.plot(xs, y, label='dist')
-    # # plt.axhline(y=s_min+L, color='black', linestyle='--')
-    # # ax0.plot(xs, y_pH, label='pH', c='b')
-    # # ax0.plot(xs, y_pR, label='pR', c='r')
-    # ax0.legend(loc='upper right')
-
-    fig0, ax0 = plt.subplots()
-    y_pR = [s[1]['pR'][0] for s in x_all]
-    y_pH = [s[1]['pH'][0] for s in x_all]
-    y = [r - h for r, h in zip(y_pR, y_pH)]
-    ax0.plot(xs, y, label='pR1 - pH1')
-    plt.axhline(y=30, color='black', linestyle='--')
-    plt.axvline(x=t_switch, color='gray', linestyle='--')
-    ax0.legend(loc='lower right')
-
     fig1, ax1 = plt.subplots()
-    y_pR1 = [s[1]['pR'][0] - s[1]['pH'][1] for s in x_all]
-    y_pH1 = [s[1]['pH'][0] - s[1]['pH'][1] for s in x_all]
-    y_pR2 = [s[1]['pR'][1] - s[1]['pH'][1] for s in x_all]
-    ax1.plot(xs, y_pR1, label='pR1 - pH2')
-    ax1.plot(xs, y_pH1, label='pH1 - pH2')
-    ax1.plot(xs, y_pR2, label='pR2 - pH2')
+    y_pR1 = [s[1]['pR'][0] - s[1]['pH'][0] for s in x_all]
+    y_pR2 = [s[1]['pR'][1] - s[1]['pH'][0] for s in x_all]
+    y_pR3 = [s[1]['pR'][2] - s[1]['pH'][0] for s in x_all]
+    ax1.plot(xs, y_pR1, label='pR1 - pH1')
+    ax1.plot(xs, y_pR2, label='pR2 - pH1')
+    ax1.plot(xs, y_pR3, label='pR3 - pH1')
     plt.axhline(y=10, color='black', linestyle='--')
     plt.axhline(y=-10, color='black', linestyle='--')
     plt.axvline(x=t_switch, color='gray', linestyle='--')
-    ax1.legend(loc='lower left')
+    ax1.legend(loc='upper left')
 
     fig2, ax2 = plt.subplots()
     y_vR1 = [s[1]['vR'][0] for s in x_all]
-    y_vH1 = [s[1]['vH'][0] for s in x_all]
     y_vR2 = [s[1]['vR'][1] for s in x_all]
-    y_vH2 = [s[1]['vH'][1] for s in x_all]
+    y_vR3 = [s[1]['vR'][2] for s in x_all]
+    y_vH1 = [s[1]['vH'][0] for s in x_all]
     ax2.plot(xs, y_vR1, label='vR1')
-    ax2.plot(xs, y_vH1, label='vH1')
-    ax2.plot(xs, y_vR2, label='vR2')
-    ax2.plot(xs, y_vH2, label='vH2')
+    ax2.plot(xs, y_vR2, label='vH1')
+    ax2.plot(xs, y_vR3, label='vR2')
+    ax2.plot(xs, y_vH1, label='vH2')
     plt.axvline(x=t_switch, color='gray', linestyle='--')
-    ax2.legend(loc='lower left')
+    ax2.legend(loc='lower right')
 
     fig3, ax3 = plt.subplots()
     y_aR1 = [s[1]['aR'][0] for s in x_all]
-    y_aH1 = [s[1]['aH'][0] for s in x_all]
     y_aR2 = [s[1]['aR'][1] for s in x_all]
-    y_aH2 = [s[1]['aH'][1] for s in x_all]
-    # ax3.plot(xs, y_aR1, label='aR1')
-    ax3.plot(xs, y_aH1, label='aH1')
-    # ax3.plot(xs, y_aR2, label='aR2')
-    ax3.plot(xs, y_aH2, label='aH2')
+    y_aR3 = [s[1]['aR'][2] for s in x_all]
+    y_aH1 = [s[1]['aH'][0] for s in x_all]
+    ax3.plot(xs, y_aR1, label='aR1')
+    ax3.plot(xs, y_aR2, label='aH1')
+    ax3.plot(xs, y_aR3, label='aR2')
+    ax3.plot(xs, y_aH1, label='aH2')
     plt.axvline(x=t_switch, color='gray', linestyle='--')
-    ax3.legend(loc='lower left')
-
-    # fig1, ax1 = plt.subplots()
-    # y = [s[1]['vH'][0] for s in x_all]
-    # ax1.plot(xs, y, label='vH')
-    # plt.axhline(y=v_max, color='black', linestyle='--')
-    # ax1.legend(loc='upper right')
-
-    # fig2, ax2 = plt.subplots()
-    # y_vH = [s[1]['vH'][0] for s in x_all]
-    # y_vR = [s[1]['vR'][0] for s in x_all]
-    # y_vB = [s[1]['vB'][0] for s in x_all]
-    # ax2.plot(xs, y_vH, label='vH', c='b')
-    # ax2.plot(xs, y_vR, label='vR', c='r')
-    # ax2.plot(xs, y_vB, label='vB', c='g')
-    # plt.axvline(x=t_switch, color='gray', linestyle='--')
-    # ax2.legend(loc='lower right')
+    ax3.legend(loc='lower right')
 
     fig4, ax4 = plt.subplots()
     y_u1 = [s[1]['aR'][0] for s in x_all]
     y_u2 = [s[1]['aR'][1] for s in x_all]
+    y_u3 = [s[1]['aR'][2] for s in x_all]
     ax4.plot(xs, y_u1, label='u1')
     ax4.plot(xs, y_u2, label='u2')
+    ax4.plot(xs, y_u3, label='u3')
     plt.axvline(x=t_switch, color='gray', linestyle='--')
     ax4.legend(loc='upper right')
 
     fig5, ax5 = plt.subplots()
     y_vR1 = [s[1]['vR'][0] for s in x_all]
     y_vR2 = [s[1]['vR'][1] for s in x_all]
-    y_dv = [r1 - r2 + 0.2 for r1, r2 in zip(y_vR1, y_vR2)]
-    ax5.plot(xs, y_dv, label='vR1 - vR2')
+    y_dv = [r2 - r1 for r1, r2 in zip(y_vR1, y_vR2)]
+    ax5.plot(xs, y_dv, label='vR2 - vR1')
     plt.axvline(x=t_switch, color='gray', linestyle='--')
-    plt.axhline(y=3.97, color='black', linestyle='--')
+    plt.axhline(y=2.99, color='black', linestyle='--')
     ax5.legend(loc='lower right')
 
     # fig4, ax4 = plt.subplots()
@@ -295,12 +260,13 @@ def f():
         if fol is not None:
             fol_new = get_following(i, -1)
             vel_new = v0 if fol_new is None else fol_new[1]
-            incentive = vel_new - fol[1] >= vH_th
+            incentive = vel_new - fol[1] >= dvH_th - 0.1
         safety = not is_occupied(x['pH'][i], x['lH'][i] - 1)
+
         # dH.append(0 if fol is None 
         #           else -(incentive and safety))
         global t_switch
-        if i == 1 and safety and t_switch == -1:
+        if i == 0 and safety and t_switch == -1:
             t_switch = t
         dH.append(0 if fol is None else -safety)
         # dH.append(0)
@@ -309,42 +275,46 @@ def f():
 
 def compute_u():
 
-    A11, A12, b1 = hF.constraint(x)
-    A21, A22, b2 = hB.constraint(x)
-    ub = hD1.ub(x)  # u1 <= ub
-    ub = ub if t > 1 else 100000
-    # ub = 1000000000000
-    # lb = hD2.lb(x) # u1 >= lb
-    # lb = lb if lb <= 0 else -10000000
-    lb = -100000
-    print(A11, A12, b1, A21, A22, b2, lb, ub)
+    A11, A12, A13, b1 = hF.constraint(x) # u1, u2
+    A21, A22, A23, b2 = hB.constraint(x) # u1, u3
+    A31, A32, A33, b3 = hV.constraint(x) # u1, u2
+    print("F", A11, A12, A13, b1)
+    print("B", A21, A22, A23, b2)
+    print("V", A31, A32, A33, b3)
 
-    A = cvxopt.matrix([[-A11, -A21, -1.0, 1.0], [-A12, -A22, 0.0, 0.0]])
-    b = cvxopt.matrix([-b1, -b2, -lb, ub])
+    # A = cvxopt.matrix([[-A11, -A21, -A31], [-A12, -A22, -A32], [-A13, -A23, -A33]])
+    # b = cvxopt.matrix([-b1, -b2, -b3])
+
+    A = cvxopt.matrix([[-A11, -A21], [-A12, -A22], [-A13, -A23]])
+    b = cvxopt.matrix([-b1, -b2])
+
+    # A = cvxopt.matrix([[-A11], [-A12], [-A13]])
+    # b = cvxopt.matrix([-b1])
+
     print(A)
     print(b)
 
     u_star = [0 for _ in range(n)]
-    sol = cvxopt.solvers.qp(cvxopt.matrix([[1.0, 0.0], [0.0, 1.0]]), # 1.0 for min, -1.0 for max
-                            cvxopt.matrix([0.0, 0.0]), 
+    sol = cvxopt.solvers.qp(cvxopt.matrix([[1.0, 0.0, 0.0], 
+                                           [0.0, 1.0, 0.0], 
+                                           [0.0, 0.0, 1.0]]), # 1.0 for min, -1.0 for max
+                            cvxopt.matrix([0.0, 0.0, 0.0]), 
                             A, b)
     if sol['status'] == 'optimal':
         u_star = sol['x']
 
-    if x['lH'][1] == -1:
+        # u_star = [u_star[1], u_star[0], u_star[2]] # why?????????
+        u_star = [u_star[1], -u_star[2], -u_star[0]] # why?????????
+
+    if x['lH'][0] == -1:
         u_star[0] = idm.free_road(x['vR'][0])
         u_star[1] = idm.free_road(x['vR'][1])
+        u_star[2] = idm.idm(x['pR'][2], x['pH'][0], x['vR'][2], x['vH'][0])
 
     print(f"U_STAR: {u_star}")
     return (u_star, [0 for _ in range(n)])
 
 if __name__ == '__main__':
-
-    x['pH'].append(-2*L)
-    x['vH'].append(30)
-    x['aH'].append(0)
-    x['lH'].append(-1)
-    x['dH'].append(0)
 
     x['pH'].append(-2*L)
     x['vH'].append(30)
@@ -355,31 +325,26 @@ if __name__ == '__main__':
     x['pR'].append(0)
     x['vR'].append(30)
     x['aR'].append(0)
-    x['lR'].append(-1)
+    x['lR'].append(0)
 
     x['pR'].append(0)
     x['vR'].append(30)
     x['aR'].append(0)
-    x['lR'].append(0)
+    x['lR'].append(-1)
 
-    x['pB'].append(-4*L)
-    x['vB'].append(30)
-    x['lB'].append(-1)
+    x['pR'].append(-2*L)
+    x['vR'].append(30)
+    x['aR'].append(0)
+    x['lR'].append(-1)
 
-    x['pB'].append(6*L)
-    x['vB'].append(30)
-    x['lB'].append(-1)
-
-    hF = CBF_hF31(x, s_min, L, dt, c_min, idm)
-    hB = CBF_hB31(x, s_min, L, dt, c_min, idm)
-    hD1 = CBF_hD1_33(x, s_min, L, dt, c_min, idm)
-    hD2 = CBF_hD2_33(x, s_min, L, dt, c_min, idm)
+    hF = CBF_hF21(x, s_min, L, dt, c_min, idm)
+    hB = CBF_hB21(x, s_min, L, dt, c_min, idm)
+    hV = CBF_hV21(x, dvH_th, c_min, idm)
 
     u = ([0 for _ in range(n)], [0 for _ in range(n)])
     while t <= t_max:
         apply_control(compute_u())
-        # vis(min(min(x['pH'][1], x['pR'][1]), x['pR'][0]))
-        vis(min(x['pH'][1], x['pH'][0]))
+        vis(min(min(x['pH'][0], x['pR'][1]), x['pR'][0]))
         # vis((x['pH'][1] + x['pR'][1] + x['pR'][0]) / 3)
         t += dt
 

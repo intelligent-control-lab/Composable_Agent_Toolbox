@@ -15,12 +15,13 @@ class CBF_hB21:
         return x['aH'][0] - x['aR'][2]
     
     def constraint(self, x):
+        print("HERE IS hB: ", self.h(x), self.h_dot(x), self.h_ddot(x))
         coeff1 = self.idm.df_dvR(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0])
-        coeff2 = -(self.alpha[2] + 1 / self.dt)
+        coeff3 = -(self.alpha[2] + 1 / self.dt)
         beta = -x['aR'][2] / self.dt - self.idm.lamb(x['pH'][0], x['pR'][0], x['vH'][0], x['vR'][0], x['aH'][0]) - \
             self.alpha[2] * x['aH'][0] - self.alpha[1] * self.h_dot(x) - self.alpha[0] * self.h(x)
-        # coeff1*u1 + coeff2*u3 >= beta
-        return (coeff1, coeff2, beta) 
+        # coeff1*u1 + coeff3*u3 >= beta
+        return (coeff1, 0, coeff3, beta) 
     
     def _alpha(self, x):
         c1 = max(0, -self.h_dot(x) / self.h(x)) + self.c_min
