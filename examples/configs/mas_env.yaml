@@ -7,15 +7,19 @@ world:
             a1: [[20.0, 10.0]]
             a2: [[15.0, 15.0]]
             ob1: [[20.0, 5.0]]
+            ob2: [[20.0, 5.0]]
             a3: [[20.0, 15.0]]
             # a3: [[10.0, 5.0]]
             obstat: [[15.0, 10.0]]
+            a4: [[15, 5]]
 dt: 0.02
 agent_comp_spec:
     a1: configs/mas_sim_a1.yaml
     a2: configs/mas_sim_a2.yaml
-    # ob1: configs/mas_sim/ob1.yaml
+    ob1: configs/mas_sim/ob1.yaml
+    ob2: configs/mas_sim/ob2.yaml
     a3: configs/mas_sim_a3.yaml
+    a4: configs/mas_sim_a4.yaml
 agent_env_spec:
     a1:
         type: BB8Agent
@@ -29,7 +33,16 @@ agent_env_spec:
         type: BB8Agent
         spec:
             init_x: [10.0, 15.0, 0.0, 0.0]
+    ob2:
+        type: BB8Agent
+        spec:
+            init_x: [10.0, 15.0, 0.0, 0.0]
     a3:
+        type: BB8Agent
+        spec:
+            # init_x: [10.0, 5.0, 0.0, 0.0]
+            init_x: [20.0, 15.0, 0.0, 0.0]
+    a4:
         type: BB8Agent
         spec:
             # init_x: [10.0, 5.0, 0.0, 0.0]
