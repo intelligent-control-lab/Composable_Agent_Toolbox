@@ -158,10 +158,12 @@ def u():
     
     return (aR, dR)
 
-def move():
+def move(idm=True):
 
-    aH, dH = f()
-    aR, dR = u()
+    aH, dH = f() if idm else ([0 for _ in range(m)], 
+                              [0 for _ in range(m)])
+    aR, dR = u() if idm else ([0 for _ in range(n)], 
+                              [0 for _ in range(n)])
 
     for i in range(m):
         aH[i] = min(a_max, max(-b_max, aH[i]))
@@ -211,6 +213,6 @@ if __name__ == '__main__':
 
     # u = ([0 for _ in range(n)], [0 for _ in range(n)])
     while t <= t_max:
-        move()
+        move(idm=True)
         vis(x['pH'][1])
         t += dt
