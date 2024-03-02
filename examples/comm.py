@@ -25,6 +25,9 @@ T = 0.01 # 1.3
 a = 1.8
 b = 3.1
 
+def sense(observer, subject):
+    pass
+
 if __name__ == '__main__':
 
     x_init = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [], 
