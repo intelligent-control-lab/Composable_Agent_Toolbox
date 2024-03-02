@@ -25,14 +25,14 @@ T = 0.01 # 1.3
 a = 1.8
 b = 3.1
 
-def sense(observer, subject):
+x_init = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [], 
+     'pR': [], 'vR': [], 'aR': [], 'lR': [], 
+     'pB': [], 'vB': [], 'lB': []}
+
+def alg():
     pass
 
 if __name__ == '__main__':
-
-    x_init = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [], 
-     'pR': [], 'vR': [], 'aR': [], 'lR': [], 
-     'pB': [], 'vB': [], 'lB': []}
 
     x_init['pH'].append(-3*L)
     x_init['vH'].append(20)

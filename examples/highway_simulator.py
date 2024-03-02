@@ -1,3 +1,4 @@
+import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
@@ -139,3 +140,12 @@ class HighwaySimulator:
             
         self.x['aH'] = aH
         self.x['aR'] = aR
+
+    def sense(self, observer, subject):
+        pos = self.x['pH'][subject]
+        vel = self.x['vH'][subject]
+        dist = abs(pos - self.x['pR'][observer])
+        alpha = (0.01, 0.01) # TODO: tune params
+        pos += random.gauss(0, alpha[0]*dist**2 + alpha[1]*pos)
+        vel += random.gauss(0, alpha[0]*dist**2 + alpha[1]*vel)
+        return (pos, vel)
