@@ -22,7 +22,8 @@ class Infrastructure:
         return temp
 
     # from https://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf
-    def _bayes(self, prior, lhood, obs):
+    # bayesian inference for gaussian prior and likelihood
+    def _bayes_gauss(self, prior, lhood, obs):
         sigma2 = 1 / (len(obs) / lhood[1] + 1 / prior[1]) # eq. (20)
         mu = sigma2 * (prior[0] / prior[1] + sum(obs) / lhood[1]) # eq. (24)
         return (mu, sigma2)
@@ -43,8 +44,8 @@ class Infrastructure:
         obs_p = self.obs[sender][subject]['pos'][-1] # latest observation
         obs_v = self.obs[sender][subject]['vel'][-1]
 
-        post_p = self.bayes(prior_p, lhood_p, obs_p) # (mean, stdev^2)
-        post_v = self.bayes(prior_v, lhood_v, obs_v)
+        post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mean, stdev^2)
+        post_v = self._bayes_gauss(prior_v, lhood_v, obs_v)
 
         self.bel[receiver][subject]['pos'] = post_p
         self.bel[receiver][subject]['vel'] = post_v
