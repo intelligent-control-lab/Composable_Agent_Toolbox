@@ -28,7 +28,7 @@ class Infrastructure:
         mu = sigma2 * (prior[0] / prior[1] + sum(obs) / lhood[1]) # eq. (24)
         return (mu, sigma2)
     
-    def _update_belief(self, sender, receiver, subject):
+    def _update_belief(self, sender, receiver, subject, update=True):
         # TODO: figure out whether we're actually estimating this at every timestep (hence dt)
         pos_est = self.bel[sender][subject]['pos'][0] + self.bel['vel'][sender][0] * self.sim.dt # integrate to guess
         vel_est = self.bel[sender][subject]['vel'][0] # constant velocity assumption
@@ -41,14 +41,17 @@ class Infrastructure:
         prior_p = self.bel[receiver][subject]['pos'] # (mean, stdev^2)
         prior_v = self.bel[receiver][subject]['vel']
 
-        obs_p = self.obs[sender][subject]['pos'][-1] # latest observation
-        obs_v = self.obs[sender][subject]['vel'][-1]
+        obs_p = self.obs[sender][subject]['pos'] # list of all observations
+        obs_v = self.obs[sender][subject]['vel']
 
         post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mean, stdev^2)
         post_v = self._bayes_gauss(prior_v, lhood_v, obs_v)
 
-        self.bel[receiver][subject]['pos'] = post_p
-        self.bel[receiver][subject]['vel'] = post_v
+        if update:
+            self.bel[receiver][subject]['pos'] = post_p
+            self.bel[receiver][subject]['vel'] = post_v
+
+        return (post_p, post_v)
 
 
     def sense(self, observer, subject):
@@ -69,3 +72,6 @@ class Infrastructure:
     
     def share(self, sender, receiver, subject):
         self._update_belief(sender, receiver, subject)
+
+    def test_share(self, sender, receiver, subject):
+        return self._update_belief(sender, receiver, subject, update=False)

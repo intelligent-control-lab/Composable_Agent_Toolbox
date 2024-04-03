@@ -1,5 +1,6 @@
 from highway_simulator import HighwaySimulator
 from infrastructure import Infrastructure
+from knapsack import Knapsack
 import ortoolpy
 import random
 from IDM import IDM
@@ -65,6 +66,7 @@ if __name__ == '__main__':
 
     sim = HighwaySimulator(x, m, n, q, L, idmH, idmR, dt)
     infra = Infrastructure(sim)
+    knap = Knapsack(sim, infra, C, beta)
     
     while t <= t_max:
         x = sim.move(use_idm=True)
@@ -74,3 +76,10 @@ if __name__ == '__main__':
 # let's assume that 1. everyone wants information about everyone and that 2. everyone gets information about everyone.
 # does everyone observe everyone??
 # then, costs are just the full adjacancy matrix (C) and values are weighted sum of 1/d^2 and posterior - prior belief.
+
+# perhaps everyone gets information about everyone else in their lane
+# can observations be made across lanes? sure, since we can probably reasonably just consider longitudinal distance
+# maybe if an agent wants to change lanes, it wants observations of humans in adjacent lane
+
+# during car-following, agents get observations of car(s?) ahead in lane
+# during lane-changing, agents get observations of car(s) in adjecent lane
