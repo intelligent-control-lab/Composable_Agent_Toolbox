@@ -28,23 +28,54 @@ class Infrastructure:
         mu = sigma2 * (prior[0] / prior[1] + sum(obs) / lhood[1]) # eq. (24)
         return (mu, sigma2)
     
+    # def _update_belief(self, sender, receiver, subject, update=True):
+    #     # TODO: figure out whether we're actually estimating this at every timestep (hence dt)
+    #     pos_est = self.bel[sender][subject]['pos'][0] + self.bel['vel'][sender][0] * self.sim.dt # integrate to guess
+    #     vel_est = self.bel[sender][subject]['vel'][0] # constant velocity assumption
+
+    #     sigma = (1, 1) # TODO: tune params
+    #     # uncertainty of estimate is proportional to uncertainty of observation [assume (mean, stdev^2) tuples]
+    #     lhood_p = (pos_est, sigma[0]**2 * self.bel[sender][subject]['pos'][1]) # (mean, stdev^2)
+    #     lhood_v = (vel_est, sigma[1]**2 * self.bel[sender][subject]['vel'][1])
+
+    #     prior_p = self.bel[receiver][subject]['pos'] # (mean, stdev^2)
+    #     prior_v = self.bel[receiver][subject]['vel']
+
+    #     obs_p = self.obs[sender][subject]['pos'] # list of all observations
+    #     obs_v = self.obs[sender][subject]['vel']
+
+    #     post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mean, stdev^2)
+    #     post_v = self._bayes_gauss(prior_v, lhood_v, obs_v)
+
+    #     if update:
+    #         self.bel[receiver][subject]['pos'] = post_p
+    #         self.bel[receiver][subject]['vel'] = post_v
+
+    #     return (post_p, post_v)
+
+
+    # NEW FUNCTION
     def _update_belief(self, sender, receiver, subject, update=True):
-        # TODO: figure out whether we're actually estimating this at every timestep (hence dt)
+
+        # estimate current state from belief from last timestep
         pos_est = self.bel[sender][subject]['pos'][0] + self.bel['vel'][sender][0] * self.sim.dt # integrate to guess
         vel_est = self.bel[sender][subject]['vel'][0] # constant velocity assumption
+        
+        # prior is estimated state
+        sigma0_v = 1 # TODO: tune param
+        n = len(self.obs[sender][subject]['pos'])
+        prior_p = (pos_est, sigma0_v**2 * n * self.sim.dt) # (mu, sigma^2)
+        prior_v = (vel_est, sigma0_v**2)
 
-        sigma = (1, 1) # TODO: tune params
-        # uncertainty of estimate is proportional to uncertainty of observation [assume (mean, stdev^2) tuples]
-        lhood_p = (pos_est, sigma[0]**2 * self.bel[sender][subject]['pos'][1]) # (mean, stdev^2)
-        lhood_v = (vel_est, sigma[1]**2 * self.bel[sender][subject]['vel'][1])
+        # likelihood is latest observation
+        sigmaN = (1, 1) # TODO: tune params
+        lhood_p = (self.obs[sender][subject]['pos'][-1], sigmaN[0]**2) # (mu, sigma^2)
+        lhood_v = (self.obs[sender][subject]['vel'][-1], sigmaN[1]**2) 
 
-        prior_p = self.bel[receiver][subject]['pos'] # (mean, stdev^2)
-        prior_v = self.bel[receiver][subject]['vel']
-
+        # compute posterior
         obs_p = self.obs[sender][subject]['pos'] # list of all observations
         obs_v = self.obs[sender][subject]['vel']
-
-        post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mean, stdev^2)
+        post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mu, sigma^2)
         post_v = self._bayes_gauss(prior_v, lhood_v, obs_v)
 
         if update:
@@ -52,7 +83,7 @@ class Infrastructure:
             self.bel[receiver][subject]['vel'] = post_v
 
         return (post_p, post_v)
-
+    
 
     def sense(self, observer, subject):
         pos = self.sim.x['pH'][subject]
