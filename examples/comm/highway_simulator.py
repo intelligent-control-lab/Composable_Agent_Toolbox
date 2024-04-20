@@ -1,10 +1,9 @@
 import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-import bayes
 
 class HighwaySimulator:
-    def __init__(self, x_init, m, n, q, L, idmH, idmR, dt, bel, obs):
+    def __init__(self, x_init, m, n, q, L, idmH, idmR, dt):
         self.x = x_init
         self.m = m
         self.n = n
@@ -13,8 +12,6 @@ class HighwaySimulator:
         self.idmH = idmH
         self.idmR = idmR
         self.dt = dt
-        self.bel = bel # see share() method for datatype of this
-        self.obs = obs # see sense() method for datatype of this
 
         self.fig, self.ax = plt.subplots()
 
@@ -91,6 +88,8 @@ class HighwaySimulator:
         return False
 
     def f(self):
+        return ([0], [0])
+
         aH = []
         dH = []
         for i in range(self.m):
@@ -109,6 +108,8 @@ class HighwaySimulator:
         return (aH, dH)
 
     def u(self):
+        return ([0], [0])
+
         aR = []
         dR = [0 for _ in range(self.n)]
         for i in range(self.n):
