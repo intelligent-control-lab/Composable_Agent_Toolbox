@@ -22,10 +22,8 @@ class Infrastructure:
     # bayesian inference for gaussian prior and likelihood
     def _bayes_gauss(self, prior, lhood, obs):
         sigma2 = 1 / (len(obs) / lhood[1] + 1 / prior[1]) # eq. (20)
-        print(f'sigma2 = 1 / ({len(obs)} / {lhood[1]} + 1 / {prior[1]}) = {sigma2}')
         # mu = sigma2 * (prior[0] / prior[1] + sum(obs) / lhood[1]) # eq. (24)
         mu = sigma2 * (prior[0] / prior[1] + (len(obs) * obs[-1]) / lhood[1]) # eq. (24) [MODIFIED TO REMOVE AVG]
-        print(f'mu = {sigma2} * ({prior[0]} / {prior[1]} + {(len(obs) * obs[-1])} / {lhood[1]}) = {mu}')
         return (mu, sigma2)
 
     # NEW FUNCTION
