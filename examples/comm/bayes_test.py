@@ -41,7 +41,7 @@ fig2, ax2 = plt.subplots()
 
 def run_sense(infra):
     p, v = infra.sense(0, 0)
-    print(p, v)
+    print(f'MEASURED {p} {v}')
 
     # if t % 5 != 0:
     #     return

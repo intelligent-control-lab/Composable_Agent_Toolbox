@@ -13,10 +13,6 @@ beta = 100
 C = [[random.randint(1, 10) for j in range(n)] 
         for i in range(n)]
 
-v = [21, 11, 15, 9, 34, 25, 41, 52]
-c = [22, 12, 16, 10, 35, 26, 42, 53]
-print(ortoolpy.knapsack(v, c, beta))
-
 L = 5
 a_max = 2.0
 b_max = 4.0
@@ -69,6 +65,22 @@ if __name__ == '__main__':
     knap = Knapsack(sim, infra, C, beta)
     
     while t <= t_max:
+        
+        # run individual sensing
+        for r in range(n):
+            for h in range(m):
+                infra.sense(r, h)
+
+        # run knapsack to decide communications
+        comms = [(a, b, h) for a in range(n) for b in range(n) for h in range(m)] # consider all potential comms
+        chosen = knap.sack(comms)[1] # indices of chosen comms
+
+        # execute communications
+        for i in chosen:
+            (a, b, h) = comms[i]
+            infra.share(a, b, h)
+
+        # iterate simulation
         x = sim.move(use_idm=True)
         sim.vis(t, x['pH'][1])
         t += dt

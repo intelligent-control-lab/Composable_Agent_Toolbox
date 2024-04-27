@@ -26,7 +26,6 @@ class Infrastructure:
         mu = sigma2 * (prior[0] / prior[1] + (len(obs) * obs[-1]) / lhood[1]) # eq. (24) [MODIFIED TO REMOVE AVG]
         return (mu, sigma2)
 
-    # NEW FUNCTION
     def _update_belief(self, sender, receiver, subject, update=True):
 
         # estimate current state from belief from last timestep

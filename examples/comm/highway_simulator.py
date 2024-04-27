@@ -88,8 +88,6 @@ class HighwaySimulator:
         return False
 
     def f(self):
-        return ([0], [0])
-
         aH = []
         dH = []
         for i in range(self.m):
@@ -108,8 +106,6 @@ class HighwaySimulator:
         return (aH, dH)
 
     def u(self):
-        return ([0], [0])
-
         aR = []
         dR = [0 for _ in range(self.n)]
         for i in range(self.n):
