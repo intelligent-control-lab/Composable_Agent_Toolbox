@@ -5,7 +5,7 @@ import ortoolpy
 import random
 from IDM import IDM
 
-m = 2
+m = 1
 n = 2
 q = 0
 beta = 100
@@ -29,19 +29,13 @@ x = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [],
 
 if __name__ == '__main__':
 
-    x['pH'].append(-3*L)
+    x['pH'].append(3*L)
     x['vH'].append(20)
     x['aH'].append(0)
     x['lH'].append(-1)
     x['dH'].append(0)
 
-    x['pH'].append(-2*L)
-    x['vH'].append(20)
-    x['aH'].append(0)
-    x['lH'].append(0)
-    x['dH'].append(0)
-
-    x['pR'].append(0)
+    x['pR'].append(-3*L)
     x['vR'].append(20)
     x['aR'].append(0)
     x['lR'].append(-1)
