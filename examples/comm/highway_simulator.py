@@ -53,21 +53,21 @@ class HighwaySimulator:
     def get_following(self, i, l):
         fol = -1
         for j in range(self.m):
-            if j == i or self.x['lH'][j] != l or self.x['pH'][i] > self.x['pH'][j]:
+            if j == i or self.x['lH'][j] != l or self.x['pR'][i] > self.x['pH'][j]:
                 continue
             if fol == -1 or self.x['pH'][j] < self.x['pH'][fol]:
                 fol = j
         if fol != -1:
             return self.x['pH'][fol], self.x['vH'][fol]
         for j in range(self.n):
-            if self.x['lR'][j] != l or self.x['pH'][i] > self.x['pR'][j]:
+            if self.x['lR'][j] != l or self.x['pR'][i] > self.x['pR'][j]:
                 continue
             if fol == -1 or self.x['pR'][j] < self.x['pR'][fol]:
                 fol = j
         if fol != -1:
             return self.x['pR'][fol], self.x['vR'][fol]
         for j in range(self.q):
-            if self.x['lB'][j] != l or self.x['pH'][i] > self.x['pB'][j]:
+            if self.x['lB'][j] != l or self.x['pR'][i] > self.x['pB'][j]:
                 continue
             if fol == -1 or self.x['pB'][j] < self.x['pB'][fol]:
                 fol = j
