@@ -6,7 +6,7 @@ class Infrastructure:
         self.sim = sim
         self.obs = [[{'pos': [], 'vel': []} for _ in range(self.sim.m)] 
                     for _ in range(self.sim.n)]
-        self.bel = [[{'pos': (0, 0), 'vel': (0, 0)} for _ in range(self.sim.m)] 
+        self.bel = [[{'pos': (0, 0), 'vel': (0, 0), 't': 0} for _ in range(self.sim.m)] 
                     for _ in range(self.sim.n)]
         self._init_bel()
 
@@ -29,30 +29,35 @@ class Infrastructure:
     def _update_belief(self, sender, receiver, subject, update=True):
 
         # estimate current state from belief from last timestep
-        vel_est = self.bel[sender][subject]['vel'][0] # constant velocity assumption
-        pos_est = self.bel[sender][subject]['pos'][0] + vel_est * self.sim.dt # integrate to guess
-        
-        # prior is estimated state
-        sigma0_v = 1 # TODO: tune param
-        n = len(self.obs[sender][subject]['pos'])
+        vel_est = self.bel[receiver][subject]['vel'][0] # constant velocity assumption
+        delta_t = self.sim.t - self.bel[receiver][subject]['t'] # time since last update
+        pos_est = self.bel[receiver][subject]['pos'][0] + vel_est * delta_t # integrate to guess
+
+        # prior is estimated state of receiver
+        rec_dist = abs(self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])
+        sigma0_v = 0.05 * rec_dist # TODO: tune param
+        n = len(self.obs[receiver][subject]['pos'])
+        # TODO: not sure if using dt below is correct, but using delta_t breaks it when delta_t=0
         prior_p = (pos_est, sigma0_v**2 * n * self.sim.dt) # (mu, sigma^2)
         prior_v = (vel_est, sigma0_v**2)
         
-        # likelihood is latest observation
-        sigmaN = (1, 1) # TODO: tune params
+        # likelihood is latest observation of sender
+        sen_dist = abs(self.sim.x['pR'][sender] - self.sim.x['pH'][subject])
+        sigmaN = (0.25 * sen_dist, 0.25 * sen_dist) # TODO: tune params
         lhood_p = (self.obs[sender][subject]['pos'][-1], sigmaN[0]**2) # (mu, sigma^2)
         lhood_v = (self.obs[sender][subject]['vel'][-1], sigmaN[1]**2) 
 
-        # compute posterior
-        obs_p = self.obs[sender][subject]['pos'] # list of all observations
-        obs_v = self.obs[sender][subject]['vel']
+        # compute posterior for receiver
+        post_p = self._bayes_gauss(prior_p, lhood_p, self.obs[sender][subject]['pos']) # (mu, sigma^2)
+        post_v = self._bayes_gauss(prior_v, lhood_v, self.obs[sender][subject]['vel'])
 
-        post_p = self._bayes_gauss(prior_p, lhood_p, obs_p) # (mu, sigma^2)
-        post_v = self._bayes_gauss(prior_v, lhood_v, obs_v)
+        print(sender, "->", receiver, "POS BAYESIAN", prior_p, lhood_p, post_p)
+        print(sender, "->", receiver, "VEL BAYESIAN", prior_v, lhood_v, post_v)
 
         if update:
             self.bel[receiver][subject]['pos'] = post_p
             self.bel[receiver][subject]['vel'] = post_v
+            self.bel[receiver][subject]['t'] = self.sim.t
 
         return (post_p, post_v)
     
@@ -61,7 +66,7 @@ class Infrastructure:
         vel = self.sim.x['vH'][subject]
         dist = abs(pos - self.sim.x['pR'][observer])
 
-        alpha = (0.001, 0.001) # TODO: tune params
+        alpha = (0.01, 0.001) # TODO: tune params
         pos += random.gauss(0, alpha[0]*dist**2 + alpha[1]*pos)
         vel += random.gauss(0, alpha[0]*dist**2 + alpha[1]*vel)
 

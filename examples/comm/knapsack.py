@@ -19,14 +19,17 @@ class Knapsack:
         alpha = 1 # TODO: tune params
         beta = 1
         gamma = 1
-        d = 1 / (self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])**2
+        d = 1 / abs(self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])
+        # d = -abs(self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])
+        # d = (self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])**2
         # dv = 
         post_p, post_v = self.infra.test_share(sender, receiver, subject)
-        kl_p = self._kl_gauss(post_p, self.infra.bel[receiver][subject]['pos'])
-        kl_v = self._kl_gauss(post_v, self.infra.bel[receiver][subject]['vel'])
+        kl_p = self._kl_gauss(self.infra.bel[receiver][subject]['pos'], post_p)
+        kl_v = self._kl_gauss(self.infra.bel[receiver][subject]['vel'], post_v)
         return alpha * d + beta * kl_p + gamma * kl_v
 
     def sack(self, comms):
-        v = [self._value(a, b, h) for (a, b, h) in comms]
         c = [self.C[a][b] for (a, b, _) in comms]
-        return ortoolpy.knapsack(v, c, self.beta)
+        v = [self._value(a, b, h) for (a, b, h) in comms]
+        # print(c, v, self.beta)
+        return ortoolpy.knapsack(c, v, self.beta)

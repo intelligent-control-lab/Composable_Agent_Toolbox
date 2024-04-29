@@ -13,9 +13,11 @@ class HighwaySimulator:
         self.idmR = idmR
         self.dt = dt
 
+        self.t = 0
+
         self.fig, self.ax = plt.subplots()
 
-    def vis(self, t, pov):
+    def vis(self, pov):
         
         self.ax.cla()
         self.ax.axis([-4*self.L, 4*self.L, pov - 4*self.L, pov + 4*self.L])
@@ -24,7 +26,7 @@ class HighwaySimulator:
         self.ax.axvline(x=-3*self.L/2, color="black", linestyle="-")
         self.ax.axvline(x=3*self.L/2, color="black", linestyle="-")
 
-        self.ax.text(-4*self.L, pov + 4*self.L, "t = " + str(round(t, 1)))
+        self.ax.text(-4*self.L, pov + 4*self.L, "t = " + str(round(self.t, 1)))
         for i in range(self.m):
             self.ax.text(self.x['lH'][i]*self.L, self.x['pH'][i], str(round(self.x['vH'][i], 1)))
         for i in range(self.n):
@@ -140,5 +142,7 @@ class HighwaySimulator:
             
         self.x['aH'] = aH
         self.x['aR'] = aR
+
+        self.t += self.dt
 
         return self.x

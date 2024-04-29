@@ -8,10 +8,12 @@ from IDM import IDM
 m = 1
 n = 2
 q = 0
-beta = 100
 
-C = [[random.randint(1, 10) for j in range(n)] 
-        for i in range(n)]
+# C = [[random.randint(1, 10) for j in range(n)] 
+#         for i in range(n)]
+
+C = [[1 for j in range(n)] for i in range(n)]
+beta = 1
 
 L = 5
 a_max = 2.0
@@ -50,34 +52,62 @@ if __name__ == '__main__':
     idmR = [IDM(random.uniform(0.5, 1.5), random.uniform(20, 30), 
             T, a, b, L) for _ in range(n)]
 
-    t = 0
-    t_max = 40
+    t_max = 5
     dt = 0.1
 
     sim = HighwaySimulator(x, m, n, q, L, idmH, idmR, dt)
     infra = Infrastructure(sim)
     knap = Knapsack(sim, infra, C, beta)
     
-    while t <= t_max:
-        
+    while sim.t <= t_max:
+
+        print("HHHHHHHHHHHHHHHHH t=", sim.t, "HHHHHHHHHHHHHHHHHHHHHHH")
+
+        # iterate simulation
+        x = sim.move(use_idm=False)
+        sim.vis(x['pR'][1])
+
+        print("~~~~PRE SENSE~~~~")
+        print('ACTUAL POS', x['pH'][0])
+        print('R0 BEL POS', infra.bel[0][0]['pos'])
+        print('R1 BEL POS', infra.bel[1][0]['pos'])
+        print('ACTUAL VEL', x['vH'][0])
+        print('R0 BEL VEL', infra.bel[0][0]['vel'])
+        print('R1 BEL VEL', infra.bel[1][0]['vel'])
+
         # run individual sensing
         for r in range(n):
             for h in range(m):
                 infra.sense(r, h)
 
+        print("~~~~POST SENSE, PRE SHARE~~~~")
+        print('ACTUAL POS', x['pH'][0])
+        print('R0 BEL POS', infra.bel[0][0]['pos'])
+        print('R1 BEL POS', infra.bel[1][0]['pos'])
+        print('ACTUAL VEL', x['vH'][0])
+        print('R0 BEL VEL', infra.bel[0][0]['vel'])
+        print('R1 BEL VEL', infra.bel[1][0]['vel'])
+
         # run knapsack to decide communications
-        comms = [(a, b, h) for a in range(n) for b in range(n) for h in range(m)] # consider all potential comms
+        comms = [(a, b, h) for a in range(n) for b in range(n) if a != b for h in range(m)] # consider all potential comms
+        print(comms)
         chosen = knap.sack(comms)[1] # indices of chosen comms
+        print(chosen)
 
         # execute communications
         for i in chosen:
             (a, b, h) = comms[i]
             infra.share(a, b, h)
 
-        # iterate simulation
-        x = sim.move(use_idm=True)
-        sim.vis(t, x['pH'][1])
-        t += dt
+        print("~~~~POST SHARE~~~~")
+        print('ACTUAL POS', x['pH'][0])
+        print('R0 BEL POS', infra.bel[0][0]['pos'])
+        print('R1 BEL POS', infra.bel[1][0]['pos'])
+        print('ACTUAL VEL', x['vH'][0])
+        print('R0 BEL VEL', infra.bel[0][0]['vel'])
+        print('R1 BEL VEL', infra.bel[1][0]['vel'])
+
+        # input()
 
 # let's assume that 1. everyone wants information about everyone and that 2. everyone gets information about everyone.
 # does everyone observe everyone??
