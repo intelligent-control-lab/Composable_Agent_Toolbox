@@ -34,7 +34,7 @@ class Infrastructure:
         pos_est = self.bel[receiver][subject]['pos'][0] + vel_est * delta_t # integrate to guess
 
         # prior is estimated state of receiver
-        rec_dist = abs(self.sim.x['pR'][receiver] - self.sim.x['pH'][subject])
+        rec_dist = abs(self.sim.x['pR'][receiver] - self.bel[receiver][subject]['pos'][0])
         sigma0_v = 0.05 * rec_dist # TODO: tune param
         n = len(self.obs[receiver][subject]['pos'])
         # TODO: not sure if using dt below is correct, but using delta_t breaks it when delta_t=0
@@ -42,7 +42,7 @@ class Infrastructure:
         prior_v = (vel_est, sigma0_v**2)
         
         # likelihood is latest observation of sender
-        sen_dist = abs(self.sim.x['pR'][sender] - self.sim.x['pH'][subject])
+        sen_dist = abs(self.sim.x['pR'][sender] - self.bel[sender][subject]['pos'][0])
         sigmaN = (0.25 * sen_dist, 0.25 * sen_dist) # TODO: tune params
         lhood_p = (self.obs[sender][subject]['pos'][-1], sigmaN[0]**2) # (mu, sigma^2)
         lhood_v = (self.obs[sender][subject]['vel'][-1], sigmaN[1]**2) 
