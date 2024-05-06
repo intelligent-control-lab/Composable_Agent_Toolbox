@@ -61,32 +61,14 @@ if __name__ == '__main__':
     
     while sim.t <= t_max:
 
-        print("HHHHHHHHHHHHHHHHH t=", sim.t, "HHHHHHHHHHHHHHHHHHHHHHH")
-
         # iterate simulation
         x = sim.move(use_idm=False)
         sim.vis(x['pR'][1])
-
-        print("~~~~PRE SENSE~~~~")
-        print('ACTUAL POS', x['pH'][0])
-        print('R0 BEL POS', infra.bel[0][0]['pos'])
-        print('R1 BEL POS', infra.bel[1][0]['pos'])
-        print('ACTUAL VEL', x['vH'][0])
-        print('R0 BEL VEL', infra.bel[0][0]['vel'])
-        print('R1 BEL VEL', infra.bel[1][0]['vel'])
 
         # run individual sensing
         for r in range(n):
             for h in range(m):
                 infra.sense(r, h)
-
-        print("~~~~POST SENSE, PRE SHARE~~~~")
-        print('ACTUAL POS', x['pH'][0])
-        print('R0 BEL POS', infra.bel[0][0]['pos'])
-        print('R1 BEL POS', infra.bel[1][0]['pos'])
-        print('ACTUAL VEL', x['vH'][0])
-        print('R0 BEL VEL', infra.bel[0][0]['vel'])
-        print('R1 BEL VEL', infra.bel[1][0]['vel'])
 
         # run knapsack to decide communications
         comms = [(a, b, h) for a in range(n) for b in range(n) if a != b for h in range(m)] # consider all potential comms
@@ -98,24 +80,3 @@ if __name__ == '__main__':
         for i in chosen:
             (a, b, h) = comms[i]
             infra.share(a, b, h)
-
-        print("~~~~POST SHARE~~~~")
-        print('ACTUAL POS', x['pH'][0])
-        print('R0 BEL POS', infra.bel[0][0]['pos'])
-        print('R1 BEL POS', infra.bel[1][0]['pos'])
-        print('ACTUAL VEL', x['vH'][0])
-        print('R0 BEL VEL', infra.bel[0][0]['vel'])
-        print('R1 BEL VEL', infra.bel[1][0]['vel'])
-
-        # input()
-
-# let's assume that 1. everyone wants information about everyone and that 2. everyone gets information about everyone.
-# does everyone observe everyone??
-# then, costs are just the full adjacancy matrix (C) and values are weighted sum of 1/d^2 and posterior - prior belief.
-
-# perhaps everyone gets information about everyone else in their lane
-# can observations be made across lanes? sure, since we can probably reasonably just consider longitudinal distance
-# maybe if an agent wants to change lanes, it wants observations of humans in adjacent lane
-
-# during car-following, agents get observations of car(s?) ahead in lane
-# during lane-changing, agents get observations of car(s) in adjecent lane
