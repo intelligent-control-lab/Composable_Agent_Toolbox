@@ -1,3 +1,4 @@
+import time
 from highway_simulator import HighwaySimulator
 from infrastructure import Infrastructure
 from knapsack import Knapsack
@@ -13,7 +14,7 @@ q = 0
 #         for i in range(n)]
 
 C = [[1 for j in range(n)] for i in range(n)]
-beta = 1
+beta = random.randint(1, n)
 
 L = 5
 a_max = 2.0
@@ -30,6 +31,8 @@ x = {'pH': [], 'vH': [], 'aH': [], 'lH': [], 'dH': [],
      'pB': [], 'vB': [], 'lB': []}
 
 if __name__ == '__main__':
+
+    start = time.time()
 
     x['pH'].append(3*L)
     x['vH'].append(20)
@@ -52,31 +55,35 @@ if __name__ == '__main__':
     idmR = [IDM(random.uniform(0.5, 1.5), random.uniform(20, 30), 
             T, a, b, L) for _ in range(n)]
 
-    t_max = 5
+    t_max = 10
     dt = 0.1
 
     sim = HighwaySimulator(x, m, n, q, L, idmH, idmR, dt)
     infra = Infrastructure(sim)
     knap = Knapsack(sim, infra, C, beta)
-    
+
     while sim.t <= t_max:
 
         # iterate simulation
         x = sim.move(use_idm=False)
-        sim.vis(x['pR'][1])
+        # sim.vis(x['pR'][1])
 
         # run individual sensing
         for r in range(n):
             for h in range(m):
                 infra.sense(r, h)
 
-        # run knapsack to decide communications
-        comms = [(a, b, h) for a in range(n) for b in range(n) if a != b for h in range(m)] # consider all potential comms
-        print(comms)
-        chosen = knap.sack(comms)[1] # indices of chosen comms
-        print(chosen)
+        if sim.t % 1 == 0:
+            # run knapsack to decide communications
+            comms = [(a, b, h) for a in range(n) for b in range(n) if a != b for h in range(m)] # consider all potential comms
+            # print(comms)
+            chosen = knap.sack(comms)[1] # indices of chosen comms
+            # print(chosen)
 
-        # execute communications
-        for i in chosen:
-            (a, b, h) = comms[i]
-            infra.share(a, b, h)
+            # execute communications
+            for i in chosen:
+                (a, b, h) = comms[i]
+                infra.share(a, b, h)
+
+    end = time.time()
+    print("RUNTIME", end - start)

@@ -51,8 +51,8 @@ class Infrastructure:
         post_p = self._bayes_gauss(prior_p, lhood_p, self.obs[sender][subject]['pos']) # (mu, sigma^2)
         post_v = self._bayes_gauss(prior_v, lhood_v, self.obs[sender][subject]['vel'])
 
-        print(sender, "->", receiver, "POS BAYESIAN", prior_p, lhood_p, post_p)
-        print(sender, "->", receiver, "VEL BAYESIAN", prior_v, lhood_v, post_v)
+        # print(sender, "->", receiver, "POS BAYESIAN", prior_p, lhood_p, post_p)
+        # print(sender, "->", receiver, "VEL BAYESIAN", prior_v, lhood_v, post_v)
 
         if update:
             self.bel[receiver][subject]['pos'] = post_p
