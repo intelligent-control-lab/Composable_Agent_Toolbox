@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
+import runner
+
 device = (
     "cuda"
     if torch.cuda.is_available()
@@ -37,8 +39,8 @@ class CustomLoss(nn.Module):
         super(CustomLoss, self).__init__()
 
     def forward(self, inputs, targets): # TODO: run sim here
-        loss = -1 * (targets * torch.log(inputs) + (1 - targets) * torch.log(1 - inputs))
-        return loss.mean()
+        loss = runner.run_sim(model)
+        return loss
     
 model = NeuralNetwork()
 
