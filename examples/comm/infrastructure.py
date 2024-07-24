@@ -30,7 +30,7 @@ class Infrastructure:
         mu = sigma2 * (prior[0] / prior[1] + (len(obs) * obs[-1]) / lhood[1]) # eq. (24) [MODIFIED TO REMOVE AVG]
         return (mu, sigma2)
 
-    def _update_belief(self, sender, receiver, subject, update=True):
+    def _update_belief(self, sender, receiver, subject, update=True, new_obs=True):
 
         # estimate current state from belief from last timestep
         vel_est = self.bel[receiver][subject]['vel'][0] # constant velocity assumption
@@ -78,6 +78,7 @@ class Infrastructure:
 
         # can't sense, occluded
         if not initial and self._occluded(observer, subject):
+            self._update_belief(observer, observer, subject) # just forward-integrate
             return None
 
         pos = self.sim.x['pH'][subject].copy()
